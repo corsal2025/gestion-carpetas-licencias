@@ -1,0 +1,306 @@
+@page
+@model LicenciasCarpetas.Dashboard.Pages.IndexModel
+@{
+    ViewData["Title"] = "Casos";
+}
+
+@if (Model.Message is not null)
+{
+    <p class="message-banner @(Model.MessageIsError ? "message-error" : "")">@Model.Message</p>
+}
+
+<div class="card" style="padding:16px 20px; margin-bottom:16px;">
+    <form method="get" style="display:flex; gap:10px; align-items:flex-end; flex-wrap:wrap;">
+        <div>
+            <label class="form-label" for="office">Oficina</label>
+            <select name="office" id="office" onchange="this.form.submit()">
+                <option value="">Todas</option>
+                @foreach (var office in Enum.GetValues<Office>())
+                {
+                    <option value="@office" selected="@(Model.Office == office)">@OfficeCatalog.Display(office)</option>
+                }
+            </select>
+        </div>
+        <div>
+            <label class="form-label" for="year">Año</label>
+            <select name="year" id="year" onchange="this.form.submit()">
+                <option value="">Todos</option>
+                @foreach (var year in Model.Years)
+                {
+                    <option value="@year" selected="@(Model.Year == year)">@year</option>
+                }
+            </select>
+        </div>
+        <div>
+            <label class="form-label" for="month">Mes</label>
+            <select name="month" id="month" onchange="this.form.submit()">
+                <option value="">Todos</option>
+                @for (var month = 1; month <= 12; month++)
+                {
+                    <option value="@month" selected="@(Model.Month == month)">@SpanishDate.MonthName(month)</option>
+                }
+            </select>
+        </div>
+        <div>
+            <label class="form-label" for="estado">Estado de la carpeta</label>
+            <select name="estado" id="estado" onchange="this.form.submit()">
+                <option value="">Todos</option>
+                @foreach (var state in FolderStateCatalog.All)
+                {
+                    <option value="@state" selected="@(Model.Estado == state)">@FolderStateCatalog.Display(state)</option>
+                }
+            </select>
+        </div>
+        <div>
+            <label class="form-label" for="decision">Decisión final</label>
+            <select name="decision" id="decision" onchange="this.form.submit()">
+                <option value="">Todas</option>
+                @foreach (var decision in FinalDecisionCatalog.All)
+                {
+                    <option value="@decision" selected="@(Model.Decision == decision)">@FinalDecisionCatalog.Display(decision)</option>
+                }
+            </select>
+        </div>
+        <div>
+            <label class="form-label" for="sector">Sector</label>
+            <select name="sector" id="sector" onchange="this.form.submit()">
+                <option value="">Todos</option>
+                <option value="Archivo" selected="@(Model.Sector == FolderSector.Archivo)">Archivo</option>
+                <option value="Oficina43" selected="@(Model.Sector == FolderSector.Oficina43)">Oficina 43</option>
+            </select>
+        </div>
+        <div>
+            <label class="form-label" for="search">Buscar</label>
+            <input type="text" name="search" id="search" value="@Model.Search" placeholder="RUT o nombre..." />
+        </div>
+        <label style="display:flex; gap:6px; align-items:center; font-size:0.8rem;">
+            <input type="checkbox" name="needsReview" value="true" checked="@Model.NeedsReview" onchange="this.form.submit()" />
+            Requiere revisión (@Model.NeedsReviewCount)
+        </label>
+        <label style="display:flex; gap:6px; align-items:center; font-size:0.8rem;">
+            <input type="checkbox" name="otherComuna" value="true" checked="@Model.OtherComuna" onchange="this.form.submit()" />
+            Carpeta en otra comuna
+        </label>
+        <button type="submit" class="btn-primary" style="padding:8px 16px;">Filtrar</button>
+        <a asp-page="/Index" class="nav-pill">Limpiar</a>
+        <a asp-page="/Index" asp-page-handler="Export"
+           asp-route-office="@Model.Office" asp-route-year="@Model.Year" asp-route-month="@Model.Month"
+           asp-route-estado="@Model.Estado" asp-route-decision="@Model.Decision" asp-route-sector="@Model.Sector"
+           asp-route-needsReview="@Model.NeedsReview" asp-route-otherComuna="@Model.OtherComuna"
+           asp-route-search="@Model.Search" class="nav-pill">Exportar a Excel</a>
+    </form>
+</div>
+
+<details class="card" style="padding:16px 20px; margin-bottom:16px;">
+    <summary style="cursor:pointer; font-size:0.9rem; font-weight:600;">Agregar caso a la agenda</summary>
+    <form method="post" asp-page-handler="Add" style="display:flex; gap:10px; align-items:flex-end; flex-wrap:wrap; margin-top:12px;">
+        <div>
+            <label class="form-label">Nombre completo</label>
+            <input type="text" name="nombre" required placeholder="ej: Gustavo Peña Castro" style="min-width:220px;" />
+        </div>
+        <div>
+            <label class="form-label">RUT</label>
+            <input type="text" name="rut" placeholder="ej: 18.785.387-7" />
+        </div>
+        <div>
+            <label class="form-label">Fecha citación</label>
+            <input type="text" name="citacion" placeholder="dd-mm-aaaa" />
+        </div>
+        <div>
+            <label class="form-label">Oficina</label>
+            <select name="office">
+                @foreach (var office in Enum.GetValues<Office>())
+                {
+                    <option value="@office">@OfficeCatalog.Display(office)</option>
+                }
+            </select>
+        </div>
+        <div>
+            <label class="form-label">Última carpeta (fecha o comuna)</label>
+            <input type="text" name="ultimaCarpeta" placeholder="dd-mm-aaaa o VIÑA DEL MAR" />
+        </div>
+        <div>
+            <label class="form-label">Estado de la carpeta</label>
+            <select name="estado">
+                <option value="">—</option>
+                @foreach (var state in FolderStateCatalog.All)
+                {
+                    <option value="@state">@FolderStateCatalog.Display(state)</option>
+                }
+            </select>
+        </div>
+        <div>
+            <label class="form-label">Decisión final</label>
+            <select name="decision">
+                <option value="">—</option>
+                @foreach (var decision in FinalDecisionCatalog.All)
+                {
+                    <option value="@decision">@FinalDecisionCatalog.Display(decision)</option>
+                }
+            </select>
+        </div>
+        <div>
+            <label class="form-label">Idoneidad moral</label>
+            <select name="idoneidad">
+                <option value="">—</option>
+                @foreach (var idoneity in MoralIdoneityCatalog.All)
+                {
+                    <option value="@idoneity">@MoralIdoneityCatalog.Display(idoneity)</option>
+                }
+            </select>
+        </div>
+        <div>
+            <label class="form-label">Atención</label>
+            <input type="text" name="atencion" placeholder="ej: SI, EN AV. ARGENTINA" />
+        </div>
+        <button type="submit" class="btn-primary" style="padding:8px 16px;">Agregar</button>
+    </form>
+</details>
+
+<p style="font-size:0.8rem; margin:0 0 8px 4px;">
+    @Model.TotalCount caso(s) — página @Model.PageNumber de @Model.TotalPages
+</p>
+
+<div class="card table-card">
+    <table class="cases cases-index">
+        <thead>
+            <tr>
+                <th>Marcar</th>
+                <th>Citación</th>
+                <th>Nombre completo</th>
+                <th>RUT</th>
+                <th>Oficina</th>
+                <th>Subida carpeta</th>
+                <th>Última carpeta</th>
+                <th>Sector</th>
+                <th>Idoneidad</th>
+                <th>Estado de la carpeta</th>
+                <th>Decisión final</th>
+                <th>Acción</th>
+            </tr>
+        </thead>
+        <tbody>
+        @{ var rowIndex = 0; }
+        @foreach (var item in Model.Cases)
+        {
+            var rowClass = rowIndex % 2 == 1 ? "row-alt" : "";
+            var reviewClass = item.NeedsReview ? "row-needs-review" : "";
+            rowIndex++;
+            <tr class="@rowClass @reviewClass">
+                <td class="marked-cell">
+                    <form method="post" asp-page-handler="ToggleMarked" class="marked-form">
+                        <input type="hidden" name="id" value="@item.Id" />
+                        <input type="checkbox" name="markedValue" class="marked-checkbox" @(item.Marked ? "checked" : "")
+                               onchange="submitCheckboxToggle(this, 'markedValue')" title="Marcar caso" />
+                    </form>
+                </td>
+                <td>
+                    <form method="post" asp-page-handler="Save" id="case-form-@item.Id"
+                          asp-route-office="@Model.Office" asp-route-year="@Model.Year" asp-route-month="@Model.Month"
+                          asp-route-estado="@Model.Estado" asp-route-decision="@Model.Decision" asp-route-sector="@Model.Sector"
+                          asp-route-needsReview="@Model.NeedsReview" asp-route-otherComuna="@Model.OtherComuna"
+                          asp-route-search="@Model.Search" asp-route-p="@Model.PageNumber">
+                        <input type="hidden" name="id" value="@item.Id" />
+                    </form>
+                    <input type="text" name="citacion" form="case-form-@item.Id" class="input-inline" size="11"
+                           value="@LicenciasCarpetas.Dashboard.Pages.IndexModel.FormatDate(item.CitationDate)" placeholder="dd-mm-aaaa" />
+                </td>
+                <td class="name-cell">
+                    @if (item.NeedsReview)
+                    {
+                        <span class="review-alert" title="Requiere revisión — datos incompletos en la fila original">⚠</span>
+                    }
+                    <input type="text" name="nombre" form="case-form-@item.Id" class="input-inline name-input"
+                           value="@item.FullName" placeholder="Nombre completo" />
+                </td>
+                <td class="text-cell rut-cell">
+                    <input type="text" name="rut" form="case-form-@item.Id" class="input-inline rut-input" size="13" value="@item.Rut" />
+                </td>
+                <td class="text-cell">@OfficeCatalog.Display(item.Office)</td>
+                <td>
+                    <input type="text" name="subida" form="case-form-@item.Id" class="input-inline" size="11"
+                           value="@LicenciasCarpetas.Dashboard.Pages.IndexModel.FormatDate(item.FolderUploadedDate)" placeholder="dd-mm-aaaa" />
+                </td>
+                <td>
+                    <input type="text" name="ultimaCarpeta" form="case-form-@item.Id" class="input-inline" size="16"
+                           value="@(item.LastFolderDate is { } last ? last.ToString("dd-MM-yyyy") : item.LastFolderComuna)"
+                           title="Fecha de la última carpeta, o la comuna donde está la carpeta" />
+                </td>
+                <td class="text-cell">@(item.Sector?.ToString() ?? "—")</td>
+                <td>
+                    <select name="idoneidad" form="case-form-@item.Id" class="input-inline">
+                        <option value="">—</option>
+                        @foreach (var idoneity in MoralIdoneityCatalog.All)
+                        {
+                            <option value="@idoneity" selected="@(item.MoralIdoneity == idoneity)">@MoralIdoneityCatalog.Display(idoneity)</option>
+                        }
+                    </select>
+                </td>
+                <td>
+                    <select name="estado" form="case-form-@item.Id" class="input-inline">
+                        <option value="">@(item.FolderStateRaw ?? "—")</option>
+                        @foreach (var state in FolderStateCatalog.All)
+                        {
+                            <option value="@state" selected="@(item.FolderState == state)">@FolderStateCatalog.Display(state)</option>
+                        }
+                    </select>
+                </td>
+                <td>
+                    <select name="decision" form="case-form-@item.Id" class="input-inline">
+                        <option value="">@(item.FinalDecisionRaw ?? "—")</option>
+                        @foreach (var decision in FinalDecisionCatalog.All)
+                        {
+                            <option value="@decision" selected="@(item.FinalDecision == decision)">@FinalDecisionCatalog.Display(decision)</option>
+                        }
+                    </select>
+                </td>
+                <td style="display:flex; gap:6px; align-items:center;">
+                    <input type="hidden" name="atencion" form="case-form-@item.Id" value="@item.AttentionNote" />
+                    <button type="submit" form="case-form-@item.Id" class="btn-primary" style="padding:4px 10px; font-size:0.72rem;">Guardar</button>
+                    <form method="post" asp-page-handler="Delete"
+                          onsubmit="return confirm('Esto elimina el caso de forma permanente, no se puede deshacer. ¿Confirmar?');">
+                        <input type="hidden" name="id" value="@item.Id" />
+                        <button type="submit" class="btn-danger" title="Eliminar caso" aria-label="Eliminar caso">✕</button>
+                    </form>
+                </td>
+            </tr>
+        }
+        </tbody>
+    </table>
+</div>
+
+@if (Model.TotalPages > 1)
+{
+    <div style="display:flex; gap:8px; align-items:center; justify-content:center; margin:16px 0;">
+        @if (Model.PageNumber > 1)
+        {
+            <a class="nav-pill" asp-page="/Index" asp-all-route-data="@Model.RouteValues(Model.PageNumber - 1)">← Anterior</a>
+        }
+        <span style="font-size:0.8rem;">@Model.PageNumber / @Model.TotalPages</span>
+        @if (Model.PageNumber < Model.TotalPages)
+        {
+            <a class="nav-pill" asp-page="/Index" asp-all-route-data="@Model.RouteValues(Model.PageNumber + 1)">Siguiente →</a>
+        }
+    </div>
+}
+
+@section Scripts {
+<script>
+    // Checkbox toggles go through fetch() so ticking several rows quickly cannot cancel each other
+    // the way competing full-page navigations do.
+    function submitCheckboxToggle(checkbox, fieldName) {
+        var form = checkbox.form;
+        var id = form.querySelector('input[name="id"]').value;
+        var token = form.querySelector('input[name="__RequestVerificationToken"]').value;
+        var body = '__RequestVerificationToken=' + encodeURIComponent(token) + '&id=' + encodeURIComponent(id);
+        if (checkbox.checked) {
+            body += '&' + fieldName + '=true';
+        }
+        fetch(form.action, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: body
+        });
+    }
+</script>
+}

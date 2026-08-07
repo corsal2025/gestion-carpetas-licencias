@@ -1,0 +1,133 @@
+@page
+@model LicenciasCarpetas.Dashboard.Pages.EstadisticasModel
+@{
+    ViewData["Title"] = "Estadísticas";
+    var stats = Model.Statistics!;
+    var offices = Enum.GetValues<Office>();
+}
+
+@if (Model.Message is not null)
+{
+    <p class="message-banner">@Model.Message</p>
+}
+
+<div class="card" style="padding:16px 20px; margin-bottom:16px;">
+    <form method="get" style="display:flex; gap:10px; align-items:flex-end; flex-wrap:wrap;">
+        <div>
+            <label class="form-label" for="year">Año</label>
+            <select name="year" id="year" onchange="this.form.submit()">
+                @foreach (var year in Model.Years.DefaultIfEmpty(Model.Year))
+                {
+                    <option value="@year" selected="@(Model.Year == year)">@year</option>
+                }
+            </select>
+        </div>
+        <div>
+            <label class="form-label" for="month">Mes</label>
+            <select name="month" id="month" onchange="this.form.submit()">
+                @for (var month = 1; month <= 12; month++)
+                {
+                    <option value="@month" selected="@(Model.Month == month)">@SpanishDate.MonthName(month)</option>
+                }
+            </select>
+        </div>
+    </form>
+</div>
+
+<div class="card" style="padding:16px 20px; margin-bottom:16px;">
+    <h2 style="font-size:1rem; margin:0 0 10px;">Resumen de @SpanishDate.MonthName(stats.Month) @stats.Year</h2>
+    <p style="font-size:0.85rem; margin:0;">
+        Escaneadas: <strong>@stats.ScannedTotal</strong> ·
+        Subidas: <strong>@stats.UploadedTotal</strong> ·
+        Agendadas: <strong>@stats.ScheduledTotal</strong> ·
+        Atendidas: <strong>@stats.AttendedTotal</strong> ·
+        Atención: <strong>@LicenciasCarpetas.Dashboard.Pages.EstadisticasModel.Percent(stats.AttendanceRate)</strong>
+    </p>
+    <p style="font-size:0.8rem; margin:8px 0 0;">
+        @foreach (var office in offices)
+        {
+            <span style="margin-right:14px;">
+                @OfficeCatalog.Display(office): @stats.AttendedFor(office) / @stats.ScheduledFor(office)
+            </span>
+        }
+    </p>
+</div>
+
+<div class="card table-card" style="margin-bottom:16px;">
+    <table class="cases">
+        <thead>
+            <tr>
+                <th>Fecha</th>
+                <th>Escaneadas</th>
+                <th>Subidas</th>
+                @foreach (var office in offices)
+                {
+                    <th>Agendadas @OfficeCatalog.Display(office)</th>
+                    <th>Atendidas @OfficeCatalog.Display(office)</th>
+                    <th>% @OfficeCatalog.Display(office)</th>
+                }
+                <th>Guardar</th>
+            </tr>
+        </thead>
+        <tbody>
+        @foreach (var day in stats.Days)
+        {
+            var formId = $"counters-{day.Date:yyyyMMdd}";
+            <tr>
+                <td class="text-cell">@day.Date.ToString("dd-MM-yyyy")</td>
+                <td>
+                    <form method="post" asp-page-handler="SetCounters" id="@formId"
+                          asp-route-year="@Model.Year" asp-route-month="@Model.Month">
+                        <input type="hidden" name="fecha" value="@day.Date.ToString("yyyy-MM-dd")" />
+                    </form>
+                    <input type="number" name="escaneadas" form="@formId" class="input-inline" size="4" value="@day.Scanned" />
+                </td>
+                <td>
+                    <input type="number" name="subidas" form="@formId" class="input-inline" size="4" value="@day.Uploaded" />
+                </td>
+                @foreach (var office in offices)
+                {
+                    var entry = day.ByOffice.TryGetValue(office, out var value) ? value : (Scheduled: 0, Attended: 0);
+                    <td class="text-cell">@entry.Scheduled</td>
+                    <td class="text-cell">@entry.Attended</td>
+                    <td class="text-cell">@LicenciasCarpetas.Dashboard.Pages.EstadisticasModel.Percent(day.AttendanceRate(office))</td>
+                }
+                <td>
+                    <button type="submit" form="@formId" class="btn-primary" style="padding:4px 10px; font-size:0.72rem;">Guardar</button>
+                </td>
+            </tr>
+        }
+        </tbody>
+    </table>
+</div>
+
+<div style="display:flex; gap:16px; flex-wrap:wrap;">
+    <div class="card table-card" style="flex:1; min-width:320px;">
+        <table class="cases">
+            <thead><tr><th>Estado de la carpeta</th><th>Casos</th></tr></thead>
+            <tbody>
+            @foreach (var (state, count) in stats.FolderStates)
+            {
+                <tr>
+                    <td class="text-cell">@(state is { } value ? FolderStateCatalog.Display(value) : "Sin estado")</td>
+                    <td class="text-cell">@count</td>
+                </tr>
+            }
+            </tbody>
+        </table>
+    </div>
+    <div class="card table-card" style="flex:1; min-width:320px;">
+        <table class="cases">
+            <thead><tr><th>Decisión final</th><th>Casos</th></tr></thead>
+            <tbody>
+            @foreach (var (decision, count) in stats.FinalDecisions)
+            {
+                <tr>
+                    <td class="text-cell">@(decision is { } value ? FinalDecisionCatalog.Display(value) : "Sin decisión")</td>
+                    <td class="text-cell">@count</td>
+                </tr>
+            }
+            </tbody>
+        </table>
+    </div>
+</div>

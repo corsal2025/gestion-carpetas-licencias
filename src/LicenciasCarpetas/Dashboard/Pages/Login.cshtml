@@ -1,0 +1,32 @@
+@page
+@model LicenciasCarpetas.Dashboard.Pages.LoginModel
+@{
+    Layout = null;
+}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Ingresar — Carpetas Licencias</title>
+    <link rel="icon" type="image/svg+xml" href="~/favicon.svg" />
+    <link rel="stylesheet" href="~/css/dashboard.css" asp-append-version="true" />
+</head>
+<body>
+    <div class="login-shell">
+        <div class="login-card">
+            <h1>Carpetas Licencias</h1>
+            <p class="subtitle">Municipalidad de Valparaíso — Depto. Licencias de Conducir</p>
+            <form method="post">
+                <input asp-for="Username" placeholder="Usuario" autofocus />
+                <input asp-for="Password" type="password" placeholder="Contraseña" />
+                <button type="submit">Ingresar</button>
+                @if (Model.ErrorMessage is not null)
+                {
+                    <p class="error">@Model.ErrorMessage</p>
+                }
+            </form>
+        </div>
+    </div>
+</body>
+</html>

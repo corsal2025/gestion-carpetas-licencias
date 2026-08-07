@@ -1,0 +1,63 @@
+@page
+@model LicenciasCarpetas.Dashboard.Pages.ComunasModel
+@{
+    ViewData["Title"] = "Comunas";
+}
+
+@if (Model.Message is not null)
+{
+    <p class="message-banner">@Model.Message</p>
+}
+
+<div class="card" style="padding:16px 20px; margin-bottom:16px;">
+    <form method="get" style="display:flex; gap:10px; align-items:flex-end;">
+        <div>
+            <label class="form-label" for="search">Buscar comuna o correo</label>
+            <input type="text" name="search" id="search" value="@Model.Search" placeholder="ej: Quilpué" />
+        </div>
+        <button type="submit" class="btn-primary" style="padding:8px 16px;">Buscar</button>
+        <a asp-page="/Comunas" class="nav-pill">Limpiar</a>
+    </form>
+</div>
+
+<div class="card" style="padding:16px 20px; margin-bottom:16px;">
+    <form method="post" asp-page-handler="Add" style="display:flex; gap:10px; align-items:flex-end;">
+        <div>
+            <label class="form-label">Comuna</label>
+            <input type="text" name="comuna" required placeholder="ej: VIÑA DEL MAR" />
+        </div>
+        <div>
+            <label class="form-label">Correo</label>
+            <input type="text" name="correo" required placeholder="ej: licencias@munivina.cl" />
+        </div>
+        <button type="submit" class="btn-primary" style="padding:8px 16px;">Agregar contacto</button>
+    </form>
+</div>
+
+<div class="card table-card">
+    <table class="cases">
+        <thead>
+            <tr>
+                <th>Comuna</th>
+                <th>Correo</th>
+                <th>Acción</th>
+            </tr>
+        </thead>
+        <tbody>
+        @foreach (var contact in Model.Contacts)
+        {
+            <tr>
+                <td class="text-cell">@contact.Comuna</td>
+                <td class="text-cell">@contact.Email</td>
+                <td>
+                    <form method="post" asp-page-handler="Delete" asp-route-search="@Model.Search"
+                          onsubmit="return confirm('¿Eliminar este contacto?');">
+                        <input type="hidden" name="id" value="@contact.Id" />
+                        <button type="submit" class="btn-danger" title="Eliminar contacto">✕</button>
+                    </form>
+                </td>
+            </tr>
+        }
+        </tbody>
+    </table>
+</div>

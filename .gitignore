@@ -1,0 +1,20 @@
+.DS_Store
+
+# .NET
+bin/
+obj/
+*.user
+
+# Environment-specific config
+**/appsettings.Development.json
+.env
+
+# TLS certificate private key material
+certs/
+
+# Runtime data: the SQLite database holds real names and RUTs, exports do too.
+**/data/*
+!**/data/README.md
+*.db
+
+publish/

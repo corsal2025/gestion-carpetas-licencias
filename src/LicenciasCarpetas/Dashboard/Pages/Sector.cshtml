@@ -1,0 +1,56 @@
+@page "{sector?}"
+@model LicenciasCarpetas.Dashboard.Pages.SectorModel
+@{
+    var title = LicenciasCarpetas.Dashboard.Pages.SectorModel.SectorTitle(Model.SelectedSector);
+    ViewData["Title"] = $"Carpetas en {title}";
+}
+
+<div class="card" style="padding:16px 20px; margin-bottom:16px;" data-print-hide>
+    <p style="margin:0 0 10px; font-size:0.85rem;">
+        Carpetas cuyo registro de última carpeta las ubica en <strong>@title</strong>
+        (corte: julio 2023). @Model.Cases.Count caso(s).
+    </p>
+    <a class="nav-pill" asp-page="/Sector" asp-route-sector="@Model.SelectedSector" asp-route-onlyMarked="@(!Model.OnlyMarked)">
+        @(Model.OnlyMarked ? "Ver todas las carpetas del sector" : "Ver solo las marcadas")
+    </a>
+    <button type="button" class="btn-primary" style="padding:8px 16px;" onclick="window.print()">Imprimir / Guardar como PDF</button>
+</div>
+
+<div class="card table-card">
+    <h1 style="font-size:1.1rem; margin:12px 16px;">Solicitud de carpetas — @title</h1>
+    <table class="cases">
+        <thead>
+            <tr>
+                <th>#</th>
+                <th>Nombre completo</th>
+                <th>RUT</th>
+                <th>Última carpeta</th>
+                <th>Oficina</th>
+                <th>Citación</th>
+            </tr>
+        </thead>
+        <tbody>
+        @{ var index = 1; }
+        @foreach (var item in Model.Cases)
+        {
+            <tr>
+                <td class="text-cell">@index</td>
+                <td class="text-cell">@item.FullName</td>
+                <td class="text-cell">@item.Rut</td>
+                <td class="text-cell">@(item.LastFolderDate is { } date ? date.ToString("dd-MM-yyyy") : "—")</td>
+                <td class="text-cell">@OfficeCatalog.Display(item.Office)</td>
+                <td class="text-cell">@(item.CitationDate is { } citation ? citation.ToString("dd-MM-yyyy") : "—")</td>
+            </tr>
+            index++;
+        }
+        </tbody>
+    </table>
+</div>
+
+@section Scripts {
+<style>
+    @@media print {
+        .app-header, [data-print-hide] { display: none !important; }
+    }
+</style>
+}
