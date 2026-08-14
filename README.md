@@ -105,10 +105,22 @@ del repositorio, estadísticas y saneado del libro.
 ### CI
 
 `.github/workflows/ci.yml` corre `build + test` en cada push y pull request a `main`, y también a
-mano desde la pestaña Actions. Hoy los runs terminan en `startup_failure` a los 0 s antes de
-ejecutar ningún paso: le pasa igual al repositorio hermano `outlook-comuna-router` con el mismo
-workflow, así que es una condición de la cuenta de GitHub (Actions en repositorios privados), no del
-archivo. Mientras tanto, la verificación es local con `dotnet test`.
+mano desde la pestaña Actions.
+
+**Hoy ningún run llega a ejecutarse**: todos terminan en `startup_failure` a los 0 segundos, sin
+crear un solo job. La causa está fuera del repositorio, y así se descartó lo demás:
+
+- No es el archivo: un workflow mínimo de un solo `echo hello` falla exactamente igual.
+- No es el sistema operativo del runner: falla en `windows-latest` y en `ubuntu-latest`.
+- No es este repositorio: `outlook-comuna-router` acumula 22 runs, **todos** `startup_failure` desde
+  el primero (10-07-2026); nunca ejecutó uno.
+- Actions está habilitado en el repositorio (`enabled: true`, `allowed_actions: all`) y la cuenta es
+  plan pro. Otros repositorios de la misma cuenta sí ejecutaron runs reales hasta el 01-07-2026;
+  desde entonces no hay minutos de Actions consumidos en ninguno.
+
+Eso apunta a la facturación de la cuenta (límite de gasto alcanzado o método de pago rechazado), que
+bloquea Actions en todos los repositorios privados a la vez. Se revisa en
+`github.com/settings/billing`. Mientras tanto, la verificación es local con `dotnet test`.
 
 ## Despliegue
 
