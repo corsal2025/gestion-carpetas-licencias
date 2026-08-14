@@ -110,6 +110,20 @@ ejecutar ningún paso: le pasa igual al repositorio hermano `outlook-comuna-rout
 workflow, así que es una condición de la cuenta de GitHub (Actions en repositorios privados), no del
 archivo. Mientras tanto, la verificación es local con `dotnet test`.
 
+## Despliegue
+
+El equipo del departamento no necesita el SDK: la aplicación se publica como un único `.exe`
+autocontenido. Instalación completa en un comando (certificado HTTPS, usuario, importación del
+Excel y acceso directo en el Escritorio):
+
+```powershell
+.\deploy\publish.ps1 -DevCert -AddUser operador -ImportWorkbook "G:\...\DETALLE CARPETAS 2026.xlsx" -Shortcut
+```
+
+Runbook completo, actualización, reimportación y respaldos en [`deploy/README.md`](deploy/README.md).
+No lleva Tarea Programada: a diferencia de `outlook-comuna-router`, esta aplicación no corre en
+segundo plano, se abre cuando el operador la necesita.
+
 ## Detalles de implementación que conviene conocer
 
 - **Validaciones de datos del Excel**: ClosedXML se niega a abrir el libro real porque las listas
