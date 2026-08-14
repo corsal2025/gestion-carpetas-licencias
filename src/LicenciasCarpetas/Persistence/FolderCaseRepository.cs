@@ -16,6 +16,7 @@ public interface IFolderCaseRepository
     UpsertOutcome Upsert(FolderCase folderCase);
     FolderCase? FindById(long id);
     IReadOnlyList<FolderCase> Query(CaseFilter filter, int skip, int take);
+    IReadOnlyList<FolderCase> QueryAll(CaseFilter filter);
     int Count(CaseFilter filter);
     int CountNeedingReview();
     IReadOnlyList<int> DistinctYears();
@@ -235,6 +236,28 @@ public sealed class FolderCaseRepository(string connectionString) : IFolderCaseR
             """;
         command.Parameters.AddWithValue("$take", take);
         command.Parameters.AddWithValue("$skip", skip);
+
+        var results = new List<FolderCase>();
+        using var reader = command.ExecuteReader();
+        while (reader.Read())
+        {
+            results.Add(Map(reader));
+        }
+        return results;
+    }
+
+    /// <summary>Every case matching the filter, unpaged — used by the Excel export, where handing
+    /// back a silently truncated file would be worse than a slow one.</summary>
+    public IReadOnlyList<FolderCase> QueryAll(CaseFilter filter)
+    {
+        using var connection = Open();
+        using var command = connection.CreateCommand();
+        var where = BuildWhere(filter, command);
+        command.CommandText = $"""
+            SELECT * FROM FolderCase
+            {where}
+            ORDER BY CitationDate DESC, FullName COLLATE NOCASE ASC, Id ASC
+            """;
 
         var results = new List<FolderCase>();
         using var reader = command.ExecuteReader();

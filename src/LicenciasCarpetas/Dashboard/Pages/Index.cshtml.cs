@@ -59,9 +59,9 @@ public class IndexModel(IFolderCaseRepository cases, IExcelCaseExporter exporter
     public IActionResult OnGetExport()
     {
         var filter = BuildFilter();
-        // The export is the current view, not the whole table — capped so a mis-set filter cannot
-        // try to stream 20.000+ rows into one worksheet.
-        var exportable = cases.Query(filter, skip: 0, take: 5000);
+        // Everything the filter matches, not just the page on screen and with no row cap: a year of
+        // one office is over 15.000 rows, and a silently truncated report is a wrong report.
+        var exportable = cases.QueryAll(filter);
         var bytes = exporter.Export(exportable, "Casos");
         var fileName = $"casos-{DateTime.Now:yyyyMMdd-HHmm}.xlsx";
         return File(bytes, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", fileName);
