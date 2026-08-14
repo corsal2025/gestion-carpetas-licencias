@@ -102,6 +102,14 @@ dotnet test -c Release
 serial de Excel, texto tipeado), mapeo de filas, deduplicación al reimportar, filtros y paginación
 del repositorio, estadísticas y saneado del libro.
 
+### CI
+
+`.github/workflows/ci.yml` corre `build + test` en cada push y pull request a `main`, y también a
+mano desde la pestaña Actions. Hoy los runs terminan en `startup_failure` a los 0 s antes de
+ejecutar ningún paso: le pasa igual al repositorio hermano `outlook-comuna-router` con el mismo
+workflow, así que es una condición de la cuenta de GitHub (Actions en repositorios privados), no del
+archivo. Mientras tanto, la verificación es local con `dotnet test`.
+
 ## Detalles de implementación que conviene conocer
 
 - **Validaciones de datos del Excel**: ClosedXML se niega a abrir el libro real porque las listas
