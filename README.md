@@ -82,8 +82,11 @@ La ruta por defecto del Excel se configura en `Carpetas:DefaultWorkbookPath` (ve
 ## Pantallas
 
 - `/` **Casos**: tabla paginada (100 por página) con edición en línea de nombre, RUT, fechas,
-  estado, decisión e idoneidad; alta manual de filas nuevas; marcado personal; borrado; exportación
-  a `.xlsx` de la vista filtrada.
+  atención, estado, decisión e idoneidad; alta manual de filas nuevas; marcado personal; envío a la
+  papelera; exportación a `.xlsx` de **toda** la vista filtrada (sin tope de filas). Cualquier
+  encabezado ordena por esa columna, y un segundo clic invierte el orden.
+- `/Papelera`: casos eliminados, con restauración. Nada se borra de verdad hasta confirmarlo ahí.
+- `/Usuarios`: crear cuentas, cambiarle la contraseña a quien la olvidó, eliminar usuarios.
 - `/Estadisticas`: día a día del mes elegido — escaneadas y subidas editables, agendadas/atendidas y
   % de atención por oficina calculados, más el desglose por estado de carpeta y decisión final.
 - `/Sector/Archivo` y `/Sector/Oficina43`: listado imprimible (imprimir del navegador → PDF) de las
@@ -91,6 +94,34 @@ La ruta por defecto del Excel se configura en `Carpetas:DefaultWorkbookPath` (ve
 - `/Comunas`: directorio de correos por municipio.
 - `/Importar`: importación desde el dashboard, con resumen y avisos.
 - `/ChangePassword`: cambio de contraseña del operador.
+- `/Setup`: creación de la primera cuenta. Solo aparece mientras no existe ninguna; después se
+  cierra y las cuentas se crean desde `/Usuarios`, ya con sesión iniciada.
+
+## Cuentas y contraseñas
+
+La primera cuenta se crea sola en pantalla al abrir una instalación nueva. Las siguientes, desde
+`/Usuarios`. Mínimo 8 caracteres, y el nombre de usuario no distingue mayúsculas ni espacios
+sobrantes.
+
+Si alguien olvida su contraseña, otro usuario se la cambia desde `/Usuarios`. Si **nadie** puede
+entrar, se restablece desde el equipo:
+
+```powershell
+.\LicenciasCarpetas.exe --list-users
+.\LicenciasCarpetas.exe --reset-password operador
+```
+
+No hay recuperación por correo: el sistema no tiene servidor de correo, y una pantalla web que
+cambiara contraseñas sin sesión iniciada dejaría la agenda completa a merced de cualquiera que
+alcance este puerto.
+
+## Respaldos
+
+Cada arranque copia la base a `data/backups/` **antes** de aplicar migraciones, y conserva las 10
+copias más recientes (`Carpetas:BackupsToKeep`). Un fallo al respaldar nunca impide arrancar.
+
+Las copias quedan junto a la base, en el mismo disco: sirven contra un borrado accidental o una
+migración fallida, **no** contra la falla del disco. Para eso hay que copiar `data/` a otro medio.
 
 ## Pruebas
 
@@ -98,9 +129,11 @@ La ruta por defecto del Excel se configura en `Carpetas:DefaultWorkbookPath` (ve
 dotnet test -c Release
 ```
 
-89 pruebas: catálogos y variantes de escritura, validación de RUT, lectura de celdas (fecha real,
-serial de Excel, texto tipeado), mapeo de filas, deduplicación al reimportar, filtros y paginación
-del repositorio, estadísticas y saneado del libro.
+141 pruebas: catálogos y variantes de escritura, validación de RUT, lectura de celdas (fecha real,
+serial de Excel, texto tipeado), mapeo de filas, deduplicación al reimportar, filtros, orden
+(incluido el orden correcto de nombres con tilde) y paginación del repositorio, papelera,
+estadísticas, saneado del libro, exportación completa, autenticación (bloqueo por intentos
+fallidos, mayúsculas en el usuario, restablecimiento) y respaldos.
 
 ### CI
 

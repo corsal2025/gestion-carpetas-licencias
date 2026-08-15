@@ -413,8 +413,34 @@ body.cases-page main {
     min-width: 0;
     overflow-y: auto;
     /* 13 columns of agenda data do not fit on a laptop screen. The table scrolls inside its own
-       card instead of stretching the page, so the header and filters stay put. */
-    overflow-x: auto;
+       card instead of stretching the page, so the header and filters stay put.
+       `scroll`, not `auto`: the bar is always drawn, so the columns to the right announce
+       themselves instead of hiding until someone happens to swipe sideways. */
+    overflow-x: scroll;
+    scrollbar-width: auto;
+    scrollbar-gutter: stable;
+}
+
+/* A visible, grabbable horizontal bar — the default overlay scrollbar is nearly invisible on a
+   white card and this one is the only clue that Decisión final and Acción exist further right. */
+.card.table-card::-webkit-scrollbar {
+    height: 14px;
+    width: 14px;
+}
+
+.card.table-card::-webkit-scrollbar-track {
+    background: #e9eef3;
+    border-radius: 7px;
+}
+
+.card.table-card::-webkit-scrollbar-thumb {
+    background: #98a7b5;
+    border-radius: 7px;
+    border: 3px solid #e9eef3;
+}
+
+.card.table-card::-webkit-scrollbar-thumb:hover {
+    background: #6b7c8c;
 }
 
 table.cases {
@@ -492,14 +518,26 @@ table.cases-index th:nth-child(1), table.cases-index td:nth-child(1) { width: 46
 
 table.cases-index td:nth-child(3) { min-width: 230px; }
 
+/* Nothing wraps and nothing is cut: each cell keeps its text on one line and the table grows to
+   the right, scrolling inside its card. A truncated name or state is worse than a scrollbar. */
 table.cases-index th, table.cases-index td { white-space: nowrap; }
 
-/* Inputs stop at the width of what they hold: a date is 10 characters, a RUT 12. Left to
-   themselves they all render at the browser default of ~20 characters and push the table
-   sideways for no reason. */
-table.cases-index td input[type="text"] { width: 100%; min-width: 0; }
-table.cases-index td:nth-child(3) input { min-width: 220px; }
-table.cases-index td select { max-width: 190px; }
+/* The text inside the editable cells is centred too — otherwise the column headers read centred
+   while the values under them sit against the left edge of their box. */
+table.cases-index td input[type="text"],
+table.cases-index td input[type="number"],
+table.cases-index td select {
+    text-align: center;
+    width: auto;
+    min-width: 0;
+}
+
+/* Each input is as wide as its own content (the size attribute is set per row in the page), and
+   the select never clips the longest state in the catalog. */
+table.cases-index td select {
+    text-align-last: center;
+    min-width: 210px;
+}
 
 /* F8 page table: auto layout instead of cases-index's fixed % columns, so each column shrinks to
    fit its actual content (short RUT/badges/buttons) instead of leaving fixed-% whitespace. */
