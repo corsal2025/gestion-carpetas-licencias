@@ -29,7 +29,14 @@ public interface IFolderCaseRepository
         FolderState? folderState, FinalDecision? finalDecision, MoralIdoneity? moralIdoneity,
         string? attentionNote, bool needsReview);
     void SetMarked(long id, bool marked);
+
+    /// <summary>Moves the case to the bin. Recoverable with <see cref="Restore"/>.</summary>
     void Delete(long id);
+
+    void Restore(long id);
+    void DeletePermanently(long id);
+    IReadOnlyList<FolderCase> Deleted();
+    int CountDeleted();
     long Insert(FolderCase folderCase);
 }
 
@@ -73,6 +80,31 @@ public sealed class FolderCaseRepository(string connectionString) : IFolderCaseR
             CREATE INDEX IF NOT EXISTS IX_FolderCase_Natural ON FolderCase (Office, CitationDate, Rut);
             """;
         command.ExecuteNonQuery();
+
+        AddDeletedAtColumnIfMissing(connection);
+    }
+
+    /// <summary>Additive migration for databases created before the bin existed — SQLite has no
+    /// "ADD COLUMN IF NOT EXISTS", so PRAGMA table_info is checked first.</summary>
+    private static void AddDeletedAtColumnIfMissing(SqliteConnection connection)
+    {
+        using (var pragmaCommand = connection.CreateCommand())
+        {
+            pragmaCommand.CommandText = "PRAGMA table_info(FolderCase)";
+            using var reader = pragmaCommand.ExecuteReader();
+            var nameOrdinal = reader.GetOrdinal("name");
+            while (reader.Read())
+            {
+                if (string.Equals(reader.GetString(nameOrdinal), "DeletedAt", StringComparison.OrdinalIgnoreCase))
+                {
+                    return;
+                }
+            }
+        }
+
+        using var alterCommand = connection.CreateCommand();
+        alterCommand.CommandText = "ALTER TABLE FolderCase ADD COLUMN DeletedAt TEXT NULL";
+        alterCommand.ExecuteNonQuery();
     }
 
     /// <summary>
@@ -281,8 +313,37 @@ public sealed class FolderCaseRepository(string connectionString) : IFolderCaseR
     {
         using var connection = Open();
         using var command = connection.CreateCommand();
-        command.CommandText = "SELECT COUNT(*) FROM FolderCase WHERE NeedsReview = 1";
+        command.CommandText = "SELECT COUNT(*) FROM FolderCase WHERE NeedsReview = 1 AND DeletedAt IS NULL";
         return Convert.ToInt32(command.ExecuteScalar());
+    }
+
+    public int CountDeleted()
+    {
+        using var connection = Open();
+        using var command = connection.CreateCommand();
+        command.CommandText = "SELECT COUNT(*) FROM FolderCase WHERE DeletedAt IS NOT NULL";
+        return Convert.ToInt32(command.ExecuteScalar());
+    }
+
+    /// <summary>Everything currently in the bin, most recently deleted first.</summary>
+    public IReadOnlyList<FolderCase> Deleted()
+    {
+        using var connection = Open();
+        using var command = connection.CreateCommand();
+        command.CommandText = """
+            SELECT * FROM FolderCase
+            WHERE DeletedAt IS NOT NULL
+            ORDER BY DeletedAt DESC
+            LIMIT 500
+            """;
+
+        var results = new List<FolderCase>();
+        using var reader = command.ExecuteReader();
+        while (reader.Read())
+        {
+            results.Add(Map(reader));
+        }
+        return results;
     }
 
     public IReadOnlyList<int> DistinctYears()
@@ -291,7 +352,7 @@ public sealed class FolderCaseRepository(string connectionString) : IFolderCaseR
         using var command = connection.CreateCommand();
         command.CommandText = """
             SELECT DISTINCT substr(CitationDate, 1, 4) AS Year
-            FROM FolderCase WHERE CitationDate IS NOT NULL
+            FROM FolderCase WHERE CitationDate IS NOT NULL AND DeletedAt IS NULL
             ORDER BY Year DESC
             """;
         var years = new List<int>();
@@ -319,7 +380,7 @@ public sealed class FolderCaseRepository(string connectionString) : IFolderCaseR
 
         command.CommandText = $"""
             SELECT * FROM FolderCase
-            WHERE LastFolderDate IS NOT NULL AND {sectorClause} {markedClause}
+            WHERE DeletedAt IS NULL AND LastFolderDate IS NOT NULL AND {sectorClause} {markedClause}
             ORDER BY CitationDate DESC, FullName COLLATE NOCASE ASC
             LIMIT 2000
             """;
@@ -342,7 +403,7 @@ public sealed class FolderCaseRepository(string connectionString) : IFolderCaseR
         command.CommandText = """
             SELECT CitationDate, Office, COUNT(*) AS Scheduled, SUM(Attended) AS Attended
             FROM FolderCase
-            WHERE CitationDate IS NOT NULL
+            WHERE DeletedAt IS NULL AND CitationDate IS NOT NULL
               AND substr(CitationDate, 1, 4) = $year
               AND substr(CitationDate, 6, 2) = $month
             GROUP BY CitationDate, Office
@@ -390,7 +451,8 @@ public sealed class FolderCaseRepository(string connectionString) : IFolderCaseR
         command.CommandText = $"""
             SELECT {column} AS Value, COUNT(*) AS Total
             FROM FolderCase
-            WHERE CitationDate IS NOT NULL AND substr(CitationDate, 1, 4) = $year {monthClause} {officeClause}
+            WHERE DeletedAt IS NULL AND CitationDate IS NOT NULL
+              AND substr(CitationDate, 1, 4) = $year {monthClause} {officeClause}
             GROUP BY {column}
             ORDER BY Total DESC
             """;
@@ -473,6 +535,26 @@ public sealed class FolderCaseRepository(string connectionString) : IFolderCaseR
     {
         using var connection = Open();
         using var command = connection.CreateCommand();
+        command.CommandText = "UPDATE FolderCase SET DeletedAt = $deletedAt WHERE Id = $id";
+        command.Parameters.AddWithValue("$deletedAt", DateTimeOffset.UtcNow.ToString("O"));
+        command.Parameters.AddWithValue("$id", id);
+        command.ExecuteNonQuery();
+    }
+
+    public void Restore(long id)
+    {
+        using var connection = Open();
+        using var command = connection.CreateCommand();
+        command.CommandText = "UPDATE FolderCase SET DeletedAt = NULL WHERE Id = $id";
+        command.Parameters.AddWithValue("$id", id);
+        command.ExecuteNonQuery();
+    }
+
+    /// <summary>Wipes the row. Only reachable from the bin, where the case is already out of sight.</summary>
+    public void DeletePermanently(long id)
+    {
+        using var connection = Open();
+        using var command = connection.CreateCommand();
         command.CommandText = "DELETE FROM FolderCase WHERE Id = $id";
         command.Parameters.AddWithValue("$id", id);
         command.ExecuteNonQuery();
@@ -480,7 +562,8 @@ public sealed class FolderCaseRepository(string connectionString) : IFolderCaseR
 
     private static string BuildWhere(CaseFilter filter, SqliteCommand command)
     {
-        var clauses = new List<string>();
+        // Cases in the bin never show up in a listing, a count or an export — only in /Papelera.
+        var clauses = new List<string> { "DeletedAt IS NULL" };
 
         if (filter.Office is { } office)
         {
@@ -540,11 +623,6 @@ public sealed class FolderCaseRepository(string connectionString) : IFolderCaseR
                 $"%{filter.Search.Trim().Replace(".", string.Empty).Replace("-", string.Empty)}%");
         }
 
-        if (clauses.Count == 0)
-        {
-            return string.Empty;
-        }
-
         var builder = new StringBuilder("WHERE ");
         builder.AppendJoin(" AND ", clauses);
         return builder.ToString();
@@ -585,7 +663,8 @@ public sealed class FolderCaseRepository(string connectionString) : IFolderCaseR
         NeedsReview = reader.GetInt32(reader.GetOrdinal("NeedsReview")) == 1,
         Marked = reader.GetInt32(reader.GetOrdinal("Marked")) == 1,
         CreatedAt = DateTimeOffset.Parse(reader.GetString(reader.GetOrdinal("CreatedAt"))),
-        UpdatedAt = DateTimeOffset.Parse(reader.GetString(reader.GetOrdinal("UpdatedAt")))
+        UpdatedAt = DateTimeOffset.Parse(reader.GetString(reader.GetOrdinal("UpdatedAt"))),
+        DeletedAt = ReadText(reader, "DeletedAt") is { } deletedAt ? DateTimeOffset.Parse(deletedAt) : null
     };
 
     private static string? ReadText(SqliteDataReader reader, string column)

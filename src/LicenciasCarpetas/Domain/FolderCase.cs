@@ -79,6 +79,10 @@ public sealed class FolderCase
     public DateTimeOffset CreatedAt { get; set; } = DateTimeOffset.UtcNow;
     public DateTimeOffset UpdatedAt { get; set; } = DateTimeOffset.UtcNow;
 
+    /// <summary>When the operator sent the case to the bin. Null for a live case. A case in the bin
+    /// is invisible everywhere except /Papelera, and a re-import updates it without reviving it.</summary>
+    public DateTimeOffset? DeletedAt { get; set; }
+
     /// <summary>Where the physical folder is filed, derived from the última-carpeta date. Null while
     /// there is no date (including cambio-de-domicilio rows, whose folder is in another comuna).</summary>
     public FolderSector? Sector => LastFolderDate is { } fecha

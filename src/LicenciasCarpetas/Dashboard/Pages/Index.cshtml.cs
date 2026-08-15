@@ -150,7 +150,7 @@ public class IndexModel(IFolderCaseRepository cases, IExcelCaseExporter exporter
     public IActionResult OnPostDelete(long id)
     {
         cases.Delete(id);
-        return RedirectWithMessage("Caso eliminado.");
+        return RedirectWithMessage("Caso movido a la Papelera. Se puede restaurar desde ahí.");
     }
 
     private void Load()

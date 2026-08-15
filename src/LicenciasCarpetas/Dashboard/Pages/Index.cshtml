@@ -272,9 +272,9 @@
                 <td style="display:flex; gap:6px; align-items:center;">
                     <button type="submit" form="case-form-@item.Id" class="btn-primary" style="padding:4px 10px; font-size:0.72rem;">Guardar</button>
                     <form method="post" asp-page-handler="Delete"
-                          onsubmit="return confirm('Esto elimina el caso de forma permanente, no se puede deshacer. ¿Confirmar?');">
+                          onsubmit="return confirm('El caso se mueve a la Papelera y se puede restaurar desde ahí. ¿Confirmar?');">
                         <input type="hidden" name="id" value="@item.Id" />
-                        <button type="submit" class="btn-danger" title="Eliminar caso" aria-label="Eliminar caso">✕</button>
+                        <button type="submit" class="btn-danger" title="Mover a la Papelera" aria-label="Mover a la Papelera">✕</button>
                     </form>
                 </td>
             </tr>

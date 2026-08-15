@@ -21,6 +21,11 @@
     <!-- Environment-specific config (real workbook paths, local overrides) is git-ignored and must
          never travel inside bin/, obj/ or a publish/ folder, since those get copied around whole. -->
     <Content Update="appsettings.Development.json" CopyToOutputDirectory="Never" CopyToPublishDirectory="Never" />
+
+    <!-- ContentRootPath is pinned to the exe's folder (see Program.cs), so the web root is the
+         wwwroot *next to the exe*. The SDK only copies wwwroot on publish, which left the app
+         running from bin/ with no stylesheet at all — copy it to the build output too. -->
+    <Content Update="wwwroot\**" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
 </Project>

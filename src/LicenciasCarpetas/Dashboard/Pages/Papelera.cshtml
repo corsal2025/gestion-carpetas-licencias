@@ -1,0 +1,59 @@
+@page
+@model LicenciasCarpetas.Dashboard.Pages.PapeleraModel
+@{
+    ViewData["Title"] = "Papelera";
+}
+
+@if (Model.Message is not null)
+{
+    <p class="message-banner">@Model.Message</p>
+}
+
+<div class="card" style="padding:16px 20px; margin-bottom:16px;">
+    <h1 style="font-size:1.1rem; margin:0 0 6px;">Papelera</h1>
+    <p style="margin:0; font-size:0.85rem;">
+        Casos eliminados desde la pantalla Casos. No aparecen en listados, estadísticas ni
+        exportaciones, y una reimportación del Excel tampoco los revive. Se pueden restaurar acá.
+        @Model.Cases.Count caso(s).
+    </p>
+</div>
+
+<div class="card table-card">
+    <table class="cases">
+        <thead>
+            <tr>
+                <th>Eliminado</th>
+                <th>Nombre completo</th>
+                <th>RUT</th>
+                <th>Citación</th>
+                <th>Oficina</th>
+                <th>Estado de la carpeta</th>
+                <th>Acción</th>
+            </tr>
+        </thead>
+        <tbody>
+        @foreach (var item in Model.Cases)
+        {
+            <tr>
+                <td class="text-cell">@(item.DeletedAt is { } deleted ? deleted.LocalDateTime.ToString("dd-MM-yyyy HH:mm") : "—")</td>
+                <td class="text-cell">@item.FullName</td>
+                <td class="text-cell">@item.Rut</td>
+                <td class="text-cell">@(item.CitationDate is { } citation ? citation.ToString("dd-MM-yyyy") : "—")</td>
+                <td class="text-cell">@OfficeCatalog.Display(item.Office)</td>
+                <td class="text-cell">@item.FolderStateText</td>
+                <td style="display:flex; gap:6px; align-items:center;">
+                    <form method="post" asp-page-handler="Restore">
+                        <input type="hidden" name="id" value="@item.Id" />
+                        <button type="submit" class="btn-primary" style="padding:4px 10px; font-size:0.72rem;">Restaurar</button>
+                    </form>
+                    <form method="post" asp-page-handler="DeletePermanently"
+                          onsubmit="return confirm('Esto borra el caso para siempre, ya no se puede restaurar. ¿Confirmar?');">
+                        <input type="hidden" name="id" value="@item.Id" />
+                        <button type="submit" class="btn-danger" title="Eliminar definitivamente">✕</button>
+                    </form>
+                </td>
+            </tr>
+        }
+        </tbody>
+    </table>
+</div>
