@@ -157,9 +157,23 @@
     </form>
 </details>
 
-<p style="font-size:0.8rem; margin:0 0 8px 4px;">
-    @Model.TotalCount caso(s) — página @Model.PageNumber de @Model.TotalPages
-</p>
+@* Paginación arriba de la tabla, no debajo: la tabla llega hasta el borde inferior de la ventana
+   y su barra de desplazamiento lateral queda ahí, siempre a la vista. Con los botones abajo, la
+   barra subía y se comía la última fila. *@
+<div style="display:flex; gap:12px; align-items:center; margin:0 0 8px 4px; font-size:0.8rem;">
+    <span>@Model.TotalCount caso(s) — página @Model.PageNumber de @Model.TotalPages</span>
+    @if (Model.TotalPages > 1)
+    {
+        @if (Model.PageNumber > 1)
+        {
+            <a class="nav-pill" asp-page="/Index" asp-all-route-data="@Model.RouteValues(Model.PageNumber - 1)">← Anterior</a>
+        }
+        @if (Model.PageNumber < Model.TotalPages)
+        {
+            <a class="nav-pill" asp-page="/Index" asp-all-route-data="@Model.RouteValues(Model.PageNumber + 1)">Siguiente →</a>
+        }
+    }
+</div>
 
 @* Sugerencias de la columna ATENCIÓN tal como se escriben en el libro; el campo sigue siendo texto
    libre, la lista solo evita tipearlas completas. *@
@@ -294,21 +308,6 @@
         </tbody>
     </table>
 </div>
-
-@if (Model.TotalPages > 1)
-{
-    <div style="display:flex; gap:8px; align-items:center; justify-content:center; margin:16px 0;">
-        @if (Model.PageNumber > 1)
-        {
-            <a class="nav-pill" asp-page="/Index" asp-all-route-data="@Model.RouteValues(Model.PageNumber - 1)">← Anterior</a>
-        }
-        <span style="font-size:0.8rem;">@Model.PageNumber / @Model.TotalPages</span>
-        @if (Model.PageNumber < Model.TotalPages)
-        {
-            <a class="nav-pill" asp-page="/Index" asp-all-route-data="@Model.RouteValues(Model.PageNumber + 1)">Siguiente →</a>
-        }
-    </div>
-}
 
 @section Scripts {
 <script>

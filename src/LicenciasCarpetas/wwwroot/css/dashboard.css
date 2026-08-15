@@ -1205,3 +1205,9 @@ body.cases-page .card.table-card {
     /* Un piso, para que en pantallas bajas la tabla no se reduzca a una franja inservible. */
     min-height: 220px;
 }
+
+/* La tabla llega hasta el borde inferior de la ventana: sin ese hueco final, la barra de
+   desplazamiento lateral queda pegada abajo y a la vista sin bajar nada. */
+body.cases-page main {
+    padding-bottom: 8px;
+}
