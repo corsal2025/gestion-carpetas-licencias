@@ -175,17 +175,17 @@
         <thead>
             <tr>
                 <th>Marcar</th>
-                <th>Citación</th>
-                <th>Nombre completo</th>
-                <th>RUT</th>
-                <th>Oficina</th>
-                <th>Subida carpeta</th>
-                <th>Última carpeta</th>
+                <th><a asp-page="/Index" asp-all-route-data="@Model.SortRouteValues(CaseSort.CitationDate)" class="sort-link">Citación@Model.SortIndicator(CaseSort.CitationDate)</a></th>
+                <th><a asp-page="/Index" asp-all-route-data="@Model.SortRouteValues(CaseSort.Name)" class="sort-link">Nombre completo@Model.SortIndicator(CaseSort.Name)</a></th>
+                <th><a asp-page="/Index" asp-all-route-data="@Model.SortRouteValues(CaseSort.Rut)" class="sort-link">RUT@Model.SortIndicator(CaseSort.Rut)</a></th>
+                <th><a asp-page="/Index" asp-all-route-data="@Model.SortRouteValues(CaseSort.Office)" class="sort-link">Oficina@Model.SortIndicator(CaseSort.Office)</a></th>
+                <th><a asp-page="/Index" asp-all-route-data="@Model.SortRouteValues(CaseSort.FolderUploadedDate)" class="sort-link">Subida carpeta@Model.SortIndicator(CaseSort.FolderUploadedDate)</a></th>
+                <th><a asp-page="/Index" asp-all-route-data="@Model.SortRouteValues(CaseSort.LastFolderDate)" class="sort-link">Última carpeta@Model.SortIndicator(CaseSort.LastFolderDate)</a></th>
                 <th>Sector</th>
                 <th title="Texto libre. Con contenido, la persona cuenta como atendida en Estadísticas">Atención</th>
                 <th>Idoneidad</th>
-                <th>Estado de la carpeta</th>
-                <th>Decisión final</th>
+                <th><a asp-page="/Index" asp-all-route-data="@Model.SortRouteValues(CaseSort.FolderState)" class="sort-link">Estado de la carpeta@Model.SortIndicator(CaseSort.FolderState)</a></th>
+                <th><a asp-page="/Index" asp-all-route-data="@Model.SortRouteValues(CaseSort.FinalDecision)" class="sort-link">Decisión final@Model.SortIndicator(CaseSort.FinalDecision)</a></th>
                 <th>Acción</th>
             </tr>
         </thead>

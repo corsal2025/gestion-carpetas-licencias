@@ -263,7 +263,7 @@ public sealed class FolderCaseRepository(string connectionString) : IFolderCaseR
         command.CommandText = $"""
             SELECT * FROM FolderCase
             {where}
-            ORDER BY CitationDate DESC, FullName COLLATE NOCASE ASC, Id ASC
+            ORDER BY {OrderBy(filter)}
             LIMIT $take OFFSET $skip
             """;
         command.Parameters.AddWithValue("$take", take);
@@ -288,7 +288,7 @@ public sealed class FolderCaseRepository(string connectionString) : IFolderCaseR
         command.CommandText = $"""
             SELECT * FROM FolderCase
             {where}
-            ORDER BY CitationDate DESC, FullName COLLATE NOCASE ASC, Id ASC
+            ORDER BY {OrderBy(filter)}
             """;
 
         var results = new List<FolderCase>();
@@ -558,6 +558,30 @@ public sealed class FolderCaseRepository(string connectionString) : IFolderCaseR
         command.CommandText = "DELETE FROM FolderCase WHERE Id = $id";
         command.Parameters.AddWithValue("$id", id);
         command.ExecuteNonQuery();
+    }
+
+    /// <summary>
+    /// Builds the ORDER BY from the closed <see cref="CaseSort"/> set — no caller text ever reaches
+    /// the SQL. Id breaks ties so paging can't show a row twice or skip one, and every column falls
+    /// back to the name so equal dates read alphabetically.
+    /// </summary>
+    private static string OrderBy(CaseFilter filter)
+    {
+        // Dates read newest-first by default (that is how the agenda is consulted); text reads A-Z.
+        var (column, descendingByDefault) = filter.Sort switch
+        {
+            CaseSort.Name => ("FullName COLLATE NOCASE", false),
+            CaseSort.Rut => ("Rut", false),
+            CaseSort.Office => ("Office", false),
+            CaseSort.FolderUploadedDate => ("FolderUploadedDate", true),
+            CaseSort.LastFolderDate => ("LastFolderDate", false),
+            CaseSort.FolderState => ("FolderState", false),
+            CaseSort.FinalDecision => ("FinalDecision", false),
+            _ => ("CitationDate", true)
+        };
+
+        var direction = filter.Descending != descendingByDefault ? "DESC" : "ASC";
+        return $"{column} {direction}, FullName COLLATE NOCASE ASC, Id ASC";
     }
 
     private static string BuildWhere(CaseFilter filter, SqliteCommand command)

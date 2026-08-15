@@ -1015,3 +1015,16 @@ button.btn-outline-danger:hover { background: var(--color-review-bg); }
         padding: 24px 20px;
     }
 }
+
+/* Sortable column headers: the header text itself is the control, so it must not read as a
+   navigation link inside the table chrome. */
+.cases th .sort-link {
+    color: inherit;
+    text-decoration: none;
+    cursor: pointer;
+    white-space: nowrap;
+}
+
+.cases th .sort-link:hover {
+    text-decoration: underline;
+}

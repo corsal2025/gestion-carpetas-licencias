@@ -48,6 +48,12 @@ public class IndexModel(IFolderCaseRepository cases, IExcelCaseExporter exporter
     [BindProperty(SupportsGet = true, Name = "p")]
     public int RequestedPage { get; set; } = 1;
 
+    [BindProperty(SupportsGet = true)]
+    public CaseSort Sort { get; set; } = CaseSort.CitationDate;
+
+    [BindProperty(SupportsGet = true, Name = "desc")]
+    public bool Descending { get; set; }
+
     public string? Message { get; set; }
     public bool MessageIsError { get; set; }
 
@@ -182,8 +188,25 @@ public class IndexModel(IFolderCaseRepository cases, IExcelCaseExporter exporter
         Sector = Sector,
         OnlyNeedsReview = NeedsReview,
         OnlyOtherComuna = OtherComuna,
-        Search = Search
+        Search = Search,
+        Sort = Sort,
+        Descending = Descending
     };
+
+    /// <summary>Route values for a sortable column header: clicking the active column flips the
+    /// direction, clicking another one starts it in its own natural order. Paging resets to 1,
+    /// since page 7 of the old ordering means nothing in the new one.</summary>
+    public Dictionary<string, string> SortRouteValues(CaseSort column)
+    {
+        var values = RouteValues(1);
+        values["sort"] = column.ToString();
+        values["desc"] = (Sort == column && !Descending).ToString();
+        return values;
+    }
+
+    /// <summary>Arrow shown next to the active column header.</summary>
+    public string SortIndicator(CaseSort column)
+        => Sort != column ? string.Empty : Descending ? " ▼" : " ▲";
 
     private IActionResult RedirectWithMessage(string message, bool isError = false)
     {
@@ -221,6 +244,9 @@ public class IndexModel(IFolderCaseRepository cases, IExcelCaseExporter exporter
         if (Decision is { } decision) values["decision"] = decision.ToString();
         if (Sector is { } sector) values["sector"] = sector.ToString();
         if (!string.IsNullOrWhiteSpace(Search)) values["search"] = Search;
+
+        values["sort"] = Sort.ToString();
+        values["desc"] = Descending.ToString();
 
         return values;
     }

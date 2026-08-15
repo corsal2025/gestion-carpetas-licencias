@@ -2,6 +2,22 @@ using LicenciasCarpetas.Domain;
 
 namespace LicenciasCarpetas.Persistence;
 
+/// <summary>
+/// Sortable columns. A closed set on purpose: the ordering ends up inside the SQL text, so the
+/// caller can never hand a column name straight to the query.
+/// </summary>
+public enum CaseSort
+{
+    CitationDate,
+    Name,
+    Rut,
+    Office,
+    FolderUploadedDate,
+    LastFolderDate,
+    FolderState,
+    FinalDecision
+}
+
 /// <summary>Every filter the cases screen can apply, in one object so paging and counting agree.</summary>
 public sealed record CaseFilter
 {
@@ -25,4 +41,10 @@ public sealed record CaseFilter
 
     /// <summary>Free text matched against full name and RUT.</summary>
     public string? Search { get; init; }
+
+    /// <summary>Column the operator clicked. Citation date is the agenda's own order.</summary>
+    public CaseSort Sort { get; init; } = CaseSort.CitationDate;
+
+    /// <summary>Dates default to newest first, text to A-Z; this flips whichever applies.</summary>
+    public bool Descending { get; init; }
 }
