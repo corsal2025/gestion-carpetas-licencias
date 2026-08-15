@@ -311,6 +311,29 @@
 
 @section Scripts {
 <script>
+    // Nombre y RUT quedan fijos al desplazarse en horizontal. El nombre ancla en 0; el RUT tiene
+    // que empezar justo donde termina el nombre, y ese ancho cambia en cada página (cada campo se
+    // dimensiona según el nombre más largo que le tocó). Por eso se mide del DOM en vez de fijarlo
+    // en el CSS: un valor a ojo dejaría un hueco o taparía el final del nombre.
+    (function () {
+        var table = document.querySelector('table.cases-index');
+        if (!table) return;
+
+        function placeRutColumn() {
+            var nameHeader = table.querySelector('thead th:nth-child(3)');
+            if (!nameHeader) return;
+            table.style.setProperty('--sticky-rut-left', nameHeader.getBoundingClientRect().width + 'px');
+        }
+
+        placeRutColumn();
+        window.addEventListener('resize', placeRutColumn);
+        // Las fuentes tardan un instante en aplicarse y cambian el ancho medido.
+        if (document.fonts && document.fonts.ready) {
+            document.fonts.ready.then(placeRutColumn);
+        }
+    })();
+</script>
+<script>
     // Checkbox toggles go through fetch() so ticking several rows quickly cannot cancel each other
     // the way competing full-page navigations do.
     function submitCheckboxToggle(checkbox, fieldName) {

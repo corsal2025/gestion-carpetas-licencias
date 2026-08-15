@@ -1071,10 +1071,14 @@ button.btn-outline-danger:hover { background: var(--color-review-bg); }
     text-decoration: underline;
 }
 
-/* ── Cabecera y columna de nombre fijas en la tabla de Casos ─────────────────────────────────
-   Con 100 filas por página y 13 columnas, el operador pierde de vista qué columna está mirando
-   al bajar, y de quién es la fila al correr la tabla a la derecha. Ambas se quedan pegadas.
-   El fondo es obligatorio: sin él, las filas se ven pasar por debajo. */
+/* ── Cabecera, nombre y RUT fijos en la tabla de Casos ───────────────────────────────────────
+   Con 100 filas y 13 columnas se pierde de vista qué columna se mira al bajar, y de quién es la
+   fila al correr la tabla a la derecha. La cabecera queda pegada arriba; el nombre y el RUT,
+   pegados a la izquierda. Una celda fija tiene que ser opaca o las filas se ven pasar por debajo,
+   y ese fondo propio tapa el color de la fila: por eso cada estado (alterna, marcada, en revisión,
+   bajo el cursor) se repite abajo para las dos columnas.
+   La posición del RUT depende del ancho real de la columna de nombre, que cambia según los
+   nombres de cada página: la mide el script de la pantalla y la deja en --sticky-rut-left. */
 table.cases-index thead th {
     position: sticky;
     top: 0;
@@ -1083,42 +1087,53 @@ table.cases-index thead th {
 }
 
 table.cases-index th:nth-child(3),
-table.cases-index td:nth-child(3) {
+table.cases-index td:nth-child(3),
+table.cases-index th:nth-child(4),
+table.cases-index td:nth-child(4) {
     position: sticky;
-    left: 0;
     z-index: 1;
     background: #ffffff;
-    /* Sombra al borde derecho: marca dónde termina la columna fija y empieza lo que se desplaza. */
+}
+
+table.cases-index th:nth-child(3),
+table.cases-index td:nth-child(3) { left: 0; }
+
+table.cases-index th:nth-child(4),
+table.cases-index td:nth-child(4) {
+    left: var(--sticky-rut-left, 260px);
+    /* La línea marca dónde termina lo fijo y empieza lo que se desplaza. */
     box-shadow: 1px 0 0 var(--color-border);
 }
 
-/* La cabecera de esa misma columna se cruza con las dos reglas anteriores y necesita ganar a
-   ambas, si no queda por debajo al desplazarse en diagonal. */
-table.cases-index thead th:nth-child(3) {
+table.cases-index thead th:nth-child(3),
+table.cases-index thead th:nth-child(4) {
     z-index: 3;
     background: #eef2f6;
 }
 
-/* Una celda fija tiene que ser opaca (si no, las filas se ven pasar por debajo), y ese fondo
-   propio tapa el color de la fila: marcada, en revisión, alterna o bajo el cursor. Cada estado se
-   repite acá para que la columna de nombre acompañe a su fila en vez de quedar como un hueco
-   blanco. El orden importa: de menos a más específico, igual que en las filas. */
-table.cases-index tbody tr.row-alt td:nth-child(3) { background: #fafbfc; }
-table.cases-index tbody tr:hover td:nth-child(3) { background: #f0f6fb; }
+table.cases-index tbody tr.row-alt td:nth-child(3),
+table.cases-index tbody tr.row-alt td:nth-child(4) { background: #fafbfc; }
 
-table.cases-index tbody tr:has(input[name="markedValue"]:checked) td:nth-child(3) {
+table.cases-index tbody tr:hover td:nth-child(3),
+table.cases-index tbody tr:hover td:nth-child(4) { background: #f0f6fb; }
+
+table.cases-index tbody tr:has(input[name="markedValue"]:checked) td:nth-child(3),
+table.cases-index tbody tr:has(input[name="markedValue"]:checked) td:nth-child(4) {
     background: #bfe3b4 !important;
 }
 
-table.cases-index tbody tr:has(input[name="markedValue"]:checked):hover td:nth-child(3) {
+table.cases-index tbody tr:has(input[name="markedValue"]:checked):hover td:nth-child(3),
+table.cases-index tbody tr:has(input[name="markedValue"]:checked):hover td:nth-child(4) {
     background: #aed89f !important;
 }
 
-table.cases-index tbody tr.row-needs-review td:nth-child(3) {
+table.cases-index tbody tr.row-needs-review td:nth-child(3),
+table.cases-index tbody tr.row-needs-review td:nth-child(4) {
     background: var(--color-review-bg) !important;
 }
 
-table.cases-index tbody tr.row-needs-review:hover td:nth-child(3) {
+table.cases-index tbody tr.row-needs-review:hover td:nth-child(3),
+table.cases-index tbody tr.row-needs-review:hover td:nth-child(4) {
     background: #f6d0d8 !important;
 }
 
