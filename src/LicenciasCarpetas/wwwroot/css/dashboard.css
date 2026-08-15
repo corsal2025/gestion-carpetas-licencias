@@ -1099,10 +1099,28 @@ table.cases-index thead th:nth-child(3) {
     background: #eef2f6;
 }
 
-/* Las filas alternas y las resaltadas pintan su propio fondo; la celda fija debe repetirlo o se
-   vería blanca sobre una fila gris. */
+/* Una celda fija tiene que ser opaca (si no, las filas se ven pasar por debajo), y ese fondo
+   propio tapa el color de la fila: marcada, en revisión, alterna o bajo el cursor. Cada estado se
+   repite acá para que la columna de nombre acompañe a su fila en vez de quedar como un hueco
+   blanco. El orden importa: de menos a más específico, igual que en las filas. */
 table.cases-index tbody tr.row-alt td:nth-child(3) { background: #fafbfc; }
-table.cases-index tbody tr.row-needs-review td:nth-child(3) { background: #fff8e6; }
+table.cases-index tbody tr:hover td:nth-child(3) { background: #f0f6fb; }
+
+table.cases-index tbody tr:has(input[name="markedValue"]:checked) td:nth-child(3) {
+    background: #bfe3b4 !important;
+}
+
+table.cases-index tbody tr:has(input[name="markedValue"]:checked):hover td:nth-child(3) {
+    background: #aed89f !important;
+}
+
+table.cases-index tbody tr.row-needs-review td:nth-child(3) {
+    background: var(--color-review-bg) !important;
+}
+
+table.cases-index tbody tr.row-needs-review:hover td:nth-child(3) {
+    background: #f6d0d8 !important;
+}
 
 /* ── Tablas anchas fuera de Casos (Estadísticas) ─────────────────────────────────────────────
    Trece columnas con títulos como "Agendadas Av. Argentina" no caben repartidas al 100% del
@@ -1140,4 +1158,50 @@ table.cases.table-wide td:first-child {
 table.cases.table-wide thead th:first-child {
     z-index: 3;
     background: #eef2f6;
+}
+
+/* Segunda línea del encabezado (la oficina), más chica y tenue: el título deja de ser lo que
+   define el ancho de la columna, que pasa a mandarlo el número de abajo. */
+table.cases.table-wide th .th-sub {
+    display: block;
+    font-size: 0.6rem;
+    font-weight: 400;
+    opacity: 0.75;
+    letter-spacing: 0;
+    text-transform: none;
+    margin-top: 2px;
+}
+
+/* Contadores manuales: un campo para escribir "66" no necesita 230 px. */
+table.cases.table-wide td input.input-count {
+    width: 72px;
+    text-align: center;
+}
+
+/* Router CSS alinea .text-cell a la izquierda en algunas tablas; acá todo va centrado,
+   incluida la columna de fecha. */
+table.cases.table-wide td.text-cell,
+table.cases.table-wide td {
+    text-align: center;
+}
+
+/* ── Barra de desplazamiento lateral siempre a la vista ──────────────────────────────────────
+   La barra horizontal vive en el borde inferior de la tarjeta de la tabla. Si la tarjeta crece
+   con sus 100 filas, ese borde queda más abajo que la pantalla y hay que bajar toda la tabla
+   para alcanzarla. Fijando la página al alto de la ventana, la tarjeta termina siempre en el
+   borde inferior visible: la tabla se desplaza por dentro, en vertical y en horizontal, y la
+   barra queda a mano sin bajar nada. */
+body.cases-page {
+    height: 100vh;
+    overflow: hidden;
+}
+
+body.cases-page main {
+    overflow: hidden;
+}
+
+body.cases-page .card.table-card {
+    flex: 1 1 auto;
+    /* Un piso, para que en pantallas bajas la tabla no se reduzca a una franja inservible. */
+    min-height: 220px;
 }

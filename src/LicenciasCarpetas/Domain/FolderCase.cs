@@ -95,6 +95,10 @@ public sealed class FolderCase
     /// is invisible everywhere except /Papelera, and a re-import updates it without reviving it.</summary>
     public DateTimeOffset? DeletedAt { get; set; }
 
+    /// <summary>When this case was last included in a printed sector list. Once set, it drops off
+    /// the next list so the same physical folder is not requested twice; "volver a pedir" clears it.</summary>
+    public DateTimeOffset? SectorPrintedAt { get; set; }
+
     /// <summary>Where the physical folder is filed, derived from the última-carpeta date. Null while
     /// there is no date (including cambio-de-domicilio rows, whose folder is in another comuna).</summary>
     public FolderSector? Sector => LastFolderDate is { } fecha

@@ -20,7 +20,13 @@ public interface IFolderCaseRepository
     int Count(CaseFilter filter);
     int CountNeedingReview();
     IReadOnlyList<int> DistinctYears();
-    IReadOnlyList<FolderCase> ForSector(FolderSector sector, bool onlyMarked);
+    IReadOnlyList<FolderCase> ForSector(FolderSector sector, bool onlyMarked, bool includePrinted = false);
+
+    /// <summary>Records that these cases went out on a printed sector list.</summary>
+    void MarkSectorPrinted(IReadOnlyCollection<long> ids);
+
+    /// <summary>Puts a case back on the pending list ("volver a pedir").</summary>
+    void ClearSectorPrinted(long id);
     IReadOnlyList<(DateOnly Date, Office Office, int Scheduled, int Attended)> DailyAttendance(int year, int month);
     IReadOnlyList<(FolderState? State, int Count)> FolderStateBreakdown(int year, int? month, Office? office);
     IReadOnlyList<(FinalDecision? Decision, int Count)> FinalDecisionBreakdown(int year, int? month, Office? office);
@@ -81,13 +87,16 @@ public sealed class FolderCaseRepository(string connectionString) : IFolderCaseR
             """;
         command.ExecuteNonQuery();
 
-        AddDeletedAtColumnIfMissing(connection);
-        AddFullNameSortColumnIfMissing(connection);
+        AddColumnIfMissing(connection, "DeletedAt");
+        AddColumnIfMissing(connection, "FullNameSort");
+        AddColumnIfMissing(connection, "SectorPrintedAt");
         BackfillFullNameSort(connection);
     }
 
-    /// <summary>Accent-free copy of the name, used only for ordering (see <see cref="OrderBy"/>).</summary>
-    private static void AddFullNameSortColumnIfMissing(SqliteConnection connection)
+    /// <summary>Additive migration for databases created before a column existed — SQLite has no
+    /// "ADD COLUMN IF NOT EXISTS", so PRAGMA table_info is checked first. Every column added this
+    /// way is a nullable TEXT.</summary>
+    private static void AddColumnIfMissing(SqliteConnection connection, string column)
     {
         using (var pragmaCommand = connection.CreateCommand())
         {
@@ -96,7 +105,7 @@ public sealed class FolderCaseRepository(string connectionString) : IFolderCaseR
             var nameOrdinal = reader.GetOrdinal("name");
             while (reader.Read())
             {
-                if (string.Equals(reader.GetString(nameOrdinal), "FullNameSort", StringComparison.OrdinalIgnoreCase))
+                if (string.Equals(reader.GetString(nameOrdinal), column, StringComparison.OrdinalIgnoreCase))
                 {
                     return;
                 }
@@ -104,9 +113,11 @@ public sealed class FolderCaseRepository(string connectionString) : IFolderCaseR
         }
 
         using var alterCommand = connection.CreateCommand();
-        alterCommand.CommandText = "ALTER TABLE FolderCase ADD COLUMN FullNameSort TEXT NULL";
+        // The column name is one of the three literals above, never caller text.
+        alterCommand.CommandText = $"ALTER TABLE FolderCase ADD COLUMN {column} TEXT NULL";
         alterCommand.ExecuteNonQuery();
     }
+
 
     /// <summary>
     /// Fills the sort key for rows stored before it existed. Stripping accents is not something
@@ -148,28 +159,6 @@ public sealed class FolderCaseRepository(string connectionString) : IFolderCaseR
         transaction.Commit();
     }
 
-    /// <summary>Additive migration for databases created before the bin existed — SQLite has no
-    /// "ADD COLUMN IF NOT EXISTS", so PRAGMA table_info is checked first.</summary>
-    private static void AddDeletedAtColumnIfMissing(SqliteConnection connection)
-    {
-        using (var pragmaCommand = connection.CreateCommand())
-        {
-            pragmaCommand.CommandText = "PRAGMA table_info(FolderCase)";
-            using var reader = pragmaCommand.ExecuteReader();
-            var nameOrdinal = reader.GetOrdinal("name");
-            while (reader.Read())
-            {
-                if (string.Equals(reader.GetString(nameOrdinal), "DeletedAt", StringComparison.OrdinalIgnoreCase))
-                {
-                    return;
-                }
-            }
-        }
-
-        using var alterCommand = connection.CreateCommand();
-        alterCommand.CommandText = "ALTER TABLE FolderCase ADD COLUMN DeletedAt TEXT NULL";
-        alterCommand.ExecuteNonQuery();
-    }
 
     /// <summary>
     /// Re-importing the same workbook must not duplicate anyone. A row is the same case when the
@@ -433,8 +422,9 @@ public sealed class FolderCaseRepository(string connectionString) : IFolderCaseR
         return years;
     }
 
-    /// <summary>Cases whose physical folder has to be pulled from a given sector, for the printable list.</summary>
-    public IReadOnlyList<FolderCase> ForSector(FolderSector sector, bool onlyMarked)
+    /// <summary>Cases whose physical folder has to be pulled from a given sector, for the printable
+    /// list. Folders already requested are left out unless explicitly asked for.</summary>
+    public IReadOnlyList<FolderCase> ForSector(FolderSector sector, bool onlyMarked, bool includePrinted = false)
     {
         using var connection = Open();
         using var command = connection.CreateCommand();
@@ -443,11 +433,13 @@ public sealed class FolderCaseRepository(string connectionString) : IFolderCaseR
             ? "LastFolderDate < $cutoff"
             : "LastFolderDate >= $cutoff";
         var markedClause = onlyMarked ? "AND Marked = 1" : string.Empty;
+        var printedClause = includePrinted ? string.Empty : "AND SectorPrintedAt IS NULL";
 
         command.CommandText = $"""
             SELECT * FROM FolderCase
-            WHERE DeletedAt IS NULL AND LastFolderDate IS NOT NULL AND {sectorClause} {markedClause}
-            ORDER BY CitationDate DESC, FullName COLLATE NOCASE ASC
+            WHERE DeletedAt IS NULL AND LastFolderDate IS NOT NULL
+              AND {sectorClause} {markedClause} {printedClause}
+            ORDER BY CitationDate DESC, FullNameSort COLLATE NOCASE ASC
             LIMIT 2000
             """;
         command.Parameters.AddWithValue("$cutoff", cutoff);
@@ -584,6 +576,39 @@ public sealed class FolderCaseRepository(string connectionString) : IFolderCaseR
         command.Parameters.AddWithValue("$attended", attentionNote is not null ? 1 : 0);
         command.Parameters.AddWithValue("$needsReview", needsReview ? 1 : 0);
         command.Parameters.AddWithValue("$updatedAt", DateTimeOffset.UtcNow.ToString("O"));
+        command.Parameters.AddWithValue("$id", id);
+        command.ExecuteNonQuery();
+    }
+
+    public void MarkSectorPrinted(IReadOnlyCollection<long> ids)
+    {
+        if (ids.Count == 0)
+        {
+            return;
+        }
+
+        using var connection = Open();
+        using var transaction = connection.BeginTransaction();
+        using var command = connection.CreateCommand();
+        command.CommandText = "UPDATE FolderCase SET SectorPrintedAt = $printedAt WHERE Id = $id";
+        var printedAt = command.Parameters.Add("$printedAt", SqliteType.Text);
+        var idParameter = command.Parameters.Add("$id", SqliteType.Integer);
+        printedAt.Value = DateTimeOffset.UtcNow.ToString("O");
+
+        foreach (var id in ids)
+        {
+            idParameter.Value = id;
+            command.ExecuteNonQuery();
+        }
+
+        transaction.Commit();
+    }
+
+    public void ClearSectorPrinted(long id)
+    {
+        using var connection = Open();
+        using var command = connection.CreateCommand();
+        command.CommandText = "UPDATE FolderCase SET SectorPrintedAt = NULL WHERE Id = $id";
         command.Parameters.AddWithValue("$id", id);
         command.ExecuteNonQuery();
     }
@@ -762,7 +787,8 @@ public sealed class FolderCaseRepository(string connectionString) : IFolderCaseR
         Marked = reader.GetInt32(reader.GetOrdinal("Marked")) == 1,
         CreatedAt = DateTimeOffset.Parse(reader.GetString(reader.GetOrdinal("CreatedAt"))),
         UpdatedAt = DateTimeOffset.Parse(reader.GetString(reader.GetOrdinal("UpdatedAt"))),
-        DeletedAt = ReadText(reader, "DeletedAt") is { } deletedAt ? DateTimeOffset.Parse(deletedAt) : null
+        DeletedAt = ReadText(reader, "DeletedAt") is { } deletedAt ? DateTimeOffset.Parse(deletedAt) : null,
+        SectorPrintedAt = ReadText(reader, "SectorPrintedAt") is { } printedAt ? DateTimeOffset.Parse(printedAt) : null
     };
 
     private static string? ReadText(SqliteDataReader reader, string column)

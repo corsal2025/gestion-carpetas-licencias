@@ -60,11 +60,13 @@
                 <th>Fecha</th>
                 <th>Escaneadas</th>
                 <th>Subidas</th>
+                @* La oficina va en una segunda línea: como título de una sola línea, "Agendadas
+                   Av. Argentina" era lo que estiraba la columna, no los números de abajo. *@
                 @foreach (var office in offices)
                 {
-                    <th>Agendadas @OfficeCatalog.Display(office)</th>
-                    <th>Atendidas @OfficeCatalog.Display(office)</th>
-                    <th>% @OfficeCatalog.Display(office)</th>
+                    <th>Agendadas<span class="th-sub">@OfficeCatalog.Display(office)</span></th>
+                    <th>Atendidas<span class="th-sub">@OfficeCatalog.Display(office)</span></th>
+                    <th>%<span class="th-sub">@OfficeCatalog.Display(office)</span></th>
                 }
                 <th>Guardar</th>
             </tr>
@@ -80,10 +82,10 @@
                           asp-route-year="@Model.Year" asp-route-month="@Model.Month">
                         <input type="hidden" name="fecha" value="@day.Date.ToString("yyyy-MM-dd")" />
                     </form>
-                    <input type="number" name="escaneadas" form="@formId" class="input-inline" size="4" value="@day.Scanned" />
+                    <input type="number" name="escaneadas" form="@formId" class="input-inline input-count" value="@day.Scanned" />
                 </td>
                 <td>
-                    <input type="number" name="subidas" form="@formId" class="input-inline" size="4" value="@day.Uploaded" />
+                    <input type="number" name="subidas" form="@formId" class="input-inline input-count" value="@day.Uploaded" />
                 </td>
                 @foreach (var office in offices)
                 {
@@ -103,7 +105,7 @@
 
 <div style="display:flex; gap:16px; flex-wrap:wrap;">
     <div class="card table-card" style="flex:1; min-width:320px;">
-        <table class="cases">
+        <table class="cases table-wide">
             <thead><tr><th>Estado de la carpeta</th><th>Casos</th></tr></thead>
             <tbody>
             @foreach (var (state, count) in stats.FolderStates)
@@ -117,7 +119,7 @@
         </table>
     </div>
     <div class="card table-card" style="flex:1; min-width:320px;">
-        <table class="cases">
+        <table class="cases table-wide">
             <thead><tr><th>Decisión final</th><th>Casos</th></tr></thead>
             <tbody>
             @foreach (var (decision, count) in stats.FinalDecisions)
