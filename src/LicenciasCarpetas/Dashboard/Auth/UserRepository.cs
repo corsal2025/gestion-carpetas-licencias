@@ -47,8 +47,10 @@ public sealed class UserRepository(string connectionString) : IUserRepository
     {
         using var connection = Open();
         using var command = connection.CreateCommand();
-        command.CommandText = "SELECT * FROM DashboardUser WHERE Username = $username LIMIT 1";
-        command.Parameters.AddWithValue("$username", username);
+        // COLLATE NOCASE and a trim: accounts are stored lower-cased, but the operator types the
+        // name however they type it, and SQLite compares text case-sensitively by default.
+        command.CommandText = "SELECT * FROM DashboardUser WHERE Username = $username COLLATE NOCASE LIMIT 1";
+        command.Parameters.AddWithValue("$username", username.Trim());
         using var reader = command.ExecuteReader();
         return reader.Read() ? Map(reader) : null;
     }

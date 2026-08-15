@@ -32,6 +32,7 @@ builder.Services.AddSingleton<IDailyCounterRepository>(_ => new DailyCounterRepo
 builder.Services.AddSingleton<IComunaContactRepository>(_ => new ComunaContactRepository(connectionString));
 builder.Services.AddSingleton<IUserRepository>(_ => new UserRepository(connectionString));
 builder.Services.AddSingleton<ILoginService, LoginService>();
+builder.Services.AddSingleton<UserProvisioning>();
 builder.Services.AddSingleton<IExcelWorkbookImporter, ExcelWorkbookImporter>();
 builder.Services.AddSingleton<IExcelCaseExporter, ExcelCaseExporter>();
 builder.Services.AddSingleton<StatisticsService>();
@@ -129,9 +130,17 @@ if (args.Contains("--add-user") || args.Contains("--remove-user"))
             Console.Write("Contraseña: ");
             password = ReadPasswordMasked();
         }
-        var (hash, salt, iterations) = PasswordHasher.Hash(password);
-        users.Insert(new DashboardUser { Username = username, PasswordHash = hash, PasswordSalt = salt, Iterations = iterations });
-        Console.WriteLine($"Usuario '{username}' creado.");
+
+        // Same rules as the dashboard — the console used to accept passwords the screens refused.
+        var result = app.Services.GetRequiredService<UserProvisioning>().Create(username, password, password);
+        if (result != ProvisioningResult.Created)
+        {
+            Console.Error.WriteLine(UserProvisioning.Describe(result));
+            Environment.ExitCode = 1;
+            return;
+        }
+
+        Console.WriteLine($"Usuario '{username.Trim().ToLowerInvariant()}' creado.");
     }
     else
     {

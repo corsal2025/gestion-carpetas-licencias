@@ -7,7 +7,7 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
 
 namespace LicenciasCarpetas.Dashboard.Pages;
 
-public class LoginModel(ILoginService loginService, IUserRepository users) : PageModel
+public class LoginModel(ILoginService loginService, IUserRepository users, UserProvisioning provisioning) : PageModel
 {
     [BindProperty]
     public string Username { get; set; } = string.Empty;
@@ -17,8 +17,20 @@ public class LoginModel(ILoginService loginService, IUserRepository users) : Pag
 
     public string? ErrorMessage { get; set; }
 
-    public void OnGet()
+    /// <summary>Confirmation carried over from the first-run screen.</summary>
+    public string? Notice { get; set; }
+
+    /// <summary>A brand-new installation has nowhere to sign in from: send it to create an account
+    /// instead of showing a login form that cannot possibly succeed.</summary>
+    public IActionResult OnGet()
     {
+        if (provisioning.HasNoUsers())
+        {
+            return RedirectToPage("/Setup");
+        }
+
+        Notice = TempData["Message"] as string;
+        return Page();
     }
 
     public async Task<IActionResult> OnPostAsync()

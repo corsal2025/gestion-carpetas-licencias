@@ -30,6 +30,23 @@ public class LoginServiceTests
         Assert.Equal(LoginOutcome.Success, await login.TryLoginAsync("operador", "clave-secreta-1"));
     }
 
+    /// <summary>
+    /// Accounts are stored lower-cased, but nobody types their username that carefully — and a
+    /// login form that refuses "Operador" for an account created as "operador" reads as a lost
+    /// password, not as a capital letter.
+    /// </summary>
+    [Theory]
+    [InlineData("OPERADOR")]
+    [InlineData("Operador")]
+    [InlineData("  operador  ")]
+    public async Task The_username_is_matched_regardless_of_case_and_spacing(string typed)
+    {
+        using var db = new SqliteTestDatabase();
+        var (login, _) = Build(db);
+
+        Assert.Equal(LoginOutcome.Success, await login.TryLoginAsync(typed, "clave-secreta-1"));
+    }
+
     [Fact]
     public async Task Rejects_a_wrong_password_and_an_unknown_user()
     {

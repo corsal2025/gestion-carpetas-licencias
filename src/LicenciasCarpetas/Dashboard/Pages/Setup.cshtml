@@ -1,0 +1,47 @@
+@page
+@model LicenciasCarpetas.Dashboard.Pages.SetupModel
+@{
+    Layout = null;
+}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Crear el primer usuario — Carpetas Licencias</title>
+    <link rel="icon" type="image/svg+xml" href="~/favicon.svg" />
+    <link rel="stylesheet" href="~/css/dashboard.css" asp-append-version="true" />
+</head>
+<body>
+    <div class="login-shell">
+        <div class="login-card">
+            <h1>Crear el primer usuario</h1>
+            <p class="subtitle">Municipalidad de Valparaíso — Depto. Licencias de Conducir</p>
+            <p class="subtitle" style="margin-top:10px;">
+                Todavía no hay ninguna cuenta en este sistema. Cree la suya para entrar.
+            </p>
+            <form method="post">
+                <input asp-for="Username" placeholder="Usuario" autofocus autocomplete="off" />
+                <input asp-for="Password" type="password" placeholder="Contraseña"
+                       class="reveal-target" autocomplete="new-password" />
+                <input asp-for="ConfirmPassword" type="password" placeholder="Repetir contraseña"
+                       class="reveal-target" autocomplete="new-password" />
+                <label style="display:flex; gap:6px; align-items:center; font-size:0.8rem; margin:4px 0;">
+                    <input type="checkbox" id="reveal-passwords" /> Mostrar las contraseñas
+                </label>
+                <button type="submit">Crear usuario</button>
+                @if (Model.ErrorMessage is not null)
+                {
+                    <p class="error">@Model.ErrorMessage</p>
+                }
+            </form>
+            <script>
+                document.getElementById('reveal-passwords').addEventListener('change', function () {
+                    var type = this.checked ? 'text' : 'password';
+                    document.querySelectorAll('.reveal-target').forEach(function (input) { input.type = type; });
+                });
+            </script>
+        </div>
+    </div>
+</body>
+</html>

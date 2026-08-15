@@ -1,0 +1,105 @@
+@page
+@model LicenciasCarpetas.Dashboard.Pages.UsuariosModel
+@{
+    ViewData["Title"] = "Usuarios";
+}
+
+@if (Model.Message is not null)
+{
+    <p class="message-banner @(Model.MessageIsError ? "message-error" : "")">@Model.Message</p>
+}
+
+<div class="card" style="padding:20px 24px; margin-bottom:16px; max-width:640px;">
+    <h1 style="font-size:1.1rem; margin:0 0 4px;">Crear usuario</h1>
+    <p style="font-size:0.82rem; margin:0 0 14px;">
+        Mínimo @LicenciasCarpetas.Dashboard.Auth.UserProvisioning.MinimumPasswordLength caracteres.
+        El nombre de usuario no distingue mayúsculas.
+    </p>
+    <form method="post" asp-page-handler="Create" style="display:flex; gap:10px; align-items:flex-end; flex-wrap:wrap;">
+        <div>
+            <label class="form-label">Usuario</label>
+            <input type="text" name="usuario" required placeholder="ej: raul" autocomplete="off" />
+        </div>
+        <div>
+            <label class="form-label">Contraseña</label>
+            <input type="password" name="clave" required class="reveal-target" autocomplete="new-password" />
+        </div>
+        <div>
+            <label class="form-label">Repetir contraseña</label>
+            <input type="password" name="confirmacion" required class="reveal-target" autocomplete="new-password" />
+        </div>
+        <button type="submit" class="btn-primary" style="padding:8px 16px;">Crear</button>
+    </form>
+</div>
+
+<div class="card" style="padding:20px 24px; margin-bottom:16px; max-width:640px;">
+    <h2 style="font-size:1rem; margin:0 0 4px;">Cambiar la contraseña de un usuario</h2>
+    <p style="font-size:0.82rem; margin:0 0 14px;">
+        Para cuando alguien olvida la suya. Deja la cuenta desbloqueada de inmediato.
+    </p>
+    <form method="post" asp-page-handler="SetPassword" style="display:flex; gap:10px; align-items:flex-end; flex-wrap:wrap;">
+        <div>
+            <label class="form-label">Usuario</label>
+            <select name="usuario" required>
+                @foreach (var username in Model.Usernames)
+                {
+                    <option value="@username">@username</option>
+                }
+            </select>
+        </div>
+        <div>
+            <label class="form-label">Contraseña nueva</label>
+            <input type="password" name="clave" required class="reveal-target" autocomplete="new-password" />
+        </div>
+        <div>
+            <label class="form-label">Repetir contraseña</label>
+            <input type="password" name="confirmacion" required class="reveal-target" autocomplete="new-password" />
+        </div>
+        <button type="submit" class="btn-primary" style="padding:8px 16px;">Cambiar</button>
+    </form>
+</div>
+
+<label style="display:flex; gap:6px; align-items:center; font-size:0.8rem; margin:0 0 16px 4px;">
+    <input type="checkbox" id="reveal-passwords" /> Mostrar las contraseñas
+</label>
+
+<div class="card table-card" style="max-width:640px;">
+    <table class="cases">
+        <thead>
+            <tr><th>Usuario</th><th>Acción</th></tr>
+        </thead>
+        <tbody>
+        @foreach (var username in Model.Usernames)
+        {
+            <tr>
+                <td class="text-cell">
+                    @username
+                    @if (string.Equals(username, Model.CurrentUsername, StringComparison.OrdinalIgnoreCase))
+                    {
+                        <span class="badge badge-confirmed">tu sesión</span>
+                    }
+                </td>
+                <td>
+                    @if (!string.Equals(username, Model.CurrentUsername, StringComparison.OrdinalIgnoreCase))
+                    {
+                        <form method="post" asp-page-handler="Delete"
+                              onsubmit="return confirm('¿Eliminar el usuario @username?');">
+                            <input type="hidden" name="usuario" value="@username" />
+                            <button type="submit" class="btn-danger" title="Eliminar usuario">✕</button>
+                        </form>
+                    }
+                </td>
+            </tr>
+        }
+        </tbody>
+    </table>
+</div>
+
+@section Scripts {
+<script>
+    document.getElementById('reveal-passwords').addEventListener('change', function () {
+        var type = this.checked ? 'text' : 'password';
+        document.querySelectorAll('.reveal-target').forEach(function (input) { input.type = type; });
+    });
+</script>
+}
