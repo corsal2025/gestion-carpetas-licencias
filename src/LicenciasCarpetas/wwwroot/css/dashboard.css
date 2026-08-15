@@ -1070,3 +1070,74 @@ button.btn-outline-danger:hover { background: var(--color-review-bg); }
 .cases th .sort-link:hover {
     text-decoration: underline;
 }
+
+/* ── Cabecera y columna de nombre fijas en la tabla de Casos ─────────────────────────────────
+   Con 100 filas por página y 13 columnas, el operador pierde de vista qué columna está mirando
+   al bajar, y de quién es la fila al correr la tabla a la derecha. Ambas se quedan pegadas.
+   El fondo es obligatorio: sin él, las filas se ven pasar por debajo. */
+table.cases-index thead th {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    background: #eef2f6;
+}
+
+table.cases-index th:nth-child(3),
+table.cases-index td:nth-child(3) {
+    position: sticky;
+    left: 0;
+    z-index: 1;
+    background: #ffffff;
+    /* Sombra al borde derecho: marca dónde termina la columna fija y empieza lo que se desplaza. */
+    box-shadow: 1px 0 0 var(--color-border);
+}
+
+/* La cabecera de esa misma columna se cruza con las dos reglas anteriores y necesita ganar a
+   ambas, si no queda por debajo al desplazarse en diagonal. */
+table.cases-index thead th:nth-child(3) {
+    z-index: 3;
+    background: #eef2f6;
+}
+
+/* Las filas alternas y las resaltadas pintan su propio fondo; la celda fija debe repetirlo o se
+   vería blanca sobre una fila gris. */
+table.cases-index tbody tr.row-alt td:nth-child(3) { background: #fafbfc; }
+table.cases-index tbody tr.row-needs-review td:nth-child(3) { background: #fff8e6; }
+
+/* ── Tablas anchas fuera de Casos (Estadísticas) ─────────────────────────────────────────────
+   Trece columnas con títulos como "Agendadas Av. Argentina" no caben repartidas al 100% del
+   ancho: se apretujan y parten las palabras. Igual que en Casos, cada columna toma el ancho de
+   su contenido y la tarjeta se desplaza en horizontal. */
+table.cases.table-wide {
+    width: max-content;
+    min-width: 100%;
+}
+
+table.cases.table-wide th,
+table.cases.table-wide td {
+    white-space: nowrap;
+    text-align: center;
+}
+
+/* Cabecera fija: en un mes de 31 días se pierde de vista a qué oficina pertenece cada número. */
+table.cases.table-wide thead th {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    background: #eef2f6;
+}
+
+/* La fecha se queda a la izquierda al correr la tabla, que es la referencia de cada fila. */
+table.cases.table-wide th:first-child,
+table.cases.table-wide td:first-child {
+    position: sticky;
+    left: 0;
+    z-index: 1;
+    background: #ffffff;
+    box-shadow: 1px 0 0 var(--color-border);
+}
+
+table.cases.table-wide thead th:first-child {
+    z-index: 3;
+    background: #eef2f6;
+}
