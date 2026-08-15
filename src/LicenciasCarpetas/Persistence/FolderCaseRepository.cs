@@ -18,6 +18,10 @@ public interface IFolderCaseRepository
     IReadOnlyList<FolderCase> Query(CaseFilter filter, int skip, int take);
     IReadOnlyList<FolderCase> QueryAll(CaseFilter filter);
     int Count(CaseFilter filter);
+
+    /// <summary>RUTs appearing on more than one case inside the current filter — the same person
+    /// cited twice, which the workbook flags in violet.</summary>
+    IReadOnlyList<string> DuplicateRuts(CaseFilter filter);
     int CountNeedingReview();
     IReadOnlyList<int> DistinctYears();
     IReadOnlyList<FolderCase> ForSector(FolderSector sector, bool onlyMarked, bool includePrinted = false);
@@ -362,6 +366,27 @@ public sealed class FolderCaseRepository(string connectionString) : IFolderCaseR
         var where = BuildWhere(filter, command);
         command.CommandText = $"SELECT COUNT(*) FROM FolderCase {where}";
         return Convert.ToInt32(command.ExecuteScalar());
+    }
+
+    public IReadOnlyList<string> DuplicateRuts(CaseFilter filter)
+    {
+        using var connection = Open();
+        using var command = connection.CreateCommand();
+        var where = BuildWhere(filter, command);
+        command.CommandText = $"""
+            SELECT Rut FROM FolderCase
+            {where} AND Rut IS NOT NULL AND Rut <> ''
+            GROUP BY Rut
+            HAVING COUNT(*) > 1
+            """;
+
+        var duplicates = new List<string>();
+        using var reader = command.ExecuteReader();
+        while (reader.Read())
+        {
+            duplicates.Add(reader.GetString(0));
+        }
+        return duplicates;
     }
 
     public int CountNeedingReview()

@@ -212,6 +212,9 @@
         {
             var rowClass = rowIndex % 2 == 1 ? "row-alt" : "";
             var reviewClass = item.NeedsReview ? "row-needs-review" : "";
+            @* El color de la fila viene del estado de la carpeta, igual que en el Excel. *@
+            var estadoClass = FolderStateCatalog.CssClass(item.FolderState);
+            var duplicadoClass = Model.DuplicateRuts.Contains(item.Rut ?? string.Empty) ? "rut-duplicado" : "";
             rowIndex++;
 
             @* Cada campo se dimensiona según lo que contiene, así ningún nombre ni comuna queda
@@ -222,7 +225,7 @@
             var nameSize = Math.Max(26, (item.FullName?.Length ?? 0) + 2);
             var lastFolderSize = Math.Max(12, lastFolderText.Length + 2);
             var attentionSize = Math.Max(16, (item.AttentionNote?.Length ?? 0) + 2);
-            <tr class="@rowClass @reviewClass">
+            <tr class="@rowClass @estadoClass @duplicadoClass @reviewClass">
                 <td class="marked-cell">
                     <form method="post" asp-page-handler="ToggleMarked" class="marked-form">
                         <input type="hidden" name="id" value="@item.Id" />

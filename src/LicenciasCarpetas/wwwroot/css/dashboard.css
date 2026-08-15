@@ -1226,3 +1226,48 @@ body.cases-page .card.table-card {
 body.cases-page main {
     padding-bottom: 8px;
 }
+
+/* ── Colores de fila por estado de la carpeta ────────────────────────────────────────────────
+   Copiados tal cual del formato condicional del libro 2026: el operador lee la agenda por color
+   antes de leer el texto, así que cambiarlos sería cambiarle el idioma.
+   Se pintan las CELDAS, no la fila, porque las columnas fijas (nombre y RUT) llevan fondo propio
+   y opaco; pintando la fila quedarían como un hueco blanco.
+   "CANJE LIC. EXTRANJERA" no tiene regla en el libro y por eso tampoco tiene color acá. */
+table.cases-index tbody tr.estado-primeralicencia td { background: #FF00FF; }
+table.cases-index tbody tr.estado-subidaaconaset td { background: #FFFF00; }
+table.cases-index tbody tr.estado-subidaconf8 td { background: #BF9000; }
+table.cases-index tbody tr.estado-subidaconoficio td { background: #FFE599; }
+table.cases-index tbody tr.estado-cambiodomiciliosubidoaconaset td { background: #00FFFF; }
+table.cases-index tbody tr.estado-cambiodomiciliosubidoconcorreo td { background: #D0E0E3; }
+table.cases-index tbody tr.estado-cambiodomiciliosolicitado td { background: #9FC5E8; }
+table.cases-index tbody tr.estado-cambiodomicilio td { background: #3D85C6; }
+table.cases-index tbody tr.estado-seencuentraenarchivos td { background: #6AA84F; }
+table.cases-index tbody tr.estado-seencuentraenoficina43 td { background: #8E7CC3; }
+table.cases-index tbody tr.estado-noexistecarpeta td { background: #FF0000; }
+table.cases-index tbody tr.estado-crearoficio td { background: #C27BA0; }
+table.cases-index tbody tr.estado-crearcertificado td { background: #C27BA0; }
+
+/* Sobre los fondos oscuros (azul, rojo, morado, verde, dorado) el texto negro no se lee. */
+table.cases-index tbody tr.estado-cambiodomicilio td,
+table.cases-index tbody tr.estado-noexistecarpeta td,
+table.cases-index tbody tr.estado-seencuentraenoficina43 td,
+table.cases-index tbody tr.estado-seencuentraenarchivos td,
+table.cases-index tbody tr.estado-subidaconf8 td {
+    color: #ffffff;
+}
+
+/* Los campos editables se mantienen blancos: escribir sobre un fondo de color cansa la vista y
+   el operador pasa el día tipeando en ellos. */
+table.cases-index tbody td input,
+table.cases-index tbody td select {
+    background: #ffffff;
+    color: var(--color-text);
+}
+
+/* RUT repetido: el libro lo pinta violeta con un COUNTIF. Marca a la misma persona citada dos
+   veces dentro de lo que se está mirando. */
+table.cases-index tbody tr.rut-duplicado td:nth-child(4) input {
+    background: #f3e0ff;
+    border-color: #9900FF;
+    font-weight: 700;
+}

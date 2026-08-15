@@ -45,9 +45,38 @@ public static class FolderStateCatalog
     /// <summary>Loose-normalized spellings found in the 2026 workbook, mapped to their canonical value.</summary>
     private static readonly Dictionary<string, FolderState> Aliases = BuildAliases();
 
+    /// <summary>
+    /// Row colours taken from the workbook's own conditional formatting: the operator reads the
+    /// agenda by colour before reading any text, so these are copied exactly rather than redesigned.
+    /// "CANJE LIC. EXTRANJERA" has no rule in the workbook and therefore has no colour here either.
+    /// </summary>
+    private static readonly Dictionary<FolderState, string> Colors = new()
+    {
+        [FolderState.PrimeraLicencia] = "#FF00FF",
+        [FolderState.SubidaAConaset] = "#FFFF00",
+        [FolderState.SubidaConF8] = "#BF9000",
+        [FolderState.SubidaConOficio] = "#FFE599",
+        [FolderState.CambioDomicilioSubidoAConaset] = "#00FFFF",
+        [FolderState.CambioDomicilioSubidoConCorreo] = "#D0E0E3",
+        [FolderState.CambioDomicilioSolicitado] = "#9FC5E8",
+        [FolderState.CambioDomicilio] = "#3D85C6",
+        [FolderState.SeEncuentraEnArchivos] = "#6AA84F",
+        [FolderState.SeEncuentraEnOficina43] = "#8E7CC3",
+        [FolderState.NoExisteCarpeta] = "#FF0000",
+        [FolderState.CrearOficio] = "#C27BA0",
+        [FolderState.CrearCertificado] = "#C27BA0"
+    };
+
     public static IReadOnlyList<FolderState> All { get; } = [.. Displays.Keys];
 
     public static string Display(FolderState state) => Displays[state];
+
+    /// <summary>Row colour for a state, or null when the workbook paints nothing for it.</summary>
+    public static string? Color(FolderState state) => Colors.GetValueOrDefault(state);
+
+    /// <summary>CSS class the cases table puts on the row, derived from the enum name.</summary>
+    public static string CssClass(FolderState? state)
+        => state is null ? string.Empty : $"estado-{state.ToString()!.ToLowerInvariant()}";
 
     public static FolderState? TryResolve(string? text)
     {

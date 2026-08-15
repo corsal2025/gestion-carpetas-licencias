@@ -18,6 +18,9 @@ public class IndexModel(IFolderCaseRepository cases, IExcelCaseExporter exporter
     public int TotalPages { get; private set; } = 1;
     public IReadOnlyList<int> Years { get; private set; } = [];
 
+    /// <summary>RUTs repeated inside the current filter, highlighted like the workbook's COUNTIF.</summary>
+    public HashSet<string> DuplicateRuts { get; private set; } = [];
+
     [BindProperty(SupportsGet = true)]
     public Office? Office { get; set; }
 
@@ -170,6 +173,7 @@ public class IndexModel(IFolderCaseRepository cases, IExcelCaseExporter exporter
         Cases = cases.Query(filter, (PageNumber - 1) * pageSize, pageSize);
         NeedsReviewCount = cases.CountNeedingReview();
         Years = cases.DistinctYears();
+        DuplicateRuts = [.. cases.DuplicateRuts(filter)];
 
         if (TempData["Message"] is string message)
         {
