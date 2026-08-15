@@ -82,6 +82,70 @@ public sealed class FolderCaseRepository(string connectionString) : IFolderCaseR
         command.ExecuteNonQuery();
 
         AddDeletedAtColumnIfMissing(connection);
+        AddFullNameSortColumnIfMissing(connection);
+        BackfillFullNameSort(connection);
+    }
+
+    /// <summary>Accent-free copy of the name, used only for ordering (see <see cref="OrderBy"/>).</summary>
+    private static void AddFullNameSortColumnIfMissing(SqliteConnection connection)
+    {
+        using (var pragmaCommand = connection.CreateCommand())
+        {
+            pragmaCommand.CommandText = "PRAGMA table_info(FolderCase)";
+            using var reader = pragmaCommand.ExecuteReader();
+            var nameOrdinal = reader.GetOrdinal("name");
+            while (reader.Read())
+            {
+                if (string.Equals(reader.GetString(nameOrdinal), "FullNameSort", StringComparison.OrdinalIgnoreCase))
+                {
+                    return;
+                }
+            }
+        }
+
+        using var alterCommand = connection.CreateCommand();
+        alterCommand.CommandText = "ALTER TABLE FolderCase ADD COLUMN FullNameSort TEXT NULL";
+        alterCommand.ExecuteNonQuery();
+    }
+
+    /// <summary>
+    /// Fills the sort key for rows stored before it existed. Stripping accents is not something
+    /// SQLite can do, so the rows are read and rewritten here — in one transaction, because the
+    /// 2026 workbook alone is over 20.000 of them.
+    /// </summary>
+    private static void BackfillFullNameSort(SqliteConnection connection)
+    {
+        var pending = new List<(long Id, string FullName)>();
+
+        using (var selectCommand = connection.CreateCommand())
+        {
+            selectCommand.CommandText = "SELECT Id, FullName FROM FolderCase WHERE FullNameSort IS NULL AND FullName IS NOT NULL";
+            using var reader = selectCommand.ExecuteReader();
+            while (reader.Read())
+            {
+                pending.Add((reader.GetInt64(0), reader.GetString(1)));
+            }
+        }
+
+        if (pending.Count == 0)
+        {
+            return;
+        }
+
+        using var transaction = connection.BeginTransaction();
+        using var updateCommand = connection.CreateCommand();
+        updateCommand.CommandText = "UPDATE FolderCase SET FullNameSort = $sort WHERE Id = $id";
+        var sortParameter = updateCommand.Parameters.Add("$sort", SqliteType.Text);
+        var idParameter = updateCommand.Parameters.Add("$id", SqliteType.Integer);
+
+        foreach (var (id, fullName) in pending)
+        {
+            sortParameter.Value = TextNormalizer.Normalize(fullName);
+            idParameter.Value = id;
+            updateCommand.ExecuteNonQuery();
+        }
+
+        transaction.Commit();
     }
 
     /// <summary>Additive migration for databases created before the bin existed — SQLite has no
@@ -165,12 +229,12 @@ public sealed class FolderCaseRepository(string connectionString) : IFolderCaseR
         command.CommandText = """
             INSERT INTO FolderCase (
                 CitationDate, FolderUploadedDate, LastFolderDate, LastFolderComuna,
-                FirstName, LastName, FullName, Rut, Office, AttentionNote, Attended,
+                FirstName, LastName, FullName, FullNameSort, Rut, Office, AttentionNote, Attended,
                 MoralIdoneity, FolderState, FolderStateRaw, FinalDecision, FinalDecisionRaw,
                 SourceSheet, SourceRow, NeedsReview, Marked, CreatedAt, UpdatedAt)
             VALUES (
                 $citationDate, $uploadedDate, $lastFolderDate, $lastFolderComuna,
-                $firstName, $lastName, $fullName, $rut, $office, $attention, $attended,
+                $firstName, $lastName, $fullName, $fullNameSort, $rut, $office, $attention, $attended,
                 $idoneity, $state, $stateRaw, $decision, $decisionRaw,
                 $sheet, $row, $needsReview, $marked, $createdAt, $updatedAt);
             SELECT last_insert_rowid();
@@ -201,6 +265,7 @@ public sealed class FolderCaseRepository(string connectionString) : IFolderCaseR
                 FirstName = $firstName,
                 LastName = $lastName,
                 FullName = $fullName,
+                FullNameSort = $fullNameSort,
                 Rut = $rut,
                 Office = $office,
                 AttentionNote = $attention,
@@ -233,6 +298,7 @@ public sealed class FolderCaseRepository(string connectionString) : IFolderCaseR
         command.Parameters.AddWithValue("$lastFolderDate", Nullable(Text(folderCase.LastFolderDate)));
         command.Parameters.AddWithValue("$lastFolderComuna", Nullable(folderCase.LastFolderComuna));
         command.Parameters.AddWithValue("$fullName", Nullable(folderCase.FullName));
+        command.Parameters.AddWithValue("$fullNameSort", Nullable(SortKey(folderCase.FullName)));
         command.Parameters.AddWithValue("$rut", Nullable(folderCase.Rut));
         command.Parameters.AddWithValue("$office", (int)folderCase.Office);
         command.Parameters.AddWithValue("$attention", Nullable(folderCase.AttentionNote));
@@ -487,6 +553,7 @@ public sealed class FolderCaseRepository(string connectionString) : IFolderCaseR
         command.CommandText = """
             UPDATE FolderCase SET
                 FullName = $fullName,
+                FullNameSort = $fullNameSort,
                 Rut = $rut,
                 CitationDate = $citationDate,
                 FolderUploadedDate = $uploadedDate,
@@ -504,6 +571,7 @@ public sealed class FolderCaseRepository(string connectionString) : IFolderCaseR
             WHERE Id = $id
             """;
         command.Parameters.AddWithValue("$fullName", Nullable(fullName));
+        command.Parameters.AddWithValue("$fullNameSort", Nullable(SortKey(fullName)));
         command.Parameters.AddWithValue("$rut", Nullable(rut));
         command.Parameters.AddWithValue("$citationDate", Nullable(Text(citationDate)));
         command.Parameters.AddWithValue("$uploadedDate", Nullable(Text(folderUploadedDate)));
@@ -570,7 +638,9 @@ public sealed class FolderCaseRepository(string connectionString) : IFolderCaseR
         // Dates read newest-first by default (that is how the agenda is consulted); text reads A-Z.
         var (column, descendingByDefault) = filter.Sort switch
         {
-            CaseSort.Name => ("FullName COLLATE NOCASE", false),
+            // FullNameSort, not FullName: SQLite compares bytes, so ÁLVARO and MUÑOZ would land
+            // after Z on the raw text.
+            CaseSort.Name => ("FullNameSort COLLATE NOCASE", false),
             CaseSort.Rut => ("Rut", false),
             CaseSort.Office => ("Office", false),
             CaseSort.FolderUploadedDate => ("FolderUploadedDate", true),
@@ -581,8 +651,12 @@ public sealed class FolderCaseRepository(string connectionString) : IFolderCaseR
         };
 
         var direction = filter.Descending != descendingByDefault ? "DESC" : "ASC";
-        return $"{column} {direction}, FullName COLLATE NOCASE ASC, Id ASC";
+        return $"{column} {direction}, FullNameSort COLLATE NOCASE ASC, Id ASC";
     }
+
+    /// <summary>Accent-free, upper-cased copy of a name, for ordering only — never shown.</summary>
+    private static string? SortKey(string? fullName)
+        => fullName is null ? null : TextNormalizer.Normalize(fullName);
 
     private static string BuildWhere(CaseFilter filter, SqliteCommand command)
     {

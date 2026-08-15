@@ -15,4 +15,7 @@ public sealed class CarpetasOptions
 
     /// <summary>Rows per page on the cases screen — the workbook holds ~21.000 rows, so paging is not optional.</summary>
     public int PageSize { get; set; } = 100;
+
+    /// <summary>How many startup copies of the database to keep in data/backups (about 8 MB each).</summary>
+    public int BackupsToKeep { get; set; } = 10;
 }

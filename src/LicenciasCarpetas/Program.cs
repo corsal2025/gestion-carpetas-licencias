@@ -51,6 +51,17 @@ builder.Services.AddRazorPages(razorOptions => razorOptions.RootDirectory = "/Da
 var app = builder.Build();
 
 EnsureDataDirectory(databasePath);
+
+// Copy before the schema migrations touch anything, so the copy is the last known-good state.
+var backupPath = new DatabaseBackup(
+    databasePath,
+    Path.Combine(Path.GetDirectoryName(databasePath)!, "backups"),
+    options.BackupsToKeep).Run(DateTimeOffset.Now);
+if (backupPath is not null)
+{
+    Console.WriteLine($"Respaldo: {backupPath}");
+}
+
 EnsureSchemas(app.Services);
 
 // Password recovery: there is no mail transport here, so recovery is an operation run on the
