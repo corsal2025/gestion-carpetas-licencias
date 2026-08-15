@@ -1271,3 +1271,21 @@ table.cases-index tbody tr.rut-duplicado td:nth-child(4) input {
     border-color: #9900FF;
     font-weight: 700;
 }
+
+/* Al fijar la página al alto de la ventana, `main` pasó a ser un contenedor flex con altura
+   limitada: sus hijos se encogen por defecto y las tarjetas de filtros y de alta quedaron
+   aplastadas, con los desplegables reducidos a nada. Solo la tabla debe ceder altura; todo lo
+   demás conserva la suya. */
+body.cases-page main > * {
+    flex: 0 0 auto;
+}
+
+body.cases-page main > .card.table-card {
+    flex: 1 1 auto;
+}
+
+/* El formulario de filtros se reparte en varias líneas cuando no cabe, en vez de empujar el
+   botón "Filtrar" fuera de la pantalla. */
+body.cases-page main > .card form {
+    flex-wrap: wrap;
+}
