@@ -9,6 +9,13 @@ public interface IUserRepository
     DashboardUser? FindById(long id);
     void Insert(DashboardUser user);
     void UpdatePassword(long id, string hash, string salt, int iterations);
+
+    /// <summary>Recovery: sets a new password and clears any lockout, so the operator can get in
+    /// straight away instead of waiting out the fifteen minutes that locked them out.</summary>
+    void ResetPassword(long id, string hash, string salt, int iterations);
+
+    /// <summary>Usernames, for the operator who forgot which account they created.</summary>
+    IReadOnlyList<string> AllUsernames();
     void Delete(string username);
     void RecordFailedLogin(long id, int attempts, DateTimeOffset? lockedUntil);
     void ResetFailedLogins(long id);
@@ -84,6 +91,23 @@ public sealed class UserRepository(string connectionString) : IUserRepository
         command.ExecuteNonQuery();
     }
 
+    public void ResetPassword(long id, string hash, string salt, int iterations)
+    {
+        using var connection = Open();
+        using var command = connection.CreateCommand();
+        command.CommandText = """
+            UPDATE DashboardUser
+            SET PasswordHash = $hash, PasswordSalt = $salt, Iterations = $iterations,
+                FailedLoginAttempts = 0, LockedUntil = NULL
+            WHERE Id = $id
+            """;
+        command.Parameters.AddWithValue("$hash", hash);
+        command.Parameters.AddWithValue("$salt", salt);
+        command.Parameters.AddWithValue("$iterations", iterations);
+        command.Parameters.AddWithValue("$id", id);
+        command.ExecuteNonQuery();
+    }
+
     public void Delete(string username)
     {
         using var connection = Open();
@@ -111,6 +135,21 @@ public sealed class UserRepository(string connectionString) : IUserRepository
         command.CommandText = "UPDATE DashboardUser SET FailedLoginAttempts = 0, LockedUntil = NULL WHERE Id = $id";
         command.Parameters.AddWithValue("$id", id);
         command.ExecuteNonQuery();
+    }
+
+    public IReadOnlyList<string> AllUsernames()
+    {
+        using var connection = Open();
+        using var command = connection.CreateCommand();
+        command.CommandText = "SELECT Username FROM DashboardUser ORDER BY Username ASC";
+
+        var names = new List<string>();
+        using var reader = command.ExecuteReader();
+        while (reader.Read())
+        {
+            names.Add(reader.GetString(0));
+        }
+        return names;
     }
 
     public int Count()

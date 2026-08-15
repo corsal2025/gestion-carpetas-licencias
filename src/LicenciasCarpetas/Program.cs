@@ -53,6 +53,57 @@ var app = builder.Build();
 EnsureDataDirectory(databasePath);
 EnsureSchemas(app.Services);
 
+// Password recovery: there is no mail transport here, so recovery is an operation run on the
+// machine itself (see the /ForgotPassword screen, which points the operator at this command).
+if (args.Contains("--reset-password") || args.Contains("--list-users"))
+{
+    var users = app.Services.GetRequiredService<IUserRepository>();
+
+    if (args.Contains("--list-users"))
+    {
+        var names = users.AllUsernames();
+        Console.WriteLine(names.Count == 0
+            ? "No hay usuarios creados. Cree uno con: --add-user <usuario>"
+            : $"Usuarios: {string.Join(", ", names)}");
+        return;
+    }
+
+    var targetIndex = Array.IndexOf(args, "--reset-password") + 1;
+    if (targetIndex >= args.Length || args[targetIndex].StartsWith("--", StringComparison.Ordinal))
+    {
+        Console.Error.WriteLine("Falta el usuario: --reset-password <usuario>");
+        Environment.ExitCode = 1;
+        return;
+    }
+
+    var targetUsername = args[targetIndex];
+    if (users.FindByUsername(targetUsername) is not { } targetUser)
+    {
+        Console.Error.WriteLine($"No existe el usuario '{targetUsername}'. Vea la lista con --list-users.");
+        Environment.ExitCode = 1;
+        return;
+    }
+
+    var newPassword = Environment.GetEnvironmentVariable("LC_ADMIN_PASSWORD");
+    if (string.IsNullOrEmpty(newPassword))
+    {
+        Console.Write("Contraseña nueva: ");
+        newPassword = ReadPasswordMasked();
+    }
+
+    if (newPassword.Length < 8)
+    {
+        Console.Error.WriteLine("La contraseña debe tener al menos 8 caracteres. No se cambió nada.");
+        Environment.ExitCode = 1;
+        return;
+    }
+
+    var reset = PasswordHasher.Hash(newPassword);
+    users.ResetPassword(targetUser.Id, reset.Hash, reset.Salt, reset.Iterations);
+    Console.WriteLine($"Contraseña de '{targetUsername}' restablecida. La cuenta quedó desbloqueada.");
+    return;
+}
+
 // One-time admin CLI commands, run instead of starting the host.
 if (args.Contains("--add-user") || args.Contains("--remove-user"))
 {

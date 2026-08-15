@@ -412,6 +412,9 @@ body.cases-page main {
     min-height: 0;
     min-width: 0;
     overflow-y: auto;
+    /* 13 columns of agenda data do not fit on a laptop screen. The table scrolls inside its own
+       card instead of stretching the page, so the header and filters stay put. */
+    overflow-x: auto;
 }
 
 table.cases {
@@ -440,11 +443,14 @@ table.cases td {
 table.cases tbody tr:nth-child(even) { background: #fafbfc; }
 table.cases tbody tr:hover { background: #f0f6fb; }
 
+/* Auto layout, not fixed percentages: this table has 13 columns whose content widths are known
+   (a RUT is 12 characters, a date 10, a name is long), and hard-coded percentages were cutting
+   names off mid-word. Columns size themselves; the card scrolls sideways when they don't fit. */
 table.cases-index {
-    table-layout: fixed;
+    table-layout: auto;
     font-size: 0.72rem;
-    width: 100%;
-    min-width: 0;
+    width: max-content;
+    min-width: 100%;
 }
 
 /* Zebra striping is computed server-side into an explicit class instead of relying on
@@ -478,24 +484,22 @@ table.cases-index td {
     text-align: center;
 }
 
-/* Fixed layout needs explicit widths, otherwise all 12 columns split the row evenly and the
-   checkbox columns (which need very little space) starve Nombre/Acción of the room they need.
-   12 columns: Marcar, F8, Pendiente Carpeta, Nombre, RUT, Comuna, Recibido, Plazo, Estado,
-   Fecha última carpeta, Sector, Acción — updated when the F8/Pendiente Carpeta checkbox columns
-   were added; they previously shifted every percentage below one column out of place, squeezing
-   Acción's "Marcar subida" button into ~0% width. */
-table.cases-index th:nth-child(1), table.cases-index td:nth-child(1) { width: 4%; }
-table.cases-index th:nth-child(2), table.cases-index td:nth-child(2) { width: 4%; }
-table.cases-index th:nth-child(3), table.cases-index td:nth-child(3) { width: 4%; }
-table.cases-index th:nth-child(4), table.cases-index td:nth-child(4) { width: 20%; }
-table.cases-index th:nth-child(5), table.cases-index td:nth-child(5) { width: 9%; }
-table.cases-index th:nth-child(6), table.cases-index td:nth-child(6) { width: 8%; }
-table.cases-index th:nth-child(7), table.cases-index td:nth-child(7) { width: 7%; }
-table.cases-index th:nth-child(8), table.cases-index td:nth-child(8) { width: 9%; }
-table.cases-index th:nth-child(9), table.cases-index td:nth-child(9) { width: 6%; }
-table.cases-index th:nth-child(10), table.cases-index td:nth-child(10) { width: 9%; }
-table.cases-index th:nth-child(11), table.cases-index td:nth-child(11) { width: 6%; }
-table.cases-index th:nth-child(12), table.cases-index td:nth-child(12) { width: 14%; }
+/* Column sizing for this app's 13 columns: Marcar, Citación, Nombre, RUT, Oficina, Subida
+   carpeta, Última carpeta, Sector, Atención, Idoneidad, Estado carpeta, Decisión final, Acción.
+   Only the extremes are pinned — the checkbox stays narrow, the name gets the room a full
+   Chilean name needs — and the rest sizes to its content. */
+table.cases-index th:nth-child(1), table.cases-index td:nth-child(1) { width: 46px; }
+
+table.cases-index td:nth-child(3) { min-width: 230px; }
+
+table.cases-index th, table.cases-index td { white-space: nowrap; }
+
+/* Inputs stop at the width of what they hold: a date is 10 characters, a RUT 12. Left to
+   themselves they all render at the browser default of ~20 characters and push the table
+   sideways for no reason. */
+table.cases-index td input[type="text"] { width: 100%; min-width: 0; }
+table.cases-index td:nth-child(3) input { min-width: 220px; }
+table.cases-index td select { max-width: 190px; }
 
 /* F8 page table: auto layout instead of cases-index's fixed % columns, so each column shrinks to
    fit its actual content (short RUT/badges/buttons) instead of leaving fixed-% whitespace. */

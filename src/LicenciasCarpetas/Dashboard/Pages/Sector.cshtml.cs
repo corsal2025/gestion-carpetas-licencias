@@ -25,6 +25,5 @@ public class SectorModel(IFolderCaseRepository cases) : PageModel
         Cases = cases.ForSector(SelectedSector, onlyMarked);
     }
 
-    public static string SectorTitle(FolderSector sector)
-        => sector == FolderSector.Archivo ? "Archivo" : "Oficina 43";
+    public static string SectorTitle(FolderSector sector) => FolderSectorCatalog.Display(sector);
 }

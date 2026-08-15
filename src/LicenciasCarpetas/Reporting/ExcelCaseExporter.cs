@@ -61,7 +61,7 @@ public sealed class ExcelCaseExporter : IExcelCaseExporter
             worksheet.Cell(row, 7).Value = item.MoralIdoneity is { } idoneity ? MoralIdoneityCatalog.Display(idoneity) : string.Empty;
             worksheet.Cell(row, 8).Value = item.FolderStateText;
             worksheet.Cell(row, 9).Value = item.FinalDecisionText;
-            worksheet.Cell(row, 10).Value = item.Sector?.ToString() ?? string.Empty;
+            worksheet.Cell(row, 10).Value = item.Sector is null ? string.Empty : FolderSectorCatalog.Display(item.Sector);
             worksheet.Cell(row, 11).Value = item.NeedsReview ? "SÍ" : string.Empty;
             row++;
         }

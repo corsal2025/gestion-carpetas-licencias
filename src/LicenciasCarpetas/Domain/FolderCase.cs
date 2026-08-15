@@ -9,6 +9,18 @@ public enum FolderSector
     Oficina43
 }
 
+public static class FolderSectorCatalog
+{
+    /// <summary>The office is called "Oficina 43" everywhere in the department — the enum name
+    /// without its space is an implementation detail and must not reach the screen.</summary>
+    public static string Display(FolderSector? sector) => sector switch
+    {
+        FolderSector.Archivo => "Archivo",
+        FolderSector.Oficina43 => "Oficina 43",
+        _ => "—"
+    };
+}
+
 /// <summary>
 /// One row of a monthly agenda sheet: a citizen cited on a given date at a given office, with the
 /// state of their physical folder and the final decision of the process.

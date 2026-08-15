@@ -175,17 +175,20 @@
         <thead>
             <tr>
                 <th>Marcar</th>
-                <th><a asp-page="/Index" asp-all-route-data="@Model.SortRouteValues(CaseSort.CitationDate)" class="sort-link">Citación@Model.SortIndicator(CaseSort.CitationDate)</a></th>
-                <th><a asp-page="/Index" asp-all-route-data="@Model.SortRouteValues(CaseSort.Name)" class="sort-link">Nombre completo@Model.SortIndicator(CaseSort.Name)</a></th>
-                <th><a asp-page="/Index" asp-all-route-data="@Model.SortRouteValues(CaseSort.Rut)" class="sort-link">RUT@Model.SortIndicator(CaseSort.Rut)</a></th>
-                <th><a asp-page="/Index" asp-all-route-data="@Model.SortRouteValues(CaseSort.Office)" class="sort-link">Oficina@Model.SortIndicator(CaseSort.Office)</a></th>
-                <th><a asp-page="/Index" asp-all-route-data="@Model.SortRouteValues(CaseSort.FolderUploadedDate)" class="sort-link">Subida carpeta@Model.SortIndicator(CaseSort.FolderUploadedDate)</a></th>
-                <th><a asp-page="/Index" asp-all-route-data="@Model.SortRouteValues(CaseSort.LastFolderDate)" class="sort-link">Última carpeta@Model.SortIndicator(CaseSort.LastFolderDate)</a></th>
+                @* El texto va dentro de un <span>: escrito como "Oficina@Model...", Razor lee
+                   "texto@algo" como una dirección de correo y lo imprime literal en vez de
+                   evaluarlo. El ">" que cierra el span rompe esa heurística. *@
+                <th><a asp-page="/Index" asp-all-route-data="@Model.SortRouteValues(CaseSort.CitationDate)" class="sort-link"><span>Citación</span>@Model.SortIndicator(CaseSort.CitationDate)</a></th>
+                <th><a asp-page="/Index" asp-all-route-data="@Model.SortRouteValues(CaseSort.Name)" class="sort-link"><span>Nombre completo</span>@Model.SortIndicator(CaseSort.Name)</a></th>
+                <th><a asp-page="/Index" asp-all-route-data="@Model.SortRouteValues(CaseSort.Rut)" class="sort-link"><span>RUT</span>@Model.SortIndicator(CaseSort.Rut)</a></th>
+                <th><a asp-page="/Index" asp-all-route-data="@Model.SortRouteValues(CaseSort.Office)" class="sort-link"><span>Oficina</span>@Model.SortIndicator(CaseSort.Office)</a></th>
+                <th><a asp-page="/Index" asp-all-route-data="@Model.SortRouteValues(CaseSort.FolderUploadedDate)" class="sort-link"><span>Subida carpeta</span>@Model.SortIndicator(CaseSort.FolderUploadedDate)</a></th>
+                <th><a asp-page="/Index" asp-all-route-data="@Model.SortRouteValues(CaseSort.LastFolderDate)" class="sort-link"><span>Última carpeta</span>@Model.SortIndicator(CaseSort.LastFolderDate)</a></th>
                 <th>Sector</th>
                 <th title="Texto libre. Con contenido, la persona cuenta como atendida en Estadísticas">Atención</th>
                 <th>Idoneidad</th>
-                <th><a asp-page="/Index" asp-all-route-data="@Model.SortRouteValues(CaseSort.FolderState)" class="sort-link">Estado de la carpeta@Model.SortIndicator(CaseSort.FolderState)</a></th>
-                <th><a asp-page="/Index" asp-all-route-data="@Model.SortRouteValues(CaseSort.FinalDecision)" class="sort-link">Decisión final@Model.SortIndicator(CaseSort.FinalDecision)</a></th>
+                <th><a asp-page="/Index" asp-all-route-data="@Model.SortRouteValues(CaseSort.FolderState)" class="sort-link"><span>Estado carpeta</span>@Model.SortIndicator(CaseSort.FolderState)</a></th>
+                <th><a asp-page="/Index" asp-all-route-data="@Model.SortRouteValues(CaseSort.FinalDecision)" class="sort-link"><span>Decisión final</span>@Model.SortIndicator(CaseSort.FinalDecision)</a></th>
                 <th>Acción</th>
             </tr>
         </thead>
@@ -236,7 +239,7 @@
                            value="@(item.LastFolderDate is { } last ? last.ToString("dd-MM-yyyy") : item.LastFolderComuna)"
                            title="Fecha de la última carpeta, o la comuna donde está la carpeta" />
                 </td>
-                <td class="text-cell">@(item.Sector?.ToString() ?? "—")</td>
+                <td class="text-cell">@FolderSectorCatalog.Display(item.Sector)</td>
                 <td>
                     <input type="text" name="atencion" form="case-form-@item.Id" class="input-inline" size="18"
                            value="@item.AttentionNote" list="atencion-opciones" placeholder="—"
