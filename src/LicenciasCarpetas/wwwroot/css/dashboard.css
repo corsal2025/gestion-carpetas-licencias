@@ -1443,3 +1443,29 @@ table.cases-index tbody td select {
         margin: 14mm 12mm;
     }
 }
+
+/* Escudo municipal en la tarjeta de ingreso y en el documento impreso. */
+.login-logo {
+    display: block;
+    height: 92px;
+    width: auto;
+    margin: 0 auto 12px;
+}
+
+.documento-logo {
+    height: 74px;
+    width: auto;
+    margin-bottom: 6px;
+}
+
+/* En el documento, RUT y fecha van centrados bajo su título; solo el nombre queda a la izquierda,
+   que es como se lee una lista de personas. */
+.documento-tabla th,
+.documento-tabla td {
+    text-align: center;
+}
+
+.documento-tabla th:first-child,
+.documento-tabla td:first-child {
+    text-align: left;
+}
