@@ -67,7 +67,26 @@ public static class FolderStateCatalog
         [FolderState.CrearCertificado] = "#C27BA0"
     };
 
+    /// <summary>
+    /// States retired from the dropdowns at the operator's request. They stay in the catalog on
+    /// purpose: cases imported from the 2026 workbook already carry them, and they must keep
+    /// displaying, keep their colour and keep being recognised on import — they simply can no
+    /// longer be picked for new work.
+    /// </summary>
+    private static readonly HashSet<FolderState> RetiredStates =
+    [
+        FolderState.SeEncuentraEnArchivos,
+        FolderState.SeEncuentraEnOficina43,
+        FolderState.CrearOficio
+    ];
+
     public static IReadOnlyList<FolderState> All { get; } = [.. Displays.Keys];
+
+    /// <summary>What the dropdowns offer: everything except the retired states.</summary>
+    public static IReadOnlyList<FolderState> Selectable { get; } =
+        [.. Displays.Keys.Where(state => !RetiredStates.Contains(state))];
+
+    public static bool IsRetired(FolderState state) => RetiredStates.Contains(state);
 
     public static string Display(FolderState state) => Displays[state];
 

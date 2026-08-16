@@ -123,7 +123,7 @@
             <label class="form-label">Estado de la carpeta</label>
             <select name="estado">
                 <option value="">—</option>
-                @foreach (var state in FolderStateCatalog.All)
+                @foreach (var state in FolderStateCatalog.Selectable)
                 {
                     <option value="@state">@FolderStateCatalog.Display(state)</option>
                 }
@@ -282,9 +282,15 @@
                     <select name="estado" form="case-form-@item.Id" class="input-inline estado-select"
                             onchange="repaintRow(this)">
                         <option value="">@(item.FolderStateRaw ?? "—")</option>
-                        @foreach (var state in FolderStateCatalog.All)
+                        @foreach (var state in FolderStateCatalog.Selectable)
                         {
                             <option value="@state" selected="@(item.FolderState == state)">@FolderStateCatalog.Display(state)</option>
+                        }
+                        @* Un caso que ya tiene un estado retirado conserva su opción: sin ella el
+                           desplegable mostraría "—" y guardar la fila le borraría el estado. *@
+                        @if (item.FolderState is { } current && FolderStateCatalog.IsRetired(current))
+                        {
+                            <option value="@current" selected="selected">@FolderStateCatalog.Display(current)</option>
                         }
                     </select>
                 </td>
