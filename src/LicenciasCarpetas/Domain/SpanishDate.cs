@@ -70,4 +70,11 @@ public static class SpanishDate
 
     /// <summary>Month name alone ("marzo"), for period headings.</summary>
     public static string MonthName(int month) => MonthNames[month - 1];
+
+    /// <summary>
+    /// "15/marzo/2024" — the form used on the printed folder request. Spelling the month out
+    /// removes the day/month ambiguity of 03-04-2024 for whoever reads the sheet in Archivo.
+    /// </summary>
+    public static string FormatWithMonthName(DateOnly? date)
+        => date is { } value ? $"{value.Day}/{MonthNames[value.Month - 1]}/{value.Year}" : "—";
 }

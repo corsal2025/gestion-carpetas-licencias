@@ -62,18 +62,15 @@
         </dl>
     </header>
 
+    @* Solo los tres datos que Archivo necesita para buscar la carpeta: quién, su RUT y de cuándo
+       es la última carpeta. La fecha va con el mes escrito (15/marzo/2024) para que nadie tenga
+       que adivinar si 03/04 es marzo o abril. *@
     <table class="cases documento-tabla">
         <thead>
             <tr>
-                <th style="width:38px;">N°</th>
                 <th>Nombre completo</th>
                 <th>RUT</th>
-                <th>Última carpeta</th>
-                <th>Penúltima</th>
-                <th>Código F8</th>
-                <th>Citación</th>
-                <th>Oficina</th>
-                <th style="width:90px;">Entregada</th>
+                <th>Fecha de última carpeta</th>
                 @if (Model.IncludePrinted)
                 {
                     <th data-print-hide>Ya pedida</th>
@@ -81,20 +78,12 @@
             </tr>
         </thead>
         <tbody>
-        @{ var index = 1; }
         @foreach (var item in Model.Cases)
         {
             <tr>
-                <td class="text-cell">@index</td>
                 <td class="text-cell" style="text-align:left;">@item.FullName</td>
                 <td class="text-cell">@item.Rut</td>
-                <td class="text-cell">@(item.LastFolderDate is { } date ? date.ToString("dd-MM-yyyy") : "—")</td>
-                <td class="text-cell">@(item.PenultimateFolderDate is { } prev ? prev.ToString("dd-MM-yyyy") : "—")</td>
-                <td class="text-cell">@(string.IsNullOrWhiteSpace(item.CodigoF8) ? "—" : item.CodigoF8)</td>
-                <td class="text-cell">@(item.CitationDate is { } citation ? citation.ToString("dd-MM-yyyy") : "—")</td>
-                <td class="text-cell">@OfficeCatalog.Display(item.Office)</td>
-                @* Casilla vacía a propósito: la marca a mano quien entrega la carpeta en Archivo. *@
-                <td class="documento-casilla"></td>
+                <td class="text-cell">@SpanishDate.FormatWithMonthName(item.LastFolderDate)</td>
                 @if (Model.IncludePrinted)
                 {
                     <td data-print-hide>
@@ -111,7 +100,6 @@
                     </td>
                 }
             </tr>
-            index++;
         }
         </tbody>
     </table>
