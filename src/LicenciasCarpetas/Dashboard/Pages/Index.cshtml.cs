@@ -77,7 +77,8 @@ public class IndexModel(IFolderCaseRepository cases, IExcelCaseExporter exporter
     }
 
     public IActionResult OnPostSave(long id, string? nombre, string? rut, string? citacion, string? subida,
-        string? ultimaCarpeta, FolderState? estado, FinalDecision? decision, MoralIdoneity? idoneidad, string? atencion)
+        string? ultimaCarpeta, FolderState? estado, FinalDecision? decision, MoralIdoneity? idoneidad, string? atencion,
+        string? penultima = null, string? codigoF8 = null)
     {
         var existing = cases.FindById(id);
         if (existing is null)
@@ -102,6 +103,9 @@ public class IndexModel(IFolderCaseRepository cases, IExcelCaseExporter exporter
         cases.UpdateEditableFields(id, fullName, normalizedRut ?? rut?.Trim(), citationDate, uploadedDate,
             lastFolderDate, lastFolderComuna, estado, decision, idoneidad,
             string.IsNullOrWhiteSpace(atencion) ? null : atencion.Trim(), needsReview);
+
+        // Los dos campos que el Excel no trae van por separado, para que una reimportación no los pise.
+        cases.UpdateCaseDetails(id, codigoF8, ParseDate(penultima));
 
         var message = normalizedRut is null && !string.IsNullOrWhiteSpace(rut)
             ? $"Guardado, pero el RUT '{rut}' no tiene dígito verificador válido — el caso queda en revisión."

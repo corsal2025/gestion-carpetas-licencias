@@ -142,6 +142,63 @@ public class AgendaRowMapperTests
         Assert.Equal(Office.Placilla, mapped!.Office);
     }
 
+    /// <summary>
+    /// "SE ENCUENTRA EN ARCHIVOS" / "EN OF. 43" say the same thing the sector already says, and the
+    /// sector is derived from the última-carpeta date. With a date present the state is dropped as
+    /// redundant, so an import cannot bring back the labels the operator retired.
+    /// </summary>
+    [Theory]
+    [InlineData("SE ENCUENTRA EN ARCHIVOS")]
+    [InlineData("SE ENCUENTRA EN OF. 43")]
+    public void A_sector_state_is_dropped_when_the_date_already_gives_the_sector(string state)
+    {
+        var mapped = AgendaRowMapper.Map(
+            Row(citation: new DateTime(2026, 1, 2),
+                lastFolder: new DateTime(2020, 5, 1),
+                fullName: "JUAN PEREZ",
+                rut: "13.025.150-1",
+                state: state),
+            Sheet,
+            rowNumber: 10);
+
+        Assert.Null(mapped!.FolderState);
+        Assert.Null(mapped.FolderStateRaw);
+        Assert.Equal(FolderSector.Archivo, mapped.Sector);
+        Assert.False(mapped.NeedsReview);
+    }
+
+    /// <summary>Without a date the sector cannot be derived, so the label is the only thing that
+    /// says where the folder is — and it is kept.</summary>
+    [Fact]
+    public void A_sector_state_is_kept_when_there_is_no_date_to_derive_it_from()
+    {
+        var mapped = AgendaRowMapper.Map(
+            Row(citation: new DateTime(2026, 1, 2),
+                fullName: "JUAN PEREZ",
+                rut: "13.025.150-1",
+                state: "SE ENCUENTRA EN ARCHIVOS"),
+            Sheet,
+            rowNumber: 11);
+
+        Assert.Equal(FolderState.SeEncuentraEnArchivos, mapped!.FolderState);
+    }
+
+    /// <summary>"CREAR OFICIO" is an action, not a location: nothing else records it, so it stays.</summary>
+    [Fact]
+    public void A_retired_state_that_is_not_about_the_sector_is_kept()
+    {
+        var mapped = AgendaRowMapper.Map(
+            Row(citation: new DateTime(2026, 1, 2),
+                lastFolder: new DateTime(2020, 5, 1),
+                fullName: "JUAN PEREZ",
+                rut: "13.025.150-1",
+                state: "CREAR OFICIO"),
+            Sheet,
+            rowNumber: 12);
+
+        Assert.Equal(FolderState.CrearOficio, mapped!.FolderState);
+    }
+
     [Fact]
     public void A_row_without_any_person_is_skipped()
         => Assert.Null(AgendaRowMapper.Map(Row(citation: new DateTime(2026, 1, 2)), Sheet, rowNumber: 40));

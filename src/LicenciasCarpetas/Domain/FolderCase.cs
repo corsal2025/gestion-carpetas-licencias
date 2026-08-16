@@ -46,6 +46,13 @@ public sealed class FolderCase
     /// municipality and has to be requested from it (cambio de domicilio).</summary>
     public string? LastFolderComuna { get; set; }
 
+    /// <summary>Date of the folder before the last one. Typed by hand; the workbook has no column
+    /// for it, so an import never touches it. It never decides the sector — that is the última.</summary>
+    public DateOnly? PenultimateFolderDate { get; set; }
+
+    /// <summary>F8 case code, free text. Also typed by hand and absent from the workbook.</summary>
+    public string? CodigoF8 { get; set; }
+
     public string? FirstName { get; set; }
     public string? LastName { get; set; }
 

@@ -39,6 +39,17 @@ public static class AgendaRowMapper
         var lastFolderDate = CellValue.ToDate(raw.LastFolder);
         var lastFolderComuna = lastFolderDate is null ? CellValue.ToText(raw.LastFolder) : null;
 
+        // "SE ENCUENTRA EN ARCHIVOS" / "EN OF. 43" only repeat what the sector already says, and the
+        // sector is derived from the date above. With a date present they are dropped, so importing
+        // the workbook again cannot resurrect the labels the operator retired. Without a date they
+        // are the only record of where the folder is, and they stay.
+        if (lastFolderDate is not null && state is Domain.FolderState.SeEncuentraEnArchivos
+            or Domain.FolderState.SeEncuentraEnOficina43)
+        {
+            state = null;
+            rawState = null;
+        }
+
         var folderCase = new FolderCase
         {
             CitationDate = CellValue.ToDate(raw.CitationDate),

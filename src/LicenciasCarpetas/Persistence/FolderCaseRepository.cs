@@ -40,6 +40,9 @@ public interface IFolderCaseRepository
         string? attentionNote, bool needsReview);
     void SetMarked(long id, bool marked);
 
+    /// <summary>The two hand-typed fields the workbook does not carry: F8 code and penúltima carpeta.</summary>
+    void UpdateCaseDetails(long id, string? codigoF8, DateOnly? penultimateFolderDate);
+
     /// <summary>Moves the case to the bin. Recoverable with <see cref="Restore"/>.</summary>
     void Delete(long id);
 
@@ -94,6 +97,8 @@ public sealed class FolderCaseRepository(string connectionString) : IFolderCaseR
         AddColumnIfMissing(connection, "DeletedAt");
         AddColumnIfMissing(connection, "FullNameSort");
         AddColumnIfMissing(connection, "SectorPrintedAt");
+        AddColumnIfMissing(connection, "PenultimateFolderDate");
+        AddColumnIfMissing(connection, "CodigoF8");
         BackfillFullNameSort(connection);
     }
 
@@ -117,7 +122,7 @@ public sealed class FolderCaseRepository(string connectionString) : IFolderCaseR
         }
 
         using var alterCommand = connection.CreateCommand();
-        // The column name is one of the three literals above, never caller text.
+        // The column name is one of the literals listed above, never caller text.
         alterCommand.CommandText = $"ALTER TABLE FolderCase ADD COLUMN {column} TEXT NULL";
         alterCommand.ExecuteNonQuery();
     }
@@ -224,12 +229,14 @@ public sealed class FolderCaseRepository(string connectionString) : IFolderCaseR
                 CitationDate, FolderUploadedDate, LastFolderDate, LastFolderComuna,
                 FirstName, LastName, FullName, FullNameSort, Rut, Office, AttentionNote, Attended,
                 MoralIdoneity, FolderState, FolderStateRaw, FinalDecision, FinalDecisionRaw,
-                SourceSheet, SourceRow, NeedsReview, Marked, CreatedAt, UpdatedAt)
+                SourceSheet, SourceRow, NeedsReview, Marked, CreatedAt, UpdatedAt,
+                PenultimateFolderDate, CodigoF8)
             VALUES (
                 $citationDate, $uploadedDate, $lastFolderDate, $lastFolderComuna,
                 $firstName, $lastName, $fullName, $fullNameSort, $rut, $office, $attention, $attended,
                 $idoneity, $state, $stateRaw, $decision, $decisionRaw,
-                $sheet, $row, $needsReview, $marked, $createdAt, $updatedAt);
+                $sheet, $row, $needsReview, $marked, $createdAt, $updatedAt,
+                $penultimate, $codigoF8);
             SELECT last_insert_rowid();
             """;
         BindWritableFields(command, folderCase);
@@ -240,6 +247,10 @@ public sealed class FolderCaseRepository(string connectionString) : IFolderCaseR
         command.Parameters.AddWithValue("$marked", folderCase.Marked ? 1 : 0);
         command.Parameters.AddWithValue("$createdAt", folderCase.CreatedAt.ToString("O"));
         command.Parameters.AddWithValue("$updatedAt", folderCase.UpdatedAt.ToString("O"));
+        // Only on insert: an import must never overwrite these two, since the workbook has no
+        // column for either (same reasoning as Marked).
+        command.Parameters.AddWithValue("$penultimate", Nullable(Text(folderCase.PenultimateFolderDate)));
+        command.Parameters.AddWithValue("$codigoF8", Nullable(folderCase.CodigoF8));
 
         return (long)command.ExecuteScalar()!;
     }
@@ -605,6 +616,22 @@ public sealed class FolderCaseRepository(string connectionString) : IFolderCaseR
         command.ExecuteNonQuery();
     }
 
+    public void UpdateCaseDetails(long id, string? codigoF8, DateOnly? penultimateFolderDate)
+    {
+        using var connection = Open();
+        using var command = connection.CreateCommand();
+        command.CommandText = """
+            UPDATE FolderCase
+            SET CodigoF8 = $codigo, PenultimateFolderDate = $penultimate, UpdatedAt = $updatedAt
+            WHERE Id = $id
+            """;
+        command.Parameters.AddWithValue("$codigo", Nullable(string.IsNullOrWhiteSpace(codigoF8) ? null : codigoF8.Trim()));
+        command.Parameters.AddWithValue("$penultimate", Nullable(Text(penultimateFolderDate)));
+        command.Parameters.AddWithValue("$updatedAt", DateTimeOffset.UtcNow.ToString("O"));
+        command.Parameters.AddWithValue("$id", id);
+        command.ExecuteNonQuery();
+    }
+
     public void MarkSectorPrinted(IReadOnlyCollection<long> ids)
     {
         if (ids.Count == 0)
@@ -813,7 +840,9 @@ public sealed class FolderCaseRepository(string connectionString) : IFolderCaseR
         CreatedAt = DateTimeOffset.Parse(reader.GetString(reader.GetOrdinal("CreatedAt"))),
         UpdatedAt = DateTimeOffset.Parse(reader.GetString(reader.GetOrdinal("UpdatedAt"))),
         DeletedAt = ReadText(reader, "DeletedAt") is { } deletedAt ? DateTimeOffset.Parse(deletedAt) : null,
-        SectorPrintedAt = ReadText(reader, "SectorPrintedAt") is { } printedAt ? DateTimeOffset.Parse(printedAt) : null
+        SectorPrintedAt = ReadText(reader, "SectorPrintedAt") is { } printedAt ? DateTimeOffset.Parse(printedAt) : null,
+        PenultimateFolderDate = ReadDate(reader, "PenultimateFolderDate"),
+        CodigoF8 = ReadText(reader, "CodigoF8")
     };
 
     private static string? ReadText(SqliteDataReader reader, string column)
