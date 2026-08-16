@@ -103,6 +103,69 @@
     </table>
 </div>
 
+@* ── Gráficos ────────────────────────────────────────────────────────────────────────────────
+   Barras en CSS puro: la comparación entre oficinas o entre estados se ve de un vistazo, y no
+   hace falta traer ninguna librería de gráficos a un equipo municipal sin internet garantizado. *@
+<div class="card" style="padding:16px 20px; margin-bottom:16px;">
+    <h2 style="font-size:1rem; margin:0 0 12px;">Atención por oficina</h2>
+    @foreach (var office in offices)
+    {
+        var agendadas = stats.ScheduledFor(office);
+        var atendidas = stats.AttendedFor(office);
+        var porcentaje = agendadas > 0 ? (double)atendidas / agendadas : 0;
+        <div class="grafico-fila">
+            <span class="grafico-etiqueta">@OfficeCatalog.Display(office)</span>
+            <span class="grafico-barra">
+                <span class="grafico-relleno" style="width:@((porcentaje * 100).ToString("0.#", System.Globalization.CultureInfo.InvariantCulture))%;"></span>
+            </span>
+            <span class="grafico-valor">@atendidas / @agendadas (@LicenciasCarpetas.Dashboard.Pages.EstadisticasModel.Percent(agendadas > 0 ? porcentaje : null))</span>
+        </div>
+    }
+</div>
+
+@if (stats.LicenceClasses.Count > 0)
+{
+    var maximo = stats.LicenceClasses.Max(entry => entry.Count);
+    <div class="card" style="padding:16px 20px; margin-bottom:16px;">
+        <h2 style="font-size:1rem; margin:0 0 4px;">Licencias por clase</h2>
+        <p style="font-size:0.8rem; margin:0 0 12px;">
+            @stats.LicencesTotal licencia(s) en total, @stats.ProfessionalLicences profesional(es).
+            Una citación que cubre dos clases cuenta en las dos.
+        </p>
+        @foreach (var (licence, count) in stats.LicenceClasses)
+        {
+            <div class="grafico-fila">
+                <span class="grafico-etiqueta">@LicenceClassCatalog.Display(licence)</span>
+                <span class="grafico-barra">
+                    <span class="grafico-relleno @(LicenceClassCatalog.IsProfessional(licence) ? "grafico-relleno-profesional" : "")"
+                          style="width:@((count * 100.0 / maximo).ToString("0.#", System.Globalization.CultureInfo.InvariantCulture))%;"></span>
+                </span>
+                <span class="grafico-valor">@count</span>
+            </div>
+        }
+    </div>
+}
+
+@if (stats.FolderStates.Count > 0)
+{
+    var maximoEstado = stats.FolderStates.Max(entry => entry.Count);
+    <div class="card" style="padding:16px 20px; margin-bottom:16px;">
+        <h2 style="font-size:1rem; margin:0 0 12px;">Estados de carpeta</h2>
+        @foreach (var (state, count) in stats.FolderStates)
+        {
+            <div class="grafico-fila">
+                <span class="grafico-etiqueta">@(state is { } value ? FolderStateCatalog.Display(value) : "Sin estado")</span>
+                <span class="grafico-barra">
+                    @* Cada barra lleva el color con que esa fila se pinta en Casos. *@
+                    <span class="grafico-relleno"
+                          style="width:@((count * 100.0 / maximoEstado).ToString("0.#", System.Globalization.CultureInfo.InvariantCulture))%; background:@(state is { } s && FolderStateCatalog.Color(s) is { } color ? color : "#6b7280");"></span>
+                </span>
+                <span class="grafico-valor">@count</span>
+            </div>
+        }
+    </div>
+}
+
 <div style="display:flex; gap:16px; flex-wrap:wrap;">
     <div class="card table-card" style="flex:1; min-width:320px;">
         <table class="cases table-wide">

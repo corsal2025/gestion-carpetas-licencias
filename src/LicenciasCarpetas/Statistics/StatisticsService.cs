@@ -25,8 +25,17 @@ public sealed record MonthlyStatistics(
     int Month,
     IReadOnlyList<DailyStatisticsRow> Days,
     IReadOnlyList<(FolderState? State, int Count)> FolderStates,
-    IReadOnlyList<(FinalDecision? Decision, int Count)> FinalDecisions)
+    IReadOnlyList<(FinalDecision? Decision, int Count)> FinalDecisions,
+    IReadOnlyList<(LicenceClass Licence, int Count)> LicenceClasses)
 {
+    /// <summary>Total de licencias tramitadas en el mes. Un caso con dos clases cuenta dos veces:
+    /// son dos licencias, aunque sea una sola persona.</summary>
+    public int LicencesTotal => LicenceClasses.Sum(entry => entry.Count);
+
+    public int ProfessionalLicences => LicenceClasses
+        .Where(entry => LicenceClassCatalog.IsProfessional(entry.Licence))
+        .Sum(entry => entry.Count);
+
     public int ScannedTotal => Days.Sum(day => day.Scanned ?? 0);
     public int UploadedTotal => Days.Sum(day => day.Uploaded ?? 0);
     public int ScheduledTotal => Days.Sum(day => day.ScheduledTotal);
@@ -73,6 +82,7 @@ public sealed class StatisticsService(IFolderCaseRepository cases, IDailyCounter
             month,
             days,
             cases.FolderStateBreakdown(year, month, office: null),
-            cases.FinalDecisionBreakdown(year, month, office: null));
+            cases.FinalDecisionBreakdown(year, month, office: null),
+            cases.LicenceClassBreakdown(year, month, office: null));
     }
 }

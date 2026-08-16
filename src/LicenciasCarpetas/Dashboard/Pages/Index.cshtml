@@ -234,6 +234,7 @@
                 <th>Sector</th>
                 <th title="Fecha de la carpeta anterior a la última. No influye en el sector">Penúltima carpeta</th>
                 <th title="Código del caso F8. Texto libre">Código F8</th>
+                <th title="Clases que el contribuyente viene a obtener. Se pueden marcar varias">Licencias</th>
                 <th><a asp-page="/Index" asp-all-route-data="@Model.SortRouteValues(CaseSort.FolderState)" class="sort-link"><span>Estado carpeta</span>@Model.SortIndicator(CaseSort.FolderState)</a></th>
                 <th>Idoneidad</th>
                 <th><a asp-page="/Index" asp-all-route-data="@Model.SortRouteValues(CaseSort.FinalDecision)" class="sort-link"><span>Decisión final</span>@Model.SortIndicator(CaseSort.FinalDecision)</a></th>
@@ -317,6 +318,25 @@
                     <input type="text" name="codigoF8" form="case-form-@item.Id" class="input-inline"
                            size="@Math.Max(12, (item.CodigoF8?.Length ?? 0) + 2)" value="@item.CodigoF8"
                            placeholder="—" />
+                </td>
+                <td>
+                    @* Selección múltiple sin lista desplegable con Ctrl: un resumen que se abre y
+                       muestra casillas. En una tabla de 15 columnas, diez casillas sueltas por fila
+                       no caben, y un <select multiple> obliga a Ctrl+clic para elegir dos clases. *@
+                    @{ var licencias = LicenceClassCatalog.Parse(item.LicenceClasses); }
+                    <details class="licencias-celda">
+                        <summary>@LicenceClassCatalog.DisplayList(item.LicenceClasses)</summary>
+                        <div class="licencias-opciones">
+                            @foreach (var licence in LicenceClassCatalog.All)
+                            {
+                                <label>
+                                    <input type="checkbox" name="licencias" form="case-form-@item.Id"
+                                           value="@licence" checked="@licencias.Contains(licence)" />
+                                    @LicenceClassCatalog.Display(licence)
+                                </label>
+                            }
+                        </div>
+                    </details>
                 </td>
                 @* La columna ATENCIÓN se sacó de la tabla por pedido del operador, pero el valor
                    viaja igual en el formulario: sin él, guardar una fila borraría la atención y la

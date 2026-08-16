@@ -52,8 +52,12 @@ public interface IFolderCaseRepository
     /// statistics screen; independent of the ATENCIÓN note.</summary>
     void SetAttended(long id, bool attended);
 
-    /// <summary>The two hand-typed fields the workbook does not carry: F8 code and penúltima carpeta.</summary>
-    void UpdateCaseDetails(long id, string? codigoF8, DateOnly? penultimateFolderDate);
+    /// <summary>Los campos que el libro no trae: código F8, penúltima carpeta y clases de licencia.</summary>
+    void UpdateCaseDetails(long id, string? codigoF8, DateOnly? penultimateFolderDate, string? licenceClasses = null);
+
+    /// <summary>Cuántos casos hay por clase de licencia en el período. Un caso con varias clases
+    /// suma en cada una: la pregunta es cuántas licencias se tramitan, no cuántas personas.</summary>
+    IReadOnlyList<(LicenceClass Licence, int Count)> LicenceClassBreakdown(int year, int? month, Office? office);
 
     /// <summary>Moves the case to the bin. Recoverable with <see cref="Restore"/>.</summary>
     void Delete(long id);
@@ -112,6 +116,7 @@ public sealed class FolderCaseRepository(string connectionString) : IFolderCaseR
         AddColumnIfMissing(connection, "PenultimateFolderDate");
         AddColumnIfMissing(connection, "CodigoF8");
         AddColumnIfMissing(connection, "UpdatedBy");
+        AddColumnIfMissing(connection, "LicenceClasses");
         BackfillFullNameSort(connection);
     }
 
@@ -290,13 +295,13 @@ public sealed class FolderCaseRepository(string connectionString) : IFolderCaseR
                 FirstName, LastName, FullName, FullNameSort, Rut, Office, AttentionNote, Attended,
                 MoralIdoneity, FolderState, FolderStateRaw, FinalDecision, FinalDecisionRaw,
                 SourceSheet, SourceRow, NeedsReview, Marked, CreatedAt, UpdatedAt,
-                PenultimateFolderDate, CodigoF8)
+                PenultimateFolderDate, CodigoF8, LicenceClasses)
             VALUES (
                 $citationDate, $uploadedDate, $lastFolderDate, $lastFolderComuna,
                 $firstName, $lastName, $fullName, $fullNameSort, $rut, $office, $attention, $attended,
                 $idoneity, $state, $stateRaw, $decision, $decisionRaw,
                 $sheet, $row, $needsReview, $marked, $createdAt, $updatedAt,
-                $penultimate, $codigoF8);
+                $penultimate, $codigoF8, $licences);
             SELECT last_insert_rowid();
             """;
         BindWritableFields(command, folderCase);
@@ -311,6 +316,7 @@ public sealed class FolderCaseRepository(string connectionString) : IFolderCaseR
         // column for either (same reasoning as Marked).
         command.Parameters.AddWithValue("$penultimate", Nullable(Text(folderCase.PenultimateFolderDate)));
         command.Parameters.AddWithValue("$codigoF8", Nullable(folderCase.CodigoF8));
+        command.Parameters.AddWithValue("$licences", Nullable(folderCase.LicenceClasses));
 
         return (long)command.ExecuteScalar()!;
     }
@@ -608,6 +614,44 @@ public sealed class FolderCaseRepository(string connectionString) : IFolderCaseR
             .Select(entry => (entry.Value is { } value ? (FinalDecision)value : (FinalDecision?)null, entry.Count))
             .ToList();
 
+    /// <summary>
+    /// Las clases viven en un texto ("B,C"), así que el conteo se arma acá y no en SQL: un caso con
+    /// dos clases suma en las dos. La pregunta que responde es cuántas licencias se tramitan.
+    /// </summary>
+    public IReadOnlyList<(LicenceClass Licence, int Count)> LicenceClassBreakdown(int year, int? month, Office? office)
+    {
+        using var connection = Open();
+        using var command = connection.CreateCommand();
+        var monthClause = month is null ? string.Empty : "AND substr(CitationDate, 6, 2) = $month";
+        var officeClause = office is null ? string.Empty : "AND Office = $office";
+        command.CommandText = $"""
+            SELECT LicenceClasses FROM FolderCase
+            WHERE DeletedAt IS NULL AND LicenceClasses IS NOT NULL AND CitationDate IS NOT NULL
+              AND substr(CitationDate, 1, 4) = $year {monthClause} {officeClause}
+            """;
+        command.Parameters.AddWithValue("$year", year.ToString("D4"));
+        if (month is { } monthValue)
+        {
+            command.Parameters.AddWithValue("$month", monthValue.ToString("D2"));
+        }
+        if (office is { } officeValue)
+        {
+            command.Parameters.AddWithValue("$office", (int)officeValue);
+        }
+
+        var counts = new Dictionary<LicenceClass, int>();
+        using var reader = command.ExecuteReader();
+        while (reader.Read())
+        {
+            foreach (var licence in LicenceClassCatalog.Parse(reader.GetString(0)))
+            {
+                counts[licence] = counts.GetValueOrDefault(licence) + 1;
+            }
+        }
+
+        return [.. counts.OrderBy(entry => entry.Key).Select(entry => (entry.Key, entry.Value))];
+    }
+
     /// <summary>Counts per catalog value. The column name is never caller-supplied text — only the two
     /// literals below reach it — so it cannot carry SQL injection.</summary>
     private List<(int? Value, int Count)> Breakdown(string column, int year, int? month, Office? office)
@@ -698,15 +742,18 @@ public sealed class FolderCaseRepository(string connectionString) : IFolderCaseR
         command.ExecuteNonQuery();
     }
 
-    public void UpdateCaseDetails(long id, string? codigoF8, DateOnly? penultimateFolderDate)
+    public void UpdateCaseDetails(long id, string? codigoF8, DateOnly? penultimateFolderDate,
+        string? licenceClasses = null)
     {
         using var connection = Open();
         using var command = connection.CreateCommand();
         command.CommandText = """
             UPDATE FolderCase
-            SET CodigoF8 = $codigo, PenultimateFolderDate = $penultimate, UpdatedAt = $updatedAt
+            SET CodigoF8 = $codigo, PenultimateFolderDate = $penultimate,
+                LicenceClasses = $licences, UpdatedAt = $updatedAt
             WHERE Id = $id
             """;
+        command.Parameters.AddWithValue("$licences", Nullable(licenceClasses));
         command.Parameters.AddWithValue("$codigo", Nullable(string.IsNullOrWhiteSpace(codigoF8) ? null : codigoF8.Trim()));
         command.Parameters.AddWithValue("$penultimate", Nullable(Text(penultimateFolderDate)));
         command.Parameters.AddWithValue("$updatedAt", DateTimeOffset.UtcNow.ToString("O"));
@@ -950,7 +997,8 @@ public sealed class FolderCaseRepository(string connectionString) : IFolderCaseR
         SectorPrintedAt = ReadText(reader, "SectorPrintedAt") is { } printedAt ? DateTimeOffset.Parse(printedAt) : null,
         PenultimateFolderDate = ReadDate(reader, "PenultimateFolderDate"),
         CodigoF8 = ReadText(reader, "CodigoF8"),
-        UpdatedBy = ReadText(reader, "UpdatedBy")
+        UpdatedBy = ReadText(reader, "UpdatedBy"),
+        LicenceClasses = ReadText(reader, "LicenceClasses")
     };
 
     private static string? ReadText(SqliteDataReader reader, string column)

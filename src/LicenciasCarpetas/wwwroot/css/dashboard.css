@@ -1480,3 +1480,81 @@ table.cases-index tbody td select {
 .documento-tabla td:nth-child(2) {
     text-align: left;
 }
+
+/* Selección múltiple de clases dentro de la celda: resumen cerrado, casillas al abrir. */
+.licencias-celda summary {
+    cursor: pointer;
+    list-style: none;
+    padding: 3px 6px;
+    border: 1px solid var(--color-border);
+    border-radius: 4px;
+    background: #fff;
+    white-space: nowrap;
+    min-width: 74px;
+}
+
+.licencias-celda summary::-webkit-details-marker { display: none; }
+
+/* Las opciones flotan sobre la tabla: dentro de la celda estirarían la fila al abrirse. */
+.licencias-celda[open] .licencias-opciones {
+    position: absolute;
+    z-index: 5;
+    display: grid;
+    grid-template-columns: repeat(5, auto);
+    gap: 2px 10px;
+    padding: 8px 10px;
+    background: #fff;
+    border: 1px solid var(--color-border);
+    border-radius: 6px;
+    box-shadow: var(--shadow-sm);
+}
+
+.licencias-celda .licencias-opciones label {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 0.7rem;
+    white-space: nowrap;
+}
+
+/* ── Gráficos de barras ──────────────────────────────────────────────────────────────────────
+   Sin librerías: una barra es un <span> con un ancho en porcentaje. Un equipo municipal no
+   siempre tiene internet, y una librería de gráficos por CDN dejaría la pantalla en blanco. */
+.grafico-fila {
+    display: grid;
+    grid-template-columns: 150px 1fr 150px;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 6px;
+    font-size: 0.8rem;
+}
+
+.grafico-etiqueta {
+    text-align: right;
+    color: var(--color-text-muted);
+}
+
+.grafico-barra {
+    background: #eef2f6;
+    border-radius: 4px;
+    height: 18px;
+    overflow: hidden;
+}
+
+.grafico-relleno {
+    display: block;
+    height: 100%;
+    background: var(--color-accent);
+    border-radius: 4px;
+    /* Una barra de 0 igual se ve como una línea, para no confundir "cero" con "no hay dato". */
+    min-width: 2px;
+}
+
+.grafico-relleno-profesional {
+    background: var(--color-primary);
+}
+
+.grafico-valor {
+    font-weight: 600;
+    white-space: nowrap;
+}
