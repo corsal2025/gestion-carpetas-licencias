@@ -357,7 +357,13 @@
                     </select>
                 </td>
                 <td style="display:flex; gap:6px; align-items:center;">
-                    <button type="submit" form="case-form-@item.Id" class="btn-primary" style="padding:4px 10px; font-size:0.72rem;">Guardar</button>
+                    @* Quién tocó el caso por última vez: con varias cuentas en la misma agenda,
+                       "lo cambió alguien" no sirve para nada. *@
+                    <button type="submit" form="case-form-@item.Id" class="btn-primary"
+                            style="padding:4px 10px; font-size:0.72rem;"
+                            title="@(item.UpdatedBy is { } autor
+                                     ? $"Última edición: {autor} — {item.UpdatedAt.LocalDateTime:dd-MM-yyyy HH:mm}"
+                                     : "Sin ediciones desde el dashboard")">Guardar</button>
                     <form method="post" asp-page-handler="Delete"
                           onsubmit="return confirm('El caso se mueve a la Papelera y se puede restaurar desde ahí. ¿Confirmar?');">
                         <input type="hidden" name="id" value="@item.Id" />

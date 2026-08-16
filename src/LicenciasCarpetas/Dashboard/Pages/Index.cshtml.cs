@@ -116,7 +116,8 @@ public class IndexModel(IFolderCaseRepository cases, IExcelCaseExporter exporter
 
         cases.UpdateEditableFields(id, fullName, normalizedRut ?? rut?.Trim(), citationDate, uploadedDate,
             lastFolderDate, lastFolderComuna, estado, decision, idoneidad,
-            string.IsNullOrWhiteSpace(atencion) ? null : atencion.Trim(), needsReview);
+            string.IsNullOrWhiteSpace(atencion) ? null : atencion.Trim(), needsReview,
+            editedBy: User?.Identity?.Name);
 
         // Los dos campos que el Excel no trae van por separado, para que una reimportación no los pise.
         cases.UpdateCaseDetails(id, codigoF8, ParseDate(penultima));

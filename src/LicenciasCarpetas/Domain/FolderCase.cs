@@ -98,6 +98,10 @@ public sealed class FolderCase
     public DateTimeOffset CreatedAt { get; set; } = DateTimeOffset.UtcNow;
     public DateTimeOffset UpdatedAt { get; set; } = DateTimeOffset.UtcNow;
 
+    /// <summary>Usuario que editó el caso por última vez desde el dashboard. Null si nadie lo ha
+    /// tocado: una importación del libro no cuenta como autoría de nadie.</summary>
+    public string? UpdatedBy { get; set; }
+
     /// <summary>When the operator sent the case to the bin. Null for a live case. A case in the bin
     /// is invisible everywhere except /Papelera, and a re-import updates it without reviving it.</summary>
     public DateTimeOffset? DeletedAt { get; set; }

@@ -14,6 +14,12 @@ public interface IFolderCaseRepository
 {
     void EnsureSchema();
     UpsertOutcome Upsert(FolderCase folderCase);
+
+    /// <summary>
+    /// Importa un lote en una sola transacción. Fila por fila, cada Upsert abre y cierra su propia
+    /// conexión: con las ~21.000 del libro eso son minuto y medio de puro ir y venir al archivo.
+    /// </summary>
+    IReadOnlyList<UpsertOutcome> UpsertMany(IReadOnlyList<FolderCase> folderCases);
     FolderCase? FindById(long id);
     IReadOnlyList<FolderCase> Query(CaseFilter filter, int skip, int take);
     IReadOnlyList<FolderCase> QueryAll(CaseFilter filter);
@@ -39,7 +45,7 @@ public interface IFolderCaseRepository
     void UpdateEditableFields(long id, string? fullName, string? rut, DateOnly? citationDate,
         DateOnly? folderUploadedDate, DateOnly? lastFolderDate, string? lastFolderComuna,
         FolderState? folderState, FinalDecision? finalDecision, MoralIdoneity? moralIdoneity,
-        string? attentionNote, bool needsReview);
+        string? attentionNote, bool needsReview, string? editedBy = null);
     void SetMarked(long id, bool marked);
 
     /// <summary>Whether the person showed up. Ticked from the cases screen and counted on the
@@ -105,6 +111,7 @@ public sealed class FolderCaseRepository(string connectionString) : IFolderCaseR
         AddColumnIfMissing(connection, "SectorPrintedAt");
         AddColumnIfMissing(connection, "PenultimateFolderDate");
         AddColumnIfMissing(connection, "CodigoF8");
+        AddColumnIfMissing(connection, "UpdatedBy");
         BackfillFullNameSort(connection);
     }
 
@@ -189,14 +196,56 @@ public sealed class FolderCaseRepository(string connectionString) : IFolderCaseR
             return UpsertOutcome.Inserted;
         }
 
-        Update(existingId.Value, folderCase);
+        using (var connection = Open())
+        {
+            Update(existingId.Value, folderCase, connection);
+        }
         return UpsertOutcome.Updated;
+    }
+
+    /// <summary>
+    /// Una conexión y una transacción para todo el lote. SQLite confirma cada escritura suelta en
+    /// disco; agrupadas, la importación completa del libro baja de minutos a segundos. Si algo
+    /// falla a mitad de camino, no queda media hoja importada.
+    /// </summary>
+    public IReadOnlyList<UpsertOutcome> UpsertMany(IReadOnlyList<FolderCase> folderCases)
+    {
+        var outcomes = new List<UpsertOutcome>(folderCases.Count);
+        if (folderCases.Count == 0)
+        {
+            return outcomes;
+        }
+
+        using var connection = Open();
+        using var transaction = connection.BeginTransaction();
+
+        foreach (var folderCase in folderCases)
+        {
+            var existingId = FindExistingId(folderCase, connection);
+            if (existingId is null)
+            {
+                Insert(folderCase, connection);
+                outcomes.Add(UpsertOutcome.Inserted);
+            }
+            else
+            {
+                Update(existingId.Value, folderCase, connection);
+                outcomes.Add(UpsertOutcome.Updated);
+            }
+        }
+
+        transaction.Commit();
+        return outcomes;
     }
 
     private long? FindExistingId(FolderCase folderCase)
     {
         using var connection = Open();
+        return FindExistingId(folderCase, connection);
+    }
 
+    private static long? FindExistingId(FolderCase folderCase, SqliteConnection connection)
+    {
         if (folderCase.Rut is not null && folderCase.CitationDate is not null)
         {
             using var byNaturalKey = connection.CreateCommand();
@@ -229,6 +278,11 @@ public sealed class FolderCaseRepository(string connectionString) : IFolderCaseR
     public long Insert(FolderCase folderCase)
     {
         using var connection = Open();
+        return Insert(folderCase, connection);
+    }
+
+    private static long Insert(FolderCase folderCase, SqliteConnection connection)
+    {
         using var command = connection.CreateCommand();
         command.CommandText = """
             INSERT INTO FolderCase (
@@ -261,9 +315,8 @@ public sealed class FolderCaseRepository(string connectionString) : IFolderCaseR
         return (long)command.ExecuteScalar()!;
     }
 
-    private void Update(long id, FolderCase folderCase)
+    private static void Update(long id, FolderCase folderCase, SqliteConnection connection)
     {
-        using var connection = Open();
         using var command = connection.CreateCommand();
         // Marked is the operator's own bookkeeping and is deliberately left untouched by an import.
         command.CommandText = """
@@ -600,7 +653,7 @@ public sealed class FolderCaseRepository(string connectionString) : IFolderCaseR
     public void UpdateEditableFields(long id, string? fullName, string? rut, DateOnly? citationDate,
         DateOnly? folderUploadedDate, DateOnly? lastFolderDate, string? lastFolderComuna,
         FolderState? folderState, FinalDecision? finalDecision, MoralIdoneity? moralIdoneity,
-        string? attentionNote, bool needsReview)
+        string? attentionNote, bool needsReview, string? editedBy = null)
     {
         using var connection = Open();
         using var command = connection.CreateCommand();
@@ -620,7 +673,8 @@ public sealed class FolderCaseRepository(string connectionString) : IFolderCaseR
                 MoralIdoneity = $idoneity,
                 AttentionNote = $attention,
                 NeedsReview = $needsReview,
-                UpdatedAt = $updatedAt
+                UpdatedAt = $updatedAt,
+                UpdatedBy = COALESCE($editedBy, UpdatedBy)
             WHERE Id = $id
             """;
         // Attended queda fuera a propósito: lo maneja su propia casilla (SetAttended). Derivarlo
@@ -639,6 +693,7 @@ public sealed class FolderCaseRepository(string connectionString) : IFolderCaseR
         command.Parameters.AddWithValue("$attention", Nullable(attentionNote));
         command.Parameters.AddWithValue("$needsReview", needsReview ? 1 : 0);
         command.Parameters.AddWithValue("$updatedAt", DateTimeOffset.UtcNow.ToString("O"));
+        command.Parameters.AddWithValue("$editedBy", Nullable(editedBy));
         command.Parameters.AddWithValue("$id", id);
         command.ExecuteNonQuery();
     }
@@ -894,7 +949,8 @@ public sealed class FolderCaseRepository(string connectionString) : IFolderCaseR
         DeletedAt = ReadText(reader, "DeletedAt") is { } deletedAt ? DateTimeOffset.Parse(deletedAt) : null,
         SectorPrintedAt = ReadText(reader, "SectorPrintedAt") is { } printedAt ? DateTimeOffset.Parse(printedAt) : null,
         PenultimateFolderDate = ReadDate(reader, "PenultimateFolderDate"),
-        CodigoF8 = ReadText(reader, "CodigoF8")
+        CodigoF8 = ReadText(reader, "CodigoF8"),
+        UpdatedBy = ReadText(reader, "UpdatedBy")
     };
 
     private static string? ReadText(SqliteDataReader reader, string column)

@@ -1475,7 +1475,8 @@ table.cases-index tbody td select {
     text-align: center;
 }
 
-.documento-tabla th:first-child,
-.documento-tabla td:first-child {
+/* La primera columna es el número de orden (centrado); el nombre, la segunda, va a la izquierda. */
+.documento-tabla th:nth-child(2),
+.documento-tabla td:nth-child(2) {
     text-align: left;
 }

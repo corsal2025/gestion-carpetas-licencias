@@ -20,9 +20,6 @@ public sealed class ExcelWorkbookImporter(
     IDailyCounterRepository counters,
     IComunaContactRepository contacts) : IExcelWorkbookImporter
 {
-    private const string CountersSheetMarker = "ESCANEADAS Y SUBIDAS";
-    private const string DirectorySheetMarker = "CORREOS CAMBIO DE DOM";
-
     public ImportSummary Import(string workbookPath)
     {
         if (!File.Exists(workbookPath))
@@ -61,34 +58,43 @@ public sealed class ExcelWorkbookImporter(
         }
     }
 
+    /// <summary>
+    /// Cada hoja se clasifica por sus encabezados, no por su nombre: el libro es de quien lo usa y
+    /// las hojas se renombran ("ESCANEADAS Y SUBIDAS" pasó a "HOJA ESTADISTICAS"). Atado al nombre,
+    /// el importador dejó de traer 149 días de contadores sin decir nada.
+    /// </summary>
     public ImportSummary Import(IXLWorkbook workbook)
     {
         var summary = new ImportSummary();
 
         foreach (var sheet in workbook.Worksheets)
         {
-            var title = TextNormalizer.Normalize(sheet.Name);
+            // El nombre sigue mandando para la agenda: distingue oficina y mes, que los encabezados
+            // no dicen, y descarta las hojas PLANTILLA con la misma estructura pero sin datos.
+            if (AgendaSheet.TryParse(sheet.Name) is { } agenda && HasHeader(sheet, "FECHA DE LA CITACION"))
+            {
+                ImportAgenda(sheet, agenda, summary);
+                continue;
+            }
 
-            if (title.Contains(CountersSheetMarker, StringComparison.Ordinal))
+            if (HasHeader(sheet, "ESCANEADAS") && HasHeader(sheet, "SUBIDAS"))
             {
                 ImportCounters(sheet, summary);
                 continue;
             }
 
-            if (title.Contains(DirectorySheetMarker, StringComparison.Ordinal))
+            if (HasHeader(sheet, "MUNICIPIO") && HasHeader(sheet, "CORREO"))
             {
                 ImportDirectory(sheet, summary);
-                continue;
-            }
-
-            if (AgendaSheet.TryParse(sheet.Name) is { } agenda)
-            {
-                ImportAgenda(sheet, agenda, summary);
             }
         }
 
         return summary;
     }
+
+    /// <summary>Busca un encabezado exacto en las primeras filas de la hoja.</summary>
+    private static bool HasHeader(IXLWorksheet sheet, string header)
+        => FindHeaderRow(sheet, header) is not null;
 
     private void ImportAgenda(IXLWorksheet sheet, AgendaSheet agenda, ImportSummary summary)
     {
@@ -113,6 +119,10 @@ public sealed class ExcelWorkbookImporter(
         var decisionColumn = Column(columns, "DECISION FINAL");
 
         summary.SheetsRead++;
+
+        // Las filas se juntan y se graban en una sola transacción por hoja: fila por fila, cada
+        // escritura iba al disco por separado y el libro completo tardaba minuto y medio.
+        var mappedRows = new List<Domain.FolderCase>();
 
         var lastRow = sheet.LastRowUsed()?.RowNumber() ?? headerRow;
         for (var rowNumber = headerRow + 1; rowNumber <= lastRow; rowNumber++)
@@ -143,7 +153,13 @@ public sealed class ExcelWorkbookImporter(
                 summary.CasesNeedingReview++;
             }
 
-            if (cases.Upsert(mapped) == UpsertOutcome.Inserted)
+            mappedRows.Add(mapped);
+        }
+
+        // Toda la hoja se graba junta: una transacción por hoja en vez de una escritura por fila.
+        foreach (var outcome in cases.UpsertMany(mappedRows))
+        {
+            if (outcome == UpsertOutcome.Inserted)
             {
                 summary.CasesInserted++;
             }

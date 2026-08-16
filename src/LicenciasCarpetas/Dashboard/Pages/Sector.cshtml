@@ -109,6 +109,9 @@
     <table class="cases documento-tabla">
         <thead>
             <tr>
+                @* La numeración no es un dato del caso: es para ir tachando en papel y saber
+                   cuántas carpetas se entregaron sin recontar la hoja. *@
+                <th style="width:38px;">N°</th>
                 <th>Nombre completo</th>
                 <th>RUT</th>
                 <th>Fecha de última carpeta</th>
@@ -119,9 +122,11 @@
             </tr>
         </thead>
         <tbody>
+        @{ var numero = 1; }
         @foreach (var item in Model.Cases)
         {
             <tr>
+                <td class="text-cell">@(numero++)</td>
                 <td class="text-cell" style="text-align:left;">@item.FullName</td>
                 <td class="text-cell">@item.Rut</td>
                 <td class="text-cell">@SpanishDate.FormatWithMonthName(item.LastFolderDate)</td>
