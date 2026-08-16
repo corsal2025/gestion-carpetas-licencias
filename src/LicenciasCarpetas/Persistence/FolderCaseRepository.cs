@@ -24,7 +24,9 @@ public interface IFolderCaseRepository
     IReadOnlyList<string> DuplicateRuts(CaseFilter filter);
     int CountNeedingReview();
     IReadOnlyList<int> DistinctYears();
-    IReadOnlyList<FolderCase> ForSector(FolderSector sector, bool onlyMarked, bool includePrinted = false);
+    /// <summary>Folders to pull from a sector, optionally narrowed to one citation day or month.</summary>
+    IReadOnlyList<FolderCase> ForSector(FolderSector sector, bool onlyMarked, bool includePrinted = false,
+        DateOnly? citationDay = null, int? year = null, int? month = null);
 
     /// <summary>Records that these cases went out on a printed sector list.</summary>
     void MarkSectorPrinted(IReadOnlyCollection<long> ids);
@@ -460,7 +462,8 @@ public sealed class FolderCaseRepository(string connectionString) : IFolderCaseR
 
     /// <summary>Cases whose physical folder has to be pulled from a given sector, for the printable
     /// list. Folders already requested are left out unless explicitly asked for.</summary>
-    public IReadOnlyList<FolderCase> ForSector(FolderSector sector, bool onlyMarked, bool includePrinted = false)
+    public IReadOnlyList<FolderCase> ForSector(FolderSector sector, bool onlyMarked, bool includePrinted = false,
+        DateOnly? citationDay = null, int? year = null, int? month = null)
     {
         using var connection = Open();
         using var command = connection.CreateCommand();
@@ -471,10 +474,29 @@ public sealed class FolderCaseRepository(string connectionString) : IFolderCaseR
         var markedClause = onlyMarked ? "AND Marked = 1" : string.Empty;
         var printedClause = includePrinted ? string.Empty : "AND SectorPrintedAt IS NULL";
 
+        // Un día es más específico que un mes: si vienen los dos, manda el día.
+        var periodClause = string.Empty;
+        if (citationDay is { } day)
+        {
+            periodClause = "AND CitationDate = $day";
+            command.Parameters.AddWithValue("$day", day.ToString("yyyy-MM-dd"));
+        }
+        else if (year is { } yearValue)
+        {
+            periodClause = "AND substr(CitationDate, 1, 4) = $year";
+            command.Parameters.AddWithValue("$year", yearValue.ToString("D4"));
+
+            if (month is { } monthValue)
+            {
+                periodClause += " AND substr(CitationDate, 6, 2) = $month";
+                command.Parameters.AddWithValue("$month", monthValue.ToString("D2"));
+            }
+        }
+
         command.CommandText = $"""
             SELECT * FROM FolderCase
             WHERE DeletedAt IS NULL AND LastFolderDate IS NOT NULL
-              AND {sectorClause} {markedClause} {printedClause}
+              AND {sectorClause} {markedClause} {printedClause} {periodClause}
             ORDER BY CitationDate DESC, FullNameSort COLLATE NOCASE ASC
             LIMIT 2000
             """;

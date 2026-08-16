@@ -19,6 +19,39 @@
         @Model.Cases.Count carpeta(s) en esta lista.
     </p>
 
+    @* Período del documento: un día concreto (la agenda de ese día) o un mes completo. *@
+    <form method="get" style="display:flex; gap:10px; align-items:flex-end; flex-wrap:wrap; margin-bottom:12px;">
+        <input type="hidden" name="onlyMarked" value="@Model.OnlyMarked" />
+        <input type="hidden" name="includePrinted" value="@Model.IncludePrinted" />
+        <div>
+            <label class="form-label" for="dia">Día de citación</label>
+            <input type="date" name="dia" id="dia" value="@(Model.CitationDay?.ToString("yyyy-MM-dd"))" />
+        </div>
+        <div>
+            <label class="form-label" for="mes">Mes</label>
+            <select name="mes" id="mes">
+                <option value="">—</option>
+                @for (var month = 1; month <= 12; month++)
+                {
+                    <option value="@month" selected="@(Model.Month == month)">@SpanishDate.MonthName(month)</option>
+                }
+            </select>
+        </div>
+        <div>
+            <label class="form-label" for="anio">Año</label>
+            <select name="anio" id="anio">
+                <option value="">—</option>
+                @for (var year = DateTime.Today.Year + 1; year >= DateTime.Today.Year - 3; year--)
+                {
+                    <option value="@year" selected="@(Model.Year == year)">@year</option>
+                }
+            </select>
+        </div>
+        <button type="submit" class="btn-primary" style="padding:8px 16px;">Aplicar</button>
+        <a class="nav-pill" asp-page="/Sector" asp-route-sector="@Model.SelectedSector"
+           asp-route-onlyMarked="@Model.OnlyMarked" asp-route-includePrinted="@Model.IncludePrinted">Todo</a>
+    </form>
+
     <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
         <button type="button" class="btn-primary" style="padding:8px 16px;" onclick="window.print()">
             Imprimir / Guardar como PDF
@@ -27,17 +60,23 @@
         <form method="post" asp-page-handler="MarkPrinted"
               asp-route-sector="@Model.SelectedSector" asp-route-onlyMarked="@Model.OnlyMarked"
               asp-route-includePrinted="@Model.IncludePrinted"
+              asp-route-dia="@(Model.CitationDay?.ToString("yyyy-MM-dd"))"
+              asp-route-anio="@Model.Year" asp-route-mes="@Model.Month"
               onsubmit="return confirm('Se registrarán estas @Model.Cases.Count carpeta(s) como ya pedidas y no volverán a salir en el próximo documento. ¿Confirmar?');">
             <button type="submit" class="nav-pill">Marcar como pedidas</button>
         </form>
 
         <a class="nav-pill" asp-page="/Sector" asp-route-sector="@Model.SelectedSector"
-           asp-route-onlyMarked="@(!Model.OnlyMarked)" asp-route-includePrinted="@Model.IncludePrinted">
+           asp-route-onlyMarked="@(!Model.OnlyMarked)" asp-route-includePrinted="@Model.IncludePrinted"
+           asp-route-dia="@(Model.CitationDay?.ToString("yyyy-MM-dd"))"
+           asp-route-anio="@Model.Year" asp-route-mes="@Model.Month">
             @(Model.OnlyMarked ? "Ver todo el sector" : "Ver solo las marcadas")
         </a>
 
         <a class="nav-pill" asp-page="/Sector" asp-route-sector="@Model.SelectedSector"
-           asp-route-onlyMarked="@Model.OnlyMarked" asp-route-includePrinted="@(!Model.IncludePrinted)">
+           asp-route-onlyMarked="@Model.OnlyMarked" asp-route-includePrinted="@(!Model.IncludePrinted)"
+           asp-route-dia="@(Model.CitationDay?.ToString("yyyy-MM-dd"))"
+           asp-route-anio="@Model.Year" asp-route-mes="@Model.Month">
             @(Model.IncludePrinted ? "Ocultar las ya pedidas" : "Incluir las ya pedidas")
         </a>
     </div>
@@ -57,6 +96,7 @@
         </div>
         <dl class="documento-datos">
             <dt>Destino</dt><dd>@destino</dd>
+            <dt>Período</dt><dd>@Model.PeriodLabel</dd>
             <dt>Fecha</dt><dd>@Model.IssuedOn.ToString("dd-MM-yyyy")</dd>
             <dt>Solicita</dt><dd>@Model.OperatorName</dd>
             <dt>Total</dt><dd>@Model.Cases.Count carpeta(s)</dd>
