@@ -728,6 +728,20 @@ public sealed class FolderCaseRepository(string connectionString) : IFolderCaseR
         };
 
         var direction = filter.Descending != descendingByDefault ? "DESC" : "ASC";
+
+        // En la vista por defecto, lo ya subido a Conaset es trabajo terminado: baja al final de la
+        // lista y entre ellos van en orden de subida. Si el operador pide una columna concreta,
+        // manda esa columna y no se altera nada.
+        if (filter.Sort == CaseSort.CitationDate)
+        {
+            var conaset = (int)Domain.FolderState.SubidaAConaset;
+            return $"""
+                CASE WHEN FolderState = {conaset} THEN 1 ELSE 0 END ASC,
+                CASE WHEN FolderState = {conaset} THEN FolderUploadedDate END ASC,
+                {column} {direction}, FullNameSort COLLATE NOCASE ASC, Id ASC
+                """;
+        }
+
         return $"{column} {direction}, FullNameSort COLLATE NOCASE ASC, Id ASC";
     }
 

@@ -2,31 +2,82 @@
 @model LicenciasCarpetas.Dashboard.Pages.SectorModel
 @{
     var title = LicenciasCarpetas.Dashboard.Pages.SectorModel.SectorTitle(Model.SelectedSector);
-    ViewData["Title"] = $"Carpetas en {title}";
+    ViewData["Title"] = $"Solicitud de carpetas — {title}";
+    var destino = Model.SelectedSector == FolderSector.Archivo
+        ? "Archivo (carpetas anteriores a julio 2023)"
+        : "Oficina 43 (carpetas desde julio 2023)";
+}
+
+@if (Model.Message is not null)
+{
+    <p class="message-banner" data-print-hide>@Model.Message</p>
 }
 
 <div class="card" style="padding:16px 20px; margin-bottom:16px;" data-print-hide>
     <p style="margin:0 0 10px; font-size:0.85rem;">
-        Carpetas cuyo registro de última carpeta las ubica en <strong>@title</strong>
-        (corte: julio 2023). @Model.Cases.Count caso(s).
+        Documento para solicitar carpetas físicas a <strong>@destino</strong>.
+        @Model.Cases.Count carpeta(s) en esta lista.
     </p>
-    <a class="nav-pill" asp-page="/Sector" asp-route-sector="@Model.SelectedSector" asp-route-onlyMarked="@(!Model.OnlyMarked)">
-        @(Model.OnlyMarked ? "Ver todas las carpetas del sector" : "Ver solo las marcadas")
-    </a>
-    <button type="button" class="btn-primary" style="padding:8px 16px;" onclick="window.print()">Imprimir / Guardar como PDF</button>
+
+    <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+        <button type="button" class="btn-primary" style="padding:8px 16px;" onclick="window.print()">
+            Imprimir / Guardar como PDF
+        </button>
+
+        <form method="post" asp-page-handler="MarkPrinted"
+              asp-route-sector="@Model.SelectedSector" asp-route-onlyMarked="@Model.OnlyMarked"
+              asp-route-includePrinted="@Model.IncludePrinted"
+              onsubmit="return confirm('Se registrarán estas @Model.Cases.Count carpeta(s) como ya pedidas y no volverán a salir en el próximo documento. ¿Confirmar?');">
+            <button type="submit" class="nav-pill">Marcar como pedidas</button>
+        </form>
+
+        <a class="nav-pill" asp-page="/Sector" asp-route-sector="@Model.SelectedSector"
+           asp-route-onlyMarked="@(!Model.OnlyMarked)" asp-route-includePrinted="@Model.IncludePrinted">
+            @(Model.OnlyMarked ? "Ver todo el sector" : "Ver solo las marcadas")
+        </a>
+
+        <a class="nav-pill" asp-page="/Sector" asp-route-sector="@Model.SelectedSector"
+           asp-route-onlyMarked="@Model.OnlyMarked" asp-route-includePrinted="@(!Model.IncludePrinted)">
+            @(Model.IncludePrinted ? "Ocultar las ya pedidas" : "Incluir las ya pedidas")
+        </a>
+    </div>
 </div>
 
-<div class="card table-card">
-    <h1 style="font-size:1.1rem; margin:12px 16px;">Solicitud de carpetas — @title</h1>
-    <table class="cases">
+@* ── Documento imprimible ────────────────────────────────────────────────────────────────────
+   Todo lo que va dentro de .documento se imprime; el resto de la pantalla se oculta. *@
+<div class="card documento">
+    <header class="documento-encabezado">
+        <div>
+            <h1>Solicitud de carpetas de conducir</h1>
+            <p class="documento-organismo">
+                Ilustre Municipalidad de Valparaíso<br />
+                Departamento de Licencias de Conducir
+            </p>
+        </div>
+        <dl class="documento-datos">
+            <dt>Destino</dt><dd>@destino</dd>
+            <dt>Fecha</dt><dd>@Model.IssuedOn.ToString("dd-MM-yyyy")</dd>
+            <dt>Solicita</dt><dd>@Model.OperatorName</dd>
+            <dt>Total</dt><dd>@Model.Cases.Count carpeta(s)</dd>
+        </dl>
+    </header>
+
+    <table class="cases documento-tabla">
         <thead>
             <tr>
-                <th>#</th>
+                <th style="width:38px;">N°</th>
                 <th>Nombre completo</th>
                 <th>RUT</th>
                 <th>Última carpeta</th>
-                <th>Oficina</th>
+                <th>Penúltima</th>
+                <th>Código F8</th>
                 <th>Citación</th>
+                <th>Oficina</th>
+                <th style="width:90px;">Entregada</th>
+                @if (Model.IncludePrinted)
+                {
+                    <th data-print-hide>Ya pedida</th>
+                }
             </tr>
         </thead>
         <tbody>
@@ -35,22 +86,52 @@
         {
             <tr>
                 <td class="text-cell">@index</td>
-                <td class="text-cell">@item.FullName</td>
+                <td class="text-cell" style="text-align:left;">@item.FullName</td>
                 <td class="text-cell">@item.Rut</td>
                 <td class="text-cell">@(item.LastFolderDate is { } date ? date.ToString("dd-MM-yyyy") : "—")</td>
-                <td class="text-cell">@OfficeCatalog.Display(item.Office)</td>
+                <td class="text-cell">@(item.PenultimateFolderDate is { } prev ? prev.ToString("dd-MM-yyyy") : "—")</td>
+                <td class="text-cell">@(string.IsNullOrWhiteSpace(item.CodigoF8) ? "—" : item.CodigoF8)</td>
                 <td class="text-cell">@(item.CitationDate is { } citation ? citation.ToString("dd-MM-yyyy") : "—")</td>
+                <td class="text-cell">@OfficeCatalog.Display(item.Office)</td>
+                @* Casilla vacía a propósito: la marca a mano quien entrega la carpeta en Archivo. *@
+                <td class="documento-casilla"></td>
+                @if (Model.IncludePrinted)
+                {
+                    <td data-print-hide>
+                        @if (item.SectorPrintedAt is { } pedida)
+                        {
+                            <form method="post" asp-page-handler="RequestAgain"
+                                  asp-route-sector="@Model.SelectedSector" asp-route-onlyMarked="@Model.OnlyMarked">
+                                <input type="hidden" name="id" value="@item.Id" />
+                                <button type="submit" class="nav-pill" title="Pedida el @pedida.LocalDateTime.ToString("dd-MM-yyyy")">
+                                    Volver a pedir
+                                </button>
+                            </form>
+                        }
+                    </td>
+                }
             </tr>
             index++;
         }
         </tbody>
     </table>
-</div>
 
-@section Scripts {
-<style>
-    @@media print {
-        .app-header, [data-print-hide] { display: none !important; }
+    @if (Model.Cases.Count == 0)
+    {
+        <p style="padding:16px; font-size:0.85rem;">
+            No hay carpetas pendientes para este sector. Marque casos en la pantalla Casos, o use
+            "Incluir las ya pedidas" para ver las que ya se solicitaron.
+        </p>
     }
-</style>
-}
+
+    <section class="documento-firmas">
+        <div>
+            <span class="documento-linea"></span>
+            <p>Solicita — @Model.OperatorName<br /><small>Depto. Licencias de Conducir</small></p>
+        </div>
+        <div>
+            <span class="documento-linea"></span>
+            <p>Entrega conforme<br /><small>@(Model.SelectedSector == FolderSector.Archivo ? "Archivo" : "Oficina 43")</small></p>
+        </div>
+    </section>
+</div>

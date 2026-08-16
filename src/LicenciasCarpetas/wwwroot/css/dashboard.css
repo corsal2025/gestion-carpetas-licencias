@@ -1234,7 +1234,7 @@ body.cases-page main {
    y opaco; pintando la fila quedarían como un hueco blanco.
    "CANJE LIC. EXTRANJERA" no tiene regla en el libro y por eso tampoco tiene color acá. */
 table.cases-index tbody tr.estado-primeralicencia td { background: #FF00FF; }
-table.cases-index tbody tr.estado-subidaaconaset td { background: #FFFF00; }
+table.cases-index tbody tr.estado-subidaaconaset td { background: #1155CC; }
 table.cases-index tbody tr.estado-subidaconf8 td { background: #BF9000; }
 table.cases-index tbody tr.estado-subidaconoficio td { background: #FFE599; }
 table.cases-index tbody tr.estado-cambiodomiciliosubidoaconaset td { background: #00FFFF; }
@@ -1248,6 +1248,7 @@ table.cases-index tbody tr.estado-crearoficio td { background: #C27BA0; }
 table.cases-index tbody tr.estado-crearcertificado td { background: #C27BA0; }
 
 /* Sobre los fondos oscuros (azul, rojo, morado, verde, dorado) el texto negro no se lee. */
+table.cases-index tbody tr.estado-subidaaconaset td,
 table.cases-index tbody tr.estado-cambiodomicilio td,
 table.cases-index tbody tr.estado-noexistecarpeta td,
 table.cases-index tbody tr.estado-seencuentraenoficina43 td,
@@ -1306,7 +1307,7 @@ table.cases-index tbody tr.fila-sin-guardar button[type="submit"] {
    alterna, al fondo blanco de las columnas fijas y al resaltado del cursor. Antes perdía contra
    los tres, y la fila aparecía a medio pintar o se despintaba al pasar el mouse. */
 table.cases-index tbody tr.estado-primeralicencia td { background: #FF00FF !important; }
-table.cases-index tbody tr.estado-subidaaconaset td { background: #FFFF00 !important; }
+table.cases-index tbody tr.estado-subidaaconaset td { background: #1155CC !important; }
 table.cases-index tbody tr.estado-subidaconf8 td { background: #BF9000 !important; }
 table.cases-index tbody tr.estado-subidaconoficio td { background: #FFE599 !important; }
 table.cases-index tbody tr.estado-cambiodomiciliosubidoaconaset td { background: #00FFFF !important; }
@@ -1340,4 +1341,105 @@ table.cases-index tbody td input,
 table.cases-index tbody td select {
     background: #ffffff !important;
     color: var(--color-text);
+}
+
+/* ── Documento de solicitud de carpetas (Archivo / Oficina 43) ───────────────────────────────
+   Se ve en pantalla como una hoja y se imprime como el oficio que se lleva a Archivo. */
+.documento {
+    padding: 24px 28px;
+    background: #fff;
+}
+
+.documento-encabezado {
+    display: flex;
+    justify-content: space-between;
+    gap: 24px;
+    flex-wrap: wrap;
+    border-bottom: 2px solid var(--color-primary);
+    padding-bottom: 12px;
+    margin-bottom: 16px;
+}
+
+.documento-encabezado h1 {
+    font-size: 1.15rem;
+    margin: 0 0 4px;
+    color: var(--color-primary);
+}
+
+.documento-organismo {
+    margin: 0;
+    font-size: 0.82rem;
+    line-height: 1.4;
+}
+
+.documento-datos {
+    display: grid;
+    grid-template-columns: auto auto;
+    gap: 2px 10px;
+    margin: 0;
+    font-size: 0.8rem;
+}
+
+.documento-datos dt { font-weight: 700; }
+.documento-datos dd { margin: 0; }
+
+.documento-tabla { width: 100%; font-size: 0.78rem; }
+.documento-tabla th { background: #eef2f6; }
+.documento-tabla th, .documento-tabla td { border: 1px solid #c8d0d8; padding: 5px 7px; }
+
+/* Casilla que firma a mano quien entrega la carpeta. */
+.documento-casilla { min-width: 80px; }
+
+.documento-firmas {
+    display: flex;
+    gap: 60px;
+    justify-content: space-around;
+    margin-top: 46px;
+    font-size: 0.8rem;
+    text-align: center;
+}
+
+.documento-linea {
+    display: block;
+    width: 210px;
+    border-top: 1px solid #333;
+    margin: 0 auto 6px;
+}
+
+/* Impresión: queda la hoja y nada más. La cabecera de la tabla se repite en cada página y las
+   filas no se parten por la mitad, que es lo que arruina un listado de dos páginas. */
+@media print {
+    .app-header,
+    .app-subnav,
+    [data-print-hide] {
+        display: none !important;
+    }
+
+    body, body.cases-page {
+        height: auto;
+        overflow: visible;
+        background: #fff;
+    }
+
+    main, body.cases-page main {
+        padding: 0;
+        display: block;
+        overflow: visible;
+        max-width: none;
+    }
+
+    .card, .documento {
+        box-shadow: none;
+        border: 0;
+        padding: 0;
+    }
+
+    .documento-tabla thead { display: table-header-group; }
+    .documento-tabla tr { page-break-inside: avoid; }
+    .documento-firmas { page-break-inside: avoid; }
+
+    @page {
+        size: A4 portrait;
+        margin: 14mm 12mm;
+    }
 }

@@ -51,6 +51,13 @@ public class IndexModel(IFolderCaseRepository cases, IExcelCaseExporter exporter
     [BindProperty(SupportsGet = true, Name = "p")]
     public int RequestedPage { get; set; } = 1;
 
+    /// <summary>Rows per page chosen by the operator. Anything outside <see cref="PageSizes"/>
+    /// falls back to the configured default — a hand-edited URL cannot ask for 20.000 rows at once.</summary>
+    [BindProperty(SupportsGet = true, Name = "size")]
+    public int PageSize { get; set; }
+
+    public static IReadOnlyList<int> PageSizes { get; } = [50, 100, 200];
+
     [BindProperty(SupportsGet = true)]
     public CaseSort Sort { get; set; } = CaseSort.CitationDate;
 
@@ -88,6 +95,13 @@ public class IndexModel(IFolderCaseRepository cases, IExcelCaseExporter exporter
 
         var citationDate = ParseDate(citacion);
         var uploadedDate = ParseDate(subida);
+
+        // Marcar "SUBIDA A CONASET" es el acto de subirla: la fecha es hoy, y escribirla a mano es
+        // una oportunidad de equivocarse o de olvidarla. Una fecha ya escrita no se toca.
+        if (estado == FolderState.SubidaAConaset && uploadedDate is null)
+        {
+            uploadedDate = DateOnly.FromDateTime(DateTime.Today);
+        }
 
         // Same rule as the workbook: a date means the folder is here, free text means it is in
         // another comuna and has to be requested from it.
@@ -169,7 +183,11 @@ public class IndexModel(IFolderCaseRepository cases, IExcelCaseExporter exporter
     private void Load()
     {
         var filter = BuildFilter();
-        var pageSize = Math.Max(options.PageSize, 10);
+        if (!PageSizes.Contains(PageSize))
+        {
+            PageSize = Math.Max(options.PageSize, 10);
+        }
+        var pageSize = PageSize;
 
         TotalCount = cases.Count(filter);
         TotalPages = Math.Max(1, (int)Math.Ceiling(TotalCount / (double)pageSize));
@@ -179,7 +197,9 @@ public class IndexModel(IFolderCaseRepository cases, IExcelCaseExporter exporter
         Years = cases.DistinctYears();
         DuplicateRuts = [.. cases.DuplicateRuts(filter)];
 
-        if (TempData["Message"] is string message)
+        // TempData sólo existe dentro de una petición; fuera de ella (por ejemplo en las pruebas de
+        // la página) es null y leerla reventaría antes de llegar a lo que se está probando.
+        if (TempData?["Message"] is string message)
         {
             Message = message;
             MessageIsError = TempData["MessageIsError"] is true;
@@ -218,8 +238,12 @@ public class IndexModel(IFolderCaseRepository cases, IExcelCaseExporter exporter
 
     private IActionResult RedirectWithMessage(string message, bool isError = false)
     {
-        TempData["Message"] = message;
-        TempData["MessageIsError"] = isError;
+        // Fuera de una petición HTTP (pruebas de la página) no hay TempData que escribir.
+        if (TempData is not null)
+        {
+            TempData["Message"] = message;
+            TempData["MessageIsError"] = isError;
+        }
         return RedirectToPage(new
         {
             office = Office,
@@ -255,6 +279,7 @@ public class IndexModel(IFolderCaseRepository cases, IExcelCaseExporter exporter
 
         values["sort"] = Sort.ToString();
         values["desc"] = Descending.ToString();
+        values["size"] = (PageSizes.Contains(PageSize) ? PageSize : 0).ToString();
 
         return values;
     }

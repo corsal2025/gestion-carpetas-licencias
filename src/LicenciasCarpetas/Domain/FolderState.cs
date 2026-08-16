@@ -53,7 +53,9 @@ public static class FolderStateCatalog
     private static readonly Dictionary<FolderState, string> Colors = new()
     {
         [FolderState.PrimeraLicencia] = "#FF00FF",
-        [FolderState.SubidaAConaset] = "#FFFF00",
+        // El libro lo pintaba amarillo; el operador lo cambió a azul, porque una carpeta ya subida
+        // a Conaset es trabajo terminado y debe distinguirse de un vistazo del resto.
+        [FolderState.SubidaAConaset] = "#1155CC",
         [FolderState.SubidaConF8] = "#BF9000",
         [FolderState.SubidaConOficio] = "#FFE599",
         [FolderState.CambioDomicilioSubidoAConaset] = "#00FFFF",

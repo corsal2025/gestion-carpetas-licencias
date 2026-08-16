@@ -63,15 +63,19 @@ public class CaseSortingTests
         Assert.Equal(["CARLA SOTO", "BRUNO DIAZ", "ANA PEREZ"], Names(sorted));
     }
 
+    /// <summary>
+    /// Newest citation first — salvo lo ya subido a Conaset, que es trabajo terminado y baja al
+    /// final (ANA PEREZ, aunque sea la citación más reciente). Ver <see cref="ConasetUploadTests"/>.
+    /// </summary>
     [Fact]
-    public void Sorts_by_citation_date_newest_first_by_default()
+    public void Sorts_by_citation_date_newest_first_but_sinks_what_is_already_uploaded()
     {
         using var db = new SqliteTestDatabase();
         Seed(db);
 
         var sorted = db.Cases.Query(new CaseFilter(), 0, 50);
 
-        Assert.Equal(["ANA PEREZ", "CARLA SOTO", "BRUNO DIAZ"], Names(sorted));
+        Assert.Equal(["CARLA SOTO", "BRUNO DIAZ", "ANA PEREZ"], Names(sorted));
     }
 
     [Fact]

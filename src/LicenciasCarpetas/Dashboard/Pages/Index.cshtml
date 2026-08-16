@@ -162,6 +162,26 @@
    barra subía y se comía la última fila. *@
 <div style="display:flex; gap:12px; align-items:center; margin:0 0 8px 4px; font-size:0.8rem;">
     <span>@Model.TotalCount caso(s) — página @Model.PageNumber de @Model.TotalPages</span>
+
+    @* Cuántas filas por página. Va como formulario GET con los filtros actuales en campos ocultos,
+       para que cambiar la cantidad no pierda lo que el operador tenía filtrado ni el orden. *@
+    <form method="get" style="display:flex; gap:6px; align-items:center;">
+        @foreach (var (key, value) in Model.RouteValues(1))
+        {
+            @if (key != "size")
+            {
+                <input type="hidden" name="@key" value="@value" />
+            }
+        }
+        <label for="size">Ver</label>
+        <select name="size" id="size" onchange="this.form.submit()">
+            @foreach (var size in LicenciasCarpetas.Dashboard.Pages.IndexModel.PageSizes)
+            {
+                <option value="@size" selected="@(Model.PageSize == size)">@size</option>
+            }
+        </select>
+        <span>por página</span>
+    </form>
     @if (Model.TotalPages > 1)
     {
         @if (Model.PageNumber > 1)

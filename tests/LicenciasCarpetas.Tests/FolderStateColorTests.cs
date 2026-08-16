@@ -11,7 +11,9 @@ public class FolderStateColorTests
 {
     [Theory]
     [InlineData(FolderState.PrimeraLicencia, "#FF00FF")]
-    [InlineData(FolderState.SubidaAConaset, "#FFFF00")]
+    // Única excepción al libro: el operador pidió azul para lo ya subido a Conaset, para separar
+    // de un vistazo el trabajo terminado del pendiente (el libro lo tenía amarillo).
+    [InlineData(FolderState.SubidaAConaset, "#1155CC")]
     [InlineData(FolderState.SubidaConF8, "#BF9000")]
     [InlineData(FolderState.SubidaConOficio, "#FFE599")]
     [InlineData(FolderState.CambioDomicilioSubidoAConaset, "#00FFFF")]

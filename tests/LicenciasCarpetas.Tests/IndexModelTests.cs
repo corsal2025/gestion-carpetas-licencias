@@ -67,6 +67,54 @@ public class IndexModelTests
         Assert.Equal(6000, exporter.Exported.Count);
     }
 
+    [Theory]
+    [InlineData(50, 50)]
+    [InlineData(100, 100)]
+    [InlineData(200, 200)]
+    public void The_operator_chooses_how_many_rows_to_see(int chosen, int expected)
+    {
+        using var db = new SqliteTestDatabase();
+        Seed(db, 300);
+        var model = new IndexModel(db.Cases, new SpyExporter(), new CarpetasOptions { PageSize = 100 })
+        {
+            PageSize = chosen
+        };
+
+        model.OnGet();
+
+        Assert.Equal(expected, model.Cases.Count);
+    }
+
+    /// <summary>A hand-edited URL cannot ask for 20.000 rows in one page.</summary>
+    [Theory]
+    [InlineData(9999)]
+    [InlineData(0)]
+    [InlineData(-5)]
+    [InlineData(37)]
+    public void An_unsupported_page_size_falls_back_to_the_configured_one(int chosen)
+    {
+        using var db = new SqliteTestDatabase();
+        Seed(db, 150);
+        var model = new IndexModel(db.Cases, new SpyExporter(), new CarpetasOptions { PageSize = 100 })
+        {
+            PageSize = chosen
+        };
+
+        model.OnGet();
+
+        Assert.Equal(100, model.Cases.Count);
+        Assert.Equal(100, model.PageSize);
+    }
+
+    [Fact]
+    public void The_chosen_size_survives_paging_and_filtering()
+    {
+        using var db = new SqliteTestDatabase();
+        var model = new IndexModel(db.Cases, new SpyExporter(), new CarpetasOptions()) { PageSize = 50 };
+
+        Assert.Equal("50", model.RouteValues(2)["size"]);
+    }
+
     [Fact]
     public void The_export_respects_the_active_filters()
     {
