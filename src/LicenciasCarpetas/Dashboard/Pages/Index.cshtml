@@ -198,11 +198,12 @@
                 <th><a asp-page="/Index" asp-all-route-data="@Model.SortRouteValues(CaseSort.Office)" class="sort-link"><span>Oficina</span>@Model.SortIndicator(CaseSort.Office)</a></th>
                 <th><a asp-page="/Index" asp-all-route-data="@Model.SortRouteValues(CaseSort.FolderUploadedDate)" class="sort-link"><span>Subida carpeta</span>@Model.SortIndicator(CaseSort.FolderUploadedDate)</a></th>
                 <th><a asp-page="/Index" asp-all-route-data="@Model.SortRouteValues(CaseSort.LastFolderDate)" class="sort-link"><span>Última carpeta</span>@Model.SortIndicator(CaseSort.LastFolderDate)</a></th>
-                <th title="Fecha de la carpeta anterior a la última. No influye en el sector">Penúltima carpeta</th>
+                @* Sector va junto a Última carpeta: es la fecha de la que se calcula. *@
                 <th>Sector</th>
+                <th title="Fecha de la carpeta anterior a la última. No influye en el sector">Penúltima carpeta</th>
                 <th title="Código del caso F8. Texto libre">Código F8</th>
-                <th>Idoneidad</th>
                 <th><a asp-page="/Index" asp-all-route-data="@Model.SortRouteValues(CaseSort.FolderState)" class="sort-link"><span>Estado carpeta</span>@Model.SortIndicator(CaseSort.FolderState)</a></th>
+                <th>Idoneidad</th>
                 <th><a asp-page="/Index" asp-all-route-data="@Model.SortRouteValues(CaseSort.FinalDecision)" class="sort-link"><span>Decisión final</span>@Model.SortIndicator(CaseSort.FinalDecision)</a></th>
                 <th>Acción</th>
             </tr>
@@ -266,12 +267,12 @@
                            size="@lastFolderSize" value="@lastFolderText"
                            title="Fecha de la última carpeta, o la comuna donde está la carpeta" />
                 </td>
+                <td class="text-cell">@FolderSectorCatalog.Display(item.Sector)</td>
                 <td>
                     <input type="text" name="penultima" form="case-form-@item.Id" class="input-inline" size="12"
                            value="@LicenciasCarpetas.Dashboard.Pages.IndexModel.FormatDate(item.PenultimateFolderDate)"
                            placeholder="dd-mm-aaaa" />
                 </td>
-                <td class="text-cell">@FolderSectorCatalog.Display(item.Sector)</td>
                 <td>
                     <input type="text" name="codigoF8" form="case-form-@item.Id" class="input-inline"
                            size="@Math.Max(12, (item.CodigoF8?.Length ?? 0) + 2)" value="@item.CodigoF8"
@@ -281,15 +282,6 @@
                    viaja igual en el formulario: sin él, guardar una fila borraría la atención y la
                    persona dejaría de contar como atendida en Estadísticas. *@
                 <input type="hidden" name="atencion" form="case-form-@item.Id" value="@item.AttentionNote" />
-                <td>
-                    <select name="idoneidad" form="case-form-@item.Id" class="input-inline">
-                        <option value="">—</option>
-                        @foreach (var idoneity in MoralIdoneityCatalog.All)
-                        {
-                            <option value="@idoneity" selected="@(item.MoralIdoneity == idoneity)">@MoralIdoneityCatalog.Display(idoneity)</option>
-                        }
-                    </select>
-                </td>
                 <td>
                     <select name="estado" form="case-form-@item.Id" class="input-inline estado-select"
                             onchange="repaintRow(this)">
@@ -303,6 +295,15 @@
                         @if (item.FolderState is { } current && FolderStateCatalog.IsRetired(current))
                         {
                             <option value="@current" selected="selected">@FolderStateCatalog.Display(current)</option>
+                        }
+                    </select>
+                </td>
+                <td>
+                    <select name="idoneidad" form="case-form-@item.Id" class="input-inline">
+                        <option value="">—</option>
+                        @foreach (var idoneity in MoralIdoneityCatalog.All)
+                        {
+                            <option value="@idoneity" selected="@(item.MoralIdoneity == idoneity)">@MoralIdoneityCatalog.Display(idoneity)</option>
                         }
                     </select>
                 </td>
