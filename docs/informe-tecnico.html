@@ -1,0 +1,493 @@
+<!DOCTYPE html><html lang="es"><head><meta charset="utf-8">
+<title>Informe tecnico - Sistema de Carpetas</title><style>
+@page { size: A4 portrait; margin: 16mm 14mm; }
+body { font-family: "Segoe UI", system-ui, sans-serif; color: #1f2933; font-size: 10.5pt; line-height: 1.45; }
+h1 { color: #0b3d68; font-size: 20pt; margin: 0 0 4px; }
+h2 { color: #0b3d68; font-size: 13pt; margin: 22px 0 8px; border-bottom: 2px solid #0b3d68; padding-bottom: 3px; page-break-after: avoid; }
+.sub { color: #5c6b7a; margin: 0 0 18px; }
+pre { background: #f4f6f8; border: 1px solid #d7dde3; border-left: 3px solid #1a73b0; border-radius: 4px;
+      padding: 8px 10px; font-family: Consolas, monospace; font-size: 8pt; line-height: 1.35;
+      white-space: pre-wrap; page-break-inside: avoid; }
+.ruta { font-family: Consolas, monospace; font-size: 8pt; color: #5c6b7a; margin: 10px 0 3px; }
+table { border-collapse: collapse; margin: 8px 0; font-size: 9.5pt; }
+th, td { border: 1px solid #d7dde3; padding: 4px 8px; text-align: left; }
+th { background: #eef2f6; }
+.diagrama { text-align: center; page-break-before: always; }
+.diagrama svg { max-width: 100%; height: auto; }
+</style></head><body>
+<h1>Sistema de Carpetas &mdash; Depto. Licencias de Conducir</h1>
+<p class="sub">Ilustre Municipalidad de Valpara&iacute;so &mdash; informe t&eacute;cnico</p>
+
+<h2>1. Qué es esto</h2>
+<p>El Excel <strong>DETALLE CARPETAS DEPTO. LICENCIAS DE CONDUCIR 2026</strong> era la agenda del</p>
+<p>departamento: 23 hojas, 21.568 filas, tres oficinas. Este sistema lo reemplaza por una aplicación</p>
+<p>web que corre en el mismo computador.</p>
+<p>El Excel <strong>se lee, nunca se modifica</strong>. Se importa una vez y desde ahí la base de datos manda.</p>
+<table>
+<tr><th>Pieza</th><th>Elección</th></tr>
+<tr><td>Lenguaje</td><td>C# sobre .NET 10</td></tr>
+<tr><td>Pantallas</td><td>Razor Pages (HTML generado en el servidor)</td></tr>
+<tr><td>Base de datos</td><td>SQLite, un solo archivo</td></tr>
+<tr><td>Lectura del Excel</td><td>ClosedXML</td></tr>
+<tr><td>Pruebas</td><td>xUnit — 267 pruebas</td></tr>
+</table>
+<h2>2. Cómo fluye la información</h2>
+<p>El diagrama del final muestra el recorrido completo. En palabras:</p>
+<p>1. El operador importa (por consola o desde la pantalla *Importar*).</p>
+<p>2. El Excel se copia a un temporal <strong>sin las listas desplegables</strong>: ClosedXML se niega a abrir el original por culpa de ellas.</p>
+<p>3. Cada hoja se clasifica <strong>por sus encabezados</strong>, no por su nombre.</p>
+<p>4. Cada fila se valida y se convierte en un caso.</p>
+<p>5. Todo se graba por lotes en SQLite; de ahí viven las pantallas y los informes.</p>
+<h2>3. El obstáculo que casi bloquea todo</h2>
+<p>ClosedXML no puede abrir el libro real: sus listas desplegables superan los 255 caracteres que acepta.</p>
+<pre>System.ArgumentOutOfRangeException: The maximum allowed length of the value is 255 characters.
+   at ClosedXML.Excel.XLWorkbook.LoadDataValidations(...)</pre>
+<p>Esas validaciones no sirven para importar. La solución copia el archivo y les quita esos nodos, <strong>sin tocar el original</strong>.</p>
+<p class="ruta">src/LicenciasCarpetas/Import/WorkbookSanitizer.cs</p>
+<pre>    /// &lt;summary&gt;Copies the workbook to a temp file and strips every data-validation element from it.
+    /// The caller owns the returned file and must delete it.&lt;/summary&gt;
+    public static string CreateCopyWithoutDataValidations(string workbookPath)
+    {
+        var tempPath = Path.Combine(Path.GetTempPath(), $&quot;carpetas-import-{Guid.NewGuid():N}.xlsx&quot;);
+
+        // Copied through a shared read stream: the workbook usually lives on a synced Drive folder
+        // and may be open in Excel at the same time.
+        using (var source = new FileStream(workbookPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
+        using (var destination = new FileStream(tempPath, FileMode.CreateNew, FileAccess.Write, FileShare.None))
+        {
+            source.CopyTo(destination);
+        }
+
+        try
+        {
+            StripDataValidations(tempPath);
+            return tempPath;
+        }
+        catch
+        {
+            File.Delete(tempPath);
+            throw;
+        }
+    }
+
+    private static void StripDataValidations(string xlsxPath)
+    {
+        using var archive = ZipFile.Open(xlsxPath, ZipArchiveMode.Update);
+
+        foreach (var entry in archive.Entries.ToList())
+        {</pre>
+<h2>4. Reconocer las hojas por su contenido</h2>
+<p>Al principio las hojas se buscaban por nombre. El operador renombró <code>ESCANEADAS Y SUBIDAS</code></p>
+<p>a <code>HOJA ESTADISTICAS</code> y la importación dejó de traer 155 días de contadores <strong>sin dar ningún error</strong>.</p>
+<p>Ahora se clasifican por sus encabezados.</p>
+<p class="ruta">src/LicenciasCarpetas/Import/ExcelWorkbookImporter.cs</p>
+<pre>    /// &lt;summary&gt;
+    /// Cada hoja se clasifica por sus encabezados, no por su nombre: el libro es de quien lo usa y
+    /// las hojas se renombran (&quot;ESCANEADAS Y SUBIDAS&quot; pasó a &quot;HOJA ESTADISTICAS&quot;). Atado al nombre,
+    /// el importador dejó de traer 149 días de contadores sin decir nada.
+    /// &lt;/summary&gt;
+    public ImportSummary Import(IXLWorkbook workbook)
+    {
+        var summary = new ImportSummary();
+
+        foreach (var sheet in workbook.Worksheets)
+        {
+            // El nombre sigue mandando para la agenda: distingue oficina y mes, que los encabezados
+            // no dicen, y descarta las hojas PLANTILLA con la misma estructura pero sin datos.
+            if (AgendaSheet.TryParse(sheet.Name) is { } agenda &amp;&amp; HasHeader(sheet, &quot;FECHA DE LA CITACION&quot;))
+            {
+                ImportAgenda(sheet, agenda, summary);
+                continue;
+            }
+
+            if (HasHeader(sheet, &quot;ESCANEADAS&quot;) &amp;&amp; HasHeader(sheet, &quot;SUBIDAS&quot;))
+            {
+                ImportCounters(sheet, summary);
+                continue;
+            }
+
+            if (HasHeader(sheet, &quot;MUNICIPIO&quot;) &amp;&amp; HasHeader(sheet, &quot;CORREO&quot;))
+            {
+                ImportDirectory(sheet, summary);
+            }
+        }
+
+        return summary;
+    }
+
+    /// &lt;summary&gt;Busca un encabezado exacto en las primeras filas de la hoja.&lt;/summary&gt;</pre>
+<h2>5. Leer una fila: lo que dice y lo que significa</h2>
+<p>Una celda puede significar dos cosas. <code>FECHA ULTIMA CARPETA</code> trae una fecha (la carpeta está</p>
+<p>en Valparaíso) <strong>o</strong> el nombre de una comuna (hay que pedirla a otro municipio). Nada se descarta:</p>
+<p>lo que no se entiende se marca para revisión.</p>
+<p class="ruta">src/LicenciasCarpetas/Import/AgendaRowMapper.cs</p>
+<pre>    /// &lt;summary&gt;Returns null when the row carries no person at all (spacer rows, trailing blanks).&lt;/summary&gt;
+    public static FolderCase? Map(RawAgendaRow raw, AgendaSheet sheet, int rowNumber)
+    {
+        var fullName = CellValue.ToText(raw.FullName);
+        var firstName = CellValue.ToText(raw.FirstName);
+        var lastName = CellValue.ToText(raw.LastName);
+        var rawRut = CellValue.ToText(raw.Rut);
+
+        if (fullName is null &amp;&amp; firstName is null &amp;&amp; lastName is null &amp;&amp; rawRut is null)
+        {
+            return null;
+        }
+
+        // &quot;NOMBRE COMPLETO&quot; is a formula in the workbook and sometimes ends up empty even though the
+        // two source columns are filled — rebuild it rather than leaving the row nameless.
+        fullName ??= string.Join(&#x27; &#x27;, new[] { firstName, lastName }.Where(part =&gt; part is not null)).Trim();
+        if (fullName.Length == 0)
+        {
+            fullName = null;
+        }
+
+        var validatedRut = RutValidator.NormalizeAndValidate(rawRut);
+        var rawState = CellValue.ToText(raw.FolderState);
+        var state = FolderStateCatalog.TryResolve(rawState);
+        var rawDecision = CellValue.ToText(raw.FinalDecision);
+        var decision = FinalDecisionCatalog.TryResolve(rawDecision);
+        var attention = CellValue.ToText(raw.Attention);
+
+        // Same cell, two meanings: a date means the folder is here in Valparaíso, a comuna name means
+        // it has to be requested from that municipality (cambio de domicilio).
+        var lastFolderDate = CellValue.ToDate(raw.LastFolder);
+        var lastFolderComuna = lastFolderDate is null ? CellValue.ToText(raw.LastFolder) : null;
+
+        // &quot;SE ENCUENTRA EN ARCHIVOS&quot; / &quot;EN OF. 43&quot; only repeat what the sector already says, and the
+        // sector is derived from the date above. With a date present they are dropped, so importing
+        // the workbook again cannot resurrect the labels the operator retired. Without a date they
+        // are the only record of where the folder is, and they stay.
+        if (lastFolderDate is not null &amp;&amp; state is Domain.FolderState.SeEncuentraEnArchivos
+            or Domain.FolderState.SeEncuentraEnOficina43)
+        {
+            state = null;
+            rawState = null;
+        }
+
+        var folderCase = new FolderCase
+        {
+            CitationDate = CellValue.ToDate(raw.CitationDate),</pre>
+<h2>6. El RUT se valida, no se cree</h2>
+<p>El dígito verificador se calcula. Un RUT inválido se conserva tal cual y el caso queda en</p>
+<p>*Requiere revisión*: borrarlo sería perder lo que el operador escribió.</p>
+<p class="ruta">src/LicenciasCarpetas/Domain/RutValidator.cs</p>
+<pre>    /// &lt;summary&gt;
+    /// Normalizes a Chilean RUT (with or without dots, upper/lowercase K) to canonical dotted form
+    /// (e.g. &quot;18.785.387-7&quot;) and validates its check digit. Returns null if the input is not shaped
+    /// like a RUT or fails the check digit.
+    /// &lt;/summary&gt;
+    public static string? NormalizeAndValidate(string? rawRut)
+    {
+        if (rawRut is null)
+        {
+            return null;
+        }
+
+        var digitsAndK = new StringBuilder();
+        foreach (var c in rawRut)
+        {
+            if (char.IsDigit(c) || c is &#x27;k&#x27; or &#x27;K&#x27;)
+            {
+                digitsAndK.Append(char.ToUpperInvariant(c));
+            }
+        }
+
+        if (digitsAndK.Length &lt; 2)
+        {
+            return null;
+        }
+
+        var body = digitsAndK.ToString(0, digitsAndK.Length - 1);
+        var checkDigit = digitsAndK[^1];
+
+        if (body.Length is &lt; 7 or &gt; 8 || !body.All(char.IsDigit))
+        {
+            return null;
+        }</pre>
+<h2>7. El sector se deduce solo</h2>
+<p>Dónde está físicamente la carpeta no se elige a mano: sale de la fecha de la última carpeta.</p>
+<p>Antes de julio 2023, Archivo; desde julio 2023, Oficina 43.</p>
+<p class="ruta">src/LicenciasCarpetas/Domain/FolderCase.cs</p>
+<pre>    /// &lt;summary&gt;Where the physical folder is filed, derived from the última-carpeta date. Null while
+    /// there is no date (including cambio-de-domicilio rows, whose folder is in another comuna).&lt;/summary&gt;
+    public FolderSector? Sector =&gt; LastFolderDate is { } fecha
+        ? fecha &lt; new DateOnly(2023, 7, 1) ? FolderSector.Archivo : FolderSector.Oficina43
+        : null;
+
+    /// &lt;summary&gt;True when the folder was already uploaded to Conaset, whichever the upload route was.&lt;/summary&gt;</pre>
+<h2>8. Los colores son los del Excel</h2>
+<p>El operador lee la agenda por color antes que por texto. Los 13 colores se copiaron de las</p>
+<p>reglas de formato condicional del propio libro. Única excepción: SUBIDA A CONASET, que el operador</p>
+<p>pidió en azul para separar el trabajo terminado.</p>
+<p class="ruta">src/LicenciasCarpetas/Domain/FolderState.cs</p>
+<pre>    /// &lt;summary&gt;
+    /// Row colours taken from the workbook&#x27;s own conditional formatting: the operator reads the
+    /// agenda by colour before reading any text, so these are copied exactly rather than redesigned.
+    /// &quot;CANJE LIC. EXTRANJERA&quot; has no rule in the workbook and therefore has no colour here either.
+    /// &lt;/summary&gt;
+    private static readonly Dictionary&lt;FolderState, string&gt; Colors = new()
+    {
+        [FolderState.PrimeraLicencia] = &quot;#FF00FF&quot;,
+        // El libro lo pintaba amarillo; el operador lo cambió a azul, porque una carpeta ya subida
+        // a Conaset es trabajo terminado y debe distinguirse de un vistazo del resto.
+        [FolderState.SubidaAConaset] = &quot;#1155CC&quot;,
+        [FolderState.SubidaConF8] = &quot;#BF9000&quot;,
+        [FolderState.SubidaConOficio] = &quot;#FFE599&quot;,
+        [FolderState.CambioDomicilioSubidoAConaset] = &quot;#00FFFF&quot;,
+        [FolderState.CambioDomicilioSubidoConCorreo] = &quot;#D0E0E3&quot;,
+        [FolderState.CambioDomicilioSolicitado] = &quot;#9FC5E8&quot;,
+        [FolderState.CambioDomicilio] = &quot;#3D85C6&quot;,
+        [FolderState.SeEncuentraEnArchivos] = &quot;#6AA84F&quot;,
+        [FolderState.SeEncuentraEnOficina43] = &quot;#8E7CC3&quot;,
+        [FolderState.NoExisteCarpeta] = &quot;#FF0000&quot;,
+        [FolderState.CrearOficio] = &quot;#C27BA0&quot;,
+        [FolderState.CrearCertificado] = &quot;#C27BA0&quot;
+    };
+
+    /// &lt;summary&gt;
+    /// States retired from the dropdowns at the operator&#x27;s request. They stay in the catalog on
+    /// purpose: cases imported from the 2026 workbook already carry them, and they must keep</pre>
+<h2>9. Reimportar no duplica a nadie</h2>
+<p>Un caso es el mismo cuando coinciden oficina, fecha de citación y RUT. Si el RUT o la fecha no</p>
+<p>son legibles, la identidad es la celda de origen: hoja y fila.</p>
+<p class="ruta">src/LicenciasCarpetas/Persistence/FolderCaseRepository.cs</p>
+<pre>    /// &lt;summary&gt;
+    /// Re-importing the same workbook must not duplicate anyone. A row is the same case when the
+    /// person, citation date and office match; when the RUT or the date is unreadable, the workbook
+    /// cell it came from (sheet + row) is used as identity instead.
+    /// &lt;/summary&gt;
+    public UpsertOutcome Upsert(FolderCase folderCase)
+    {
+        var existingId = FindExistingId(folderCase);
+        if (existingId is null)
+        {
+            Insert(folderCase);
+            return UpsertOutcome.Inserted;
+        }
+
+        using (var connection = Open())
+        {
+            Update(existingId.Value, folderCase, connection);
+        }
+        return UpsertOutcome.Updated;</pre>
+<h2>10. Importar en lotes: de 87 a 15 segundos</h2>
+<p>Cada fila abría su propia conexión a SQLite. Agrupadas en una transacción por hoja, la</p>
+<p>importación completa del libro bajó de 87 a 15 segundos.</p>
+<p class="ruta">src/LicenciasCarpetas/Persistence/FolderCaseRepository.cs</p>
+<pre>    /// &lt;summary&gt;
+    /// Una conexión y una transacción para todo el lote. SQLite confirma cada escritura suelta en
+    /// disco; agrupadas, la importación completa del libro baja de minutos a segundos. Si algo
+    /// falla a mitad de camino, no queda media hoja importada.
+    /// &lt;/summary&gt;
+    public IReadOnlyList&lt;UpsertOutcome&gt; UpsertMany(IReadOnlyList&lt;FolderCase&gt; folderCases)
+    {
+        var outcomes = new List&lt;UpsertOutcome&gt;(folderCases.Count);
+        if (folderCases.Count == 0)
+        {
+            return outcomes;
+        }
+
+        using var connection = Open();
+        using var transaction = connection.BeginTransaction();
+
+        foreach (var folderCase in folderCases)
+        {
+            var existingId = FindExistingId(folderCase, connection);
+            if (existingId is null)
+            {
+                Insert(folderCase, connection);
+                outcomes.Add(UpsertOutcome.Inserted);
+            }
+            else
+            {
+                Update(existingId.Value, folderCase, connection);
+                outcomes.Add(UpsertOutcome.Updated);
+            }
+        }
+
+        transaction.Commit();
+        return outcomes;
+    }</pre>
+<h2>11. Ordenar nombres chilenos</h2>
+<p>SQLite compara byte a byte: <code>ÁLVARO</code> y <code>MUÑOZ</code> caían después de la Z. Se guarda una copia del</p>
+<p>nombre sin tildes que solo sirve para ordenar; en pantalla se ve el nombre con sus tildes.</p>
+<p class="ruta">src/LicenciasCarpetas/Persistence/FolderCaseRepository.cs</p>
+<pre>    /// &lt;summary&gt;
+    /// Builds the ORDER BY from the closed &lt;see cref=&quot;CaseSort&quot;/&gt; set — no caller text ever reaches
+    /// the SQL. Id breaks ties so paging can&#x27;t show a row twice or skip one, and every column falls
+    /// back to the name so equal dates read alphabetically.
+    /// &lt;/summary&gt;
+    private static string OrderBy(CaseFilter filter)
+    {
+        // Dates read newest-first by default (that is how the agenda is consulted); text reads A-Z.
+        var (column, descendingByDefault) = filter.Sort switch
+        {
+            // FullNameSort, not FullName: SQLite compares bytes, so ÁLVARO and MUÑOZ would land
+            // after Z on the raw text.
+            CaseSort.Name =&gt; (&quot;FullNameSort COLLATE NOCASE&quot;, false),
+            CaseSort.Rut =&gt; (&quot;Rut&quot;, false),
+            CaseSort.Office =&gt; (&quot;Office&quot;, false),
+            CaseSort.FolderUploadedDate =&gt; (&quot;FolderUploadedDate&quot;, true),
+            CaseSort.LastFolderDate =&gt; (&quot;LastFolderDate&quot;, false),
+            CaseSort.FolderState =&gt; (&quot;FolderState&quot;, false),
+            CaseSort.FinalDecision =&gt; (&quot;FinalDecision&quot;, false),
+            _ =&gt; (&quot;CitationDate&quot;, true)
+        };
+
+        var direction = filter.Descending != descendingByDefault ? &quot;DESC&quot; : &quot;ASC&quot;;
+
+        // En la vista por defecto, lo ya subido a Conaset es trabajo terminado: baja al final de la
+        // lista y entre ellos van en orden de subida. Si el operador pide una columna concreta,
+        // manda esa columna y no se altera nada.
+        if (filter.Sort == CaseSort.CitationDate)
+        {
+            var conaset = (int)Domain.FolderState.SubidaAConaset;
+            return $&quot;&quot;&quot;
+                CASE WHEN FolderState = {conaset} THEN 1 ELSE 0 END ASC,
+                CASE WHEN FolderState = {conaset} THEN FolderUploadedDate END ASC,
+                {column} {direction}, FullNameSort COLLATE NOCASE ASC, Id ASC
+                &quot;&quot;&quot;;
+        }</pre>
+<h2>12. Nada se borra de verdad</h2>
+<p>Eliminar manda el caso a la papelera: desaparece de listados, estadísticas y exportaciones, una</p>
+<p>reimportación no lo revive, y se puede restaurar. El borrado definitivo solo existe dentro de la papelera.</p>
+<p class="ruta">src/LicenciasCarpetas/Persistence/FolderCaseRepository.cs</p>
+<pre>    public void Delete(long id)
+    {
+        using var connection = Open();
+        using var command = connection.CreateCommand();
+        command.CommandText = &quot;UPDATE FolderCase SET DeletedAt = $deletedAt WHERE Id = $id&quot;;
+        command.Parameters.AddWithValue(&quot;$deletedAt&quot;, DateTimeOffset.UtcNow.ToString(&quot;O&quot;));
+        command.Parameters.AddWithValue(&quot;$id&quot;, id);
+        command.ExecuteNonQuery();
+    }
+
+    public void Restore(long id)</pre>
+<h2>13. Respaldo en cada arranque</h2>
+<p>Todo vive en un archivo de 8 MB. Cada arranque lo copia <strong>antes</strong> de aplicar migraciones y</p>
+<p>conserva las últimas diez. Si el respaldo falla, la aplicación arranca igual: un problema de copia</p>
+<p>nunca puede dejar al operador sin trabajar.</p>
+<p class="ruta">src/LicenciasCarpetas/Persistence/DatabaseBackup.cs</p>
+<pre>    /// &lt;summary&gt;
+    /// Returns the path of the copy, or null when there was nothing to copy or the copy failed —
+    /// a backup problem is never a reason to stop the operator from working.
+    /// &lt;/summary&gt;
+    public string? Run(DateTimeOffset now)
+    {
+        try
+        {
+            if (!File.Exists(databasePath))
+            {
+                return null;
+            }
+
+            Directory.CreateDirectory(backupDirectory);
+
+            var name = $&quot;{Path.GetFileNameWithoutExtension(databasePath)}-{now:yyyyMMdd-HHmm}.db&quot;;
+            var destination = Path.Combine(backupDirectory, name);
+
+            // Restarting the app twice within the same minute must not pile up identical copies.
+            if (!File.Exists(destination))
+            {
+                File.Copy(databasePath, destination);
+            }
+
+            RemoveOldCopies();
+            return destination;
+        }
+        catch (Exception)
+        {
+            return null;
+        }
+    }
+
+    private void RemoveOldCopies()</pre>
+<h2>14. Contraseñas</h2>
+<p>PBKDF2 con sal por usuario y 210.000 iteraciones. Cinco intentos fallidos bloquean la cuenta</p>
+<p>quince minutos. No hay recuperación por correo: sin servidor de correo, una pantalla que cambiara</p>
+<p>contraseñas sin sesión iniciada entregaría la agenda a cualquiera que alcance el puerto.</p>
+<p class="ruta">src/LicenciasCarpetas/Dashboard/Auth/PasswordHasher.cs</p>
+<pre>    public static (string Hash, string Salt, int Iterations) Hash(string password)
+    {
+        var salt = RandomNumberGenerator.GetBytes(SaltSizeBytes);
+        var hash = Rfc2898DeriveBytes.Pbkdf2(password, salt, DefaultIterations, HashAlgorithmName.SHA256, HashSizeBytes);
+        return (Convert.ToBase64String(hash), Convert.ToBase64String(salt), DefaultIterations);
+    }
+
+    public static bool Verify(string password, string storedHash, string storedSalt, int iterations)
+    {
+        var salt = Convert.FromBase64String(storedSalt);
+        var expected = Convert.FromBase64String(storedHash);
+        var actual = Rfc2898DeriveBytes.Pbkdf2(password, salt, iterations, HashAlgorithmName.SHA256, expected.Length);</pre>
+<h2>15. Estadísticas: lo calculado y lo escrito</h2>
+<p>Agendadas, atendidas y porcentaje de atención <strong>se cuentan solos</strong> desde los casos. Solo</p>
+<p>escaneadas y subidas siguen siendo contadores manuales: no se pueden deducir de la agenda.</p>
+<p class="ruta">src/LicenciasCarpetas/Statistics/StatisticsService.cs</p>
+<pre>    public MonthlyStatistics ForMonth(int year, int month)
+    {
+        var attendance = cases.DailyAttendance(year, month);
+        var monthCounters = counters.ForMonth(year, month).ToDictionary(counter =&gt; counter.Date);
+
+        var dates = attendance
+            .Select(entry =&gt; entry.Date)
+            .Concat(monthCounters.Keys)
+            .Distinct()
+            .OrderBy(date =&gt; date)
+            .ToList();
+
+        var days = new List&lt;DailyStatisticsRow&gt;(dates.Count);
+        foreach (var date in dates)
+        {
+            var byOffice = attendance
+                .Where(entry =&gt; entry.Date == date)
+                .ToDictionary(entry =&gt; entry.Office, entry =&gt; (entry.Scheduled, entry.Attended));
+
+            monthCounters.TryGetValue(date, out var counter);
+            days.Add(new DailyStatisticsRow(date, counter?.Scanned, counter?.Uploaded, byOffice));
+        }
+
+        return new MonthlyStatistics(
+            year,
+            month,
+            days,
+            cases.FolderStateBreakdown(year, month, office: null),
+            cases.FinalDecisionBreakdown(year, month, office: null),
+            cases.LicenceClassBreakdown(year, month, office: null));
+    }
+}</pre>
+<h2>16. Clases de licencia</h2>
+<p>Una citación puede cubrir varias clases (B y C, o A2 y A3). Se guardan como texto ordenado</p>
+<p>(<code>B,C</code>) y en las estadísticas cada clase suma por separado: la pregunta es cuántas licencias se</p>
+<p>tramitan, no cuántas personas vinieron.</p>
+<p class="ruta">src/LicenciasCarpetas/Domain/LicenceClass.cs</p>
+<pre>    /// &lt;summary&gt;
+    /// Lee la selección guardada (&quot;B,C&quot;). Un código desconocido se ignora en vez de reventar: la
+    /// columna es texto y puede traer restos de una versión anterior o de una edición a mano.
+    /// &lt;/summary&gt;
+    public static IReadOnlyList&lt;LicenceClass&gt; Parse(string? stored)
+    {
+        if (string.IsNullOrWhiteSpace(stored))
+        {
+            return [];
+        }
+
+        var selected = new List&lt;LicenceClass&gt;();
+        foreach (var piece in stored.Split(&#x27;,&#x27;, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+        {
+            if (Enum.TryParse&lt;LicenceClass&gt;(piece, ignoreCase: true, out var licence) &amp;&amp; !selected.Contains(licence))
+            {
+                selected.Add(licence);
+            }
+        }
+
+        selected.Sort();
+        return selected;
+    }
+
+    /// &lt;summary&gt;Guarda en orden de catálogo y sin repetidos, para que dos selecciones iguales se
+    /// escriban igual y las estadísticas puedan agrupar sin sorpresas.&lt;/summary&gt;
+    public static string? Serialize(IEnumerable&lt;LicenceClass&gt; selection)
+    {</pre>
+<div class="diagrama"><h2>17. Diagrama del sistema</h2><style>foreignObject div { overflow: visible !important; }</style><svg id="mermaid-1786883869502" width="100%" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" class="flowchart" style="max-width: 1860.984375px;" viewBox="0 0 1860.984375 1457.537353515625" role="graphics-document document" aria-roledescription="flowchart-v2"><style>#mermaid-1786883869502{font-family:"trebuchet ms",verdana,arial,sans-serif;font-size:16px;fill:#333;}@keyframes edge-animation-frame{from{stroke-dashoffset:0;}}@keyframes dash{to{stroke-dashoffset:0;}}#mermaid-1786883869502 .edge-animation-slow{stroke-dasharray:9,5!important;stroke-dashoffset:900;animation:dash 50s linear infinite;stroke-linecap:round;}#mermaid-1786883869502 .edge-animation-fast{stroke-dasharray:9,5!important;stroke-dashoffset:900;animation:dash 20s linear infinite;stroke-linecap:round;}#mermaid-1786883869502 .error-icon{fill:#552222;}#mermaid-1786883869502 .error-text{fill:#552222;stroke:#552222;}#mermaid-1786883869502 .edge-thickness-normal{stroke-width:1px;}#mermaid-1786883869502 .edge-thickness-thick{stroke-width:3.5px;}#mermaid-1786883869502 .edge-pattern-solid{stroke-dasharray:0;}#mermaid-1786883869502 .edge-thickness-invisible{stroke-width:0;fill:none;}#mermaid-1786883869502 .edge-pattern-dashed{stroke-dasharray:3;}#mermaid-1786883869502 .edge-pattern-dotted{stroke-dasharray:2;}#mermaid-1786883869502 .marker{fill:#333333;stroke:#333333;}#mermaid-1786883869502 .marker.cross{stroke:#333333;}#mermaid-1786883869502 svg{font-family:"trebuchet ms",verdana,arial,sans-serif;font-size:16px;}#mermaid-1786883869502 p{margin:0;}#mermaid-1786883869502 .label{font-family:"trebuchet ms",verdana,arial,sans-serif;color:#333;}#mermaid-1786883869502 .cluster-label text{fill:#333;}#mermaid-1786883869502 .cluster-label span{color:#333;}#mermaid-1786883869502 .cluster-label span p{background-color:transparent;}#mermaid-1786883869502 .label text,#mermaid-1786883869502 span{fill:#333;color:#333;}#mermaid-1786883869502 .node rect,#mermaid-1786883869502 .node circle,#mermaid-1786883869502 .node ellipse,#mermaid-1786883869502 .node polygon,#mermaid-1786883869502 .node path{fill:#ECECFF;stroke:#9370DB;stroke-width:1px;}#mermaid-1786883869502 .rough-node .label text,#mermaid-1786883869502 .node .label text,#mermaid-1786883869502 .image-shape .label,#mermaid-1786883869502 .icon-shape .label{text-anchor:middle;}#mermaid-1786883869502 .node .katex path{fill:#000;stroke:#000;stroke-width:1px;}#mermaid-1786883869502 .rough-node .label,#mermaid-1786883869502 .node .label,#mermaid-1786883869502 .image-shape .label,#mermaid-1786883869502 .icon-shape .label{text-align:center;}#mermaid-1786883869502 .node.clickable{cursor:pointer;}#mermaid-1786883869502 .root .anchor path{fill:#333333!important;stroke-width:0;stroke:#333333;}#mermaid-1786883869502 .arrowheadPath{fill:#333333;}#mermaid-1786883869502 .edgePath .path{stroke:#333333;stroke-width:2.0px;}#mermaid-1786883869502 .flowchart-link{stroke:#333333;fill:none;}#mermaid-1786883869502 .edgeLabel{background-color:rgba(232,232,232, 0.8);text-align:center;}#mermaid-1786883869502 .edgeLabel p{background-color:rgba(232,232,232, 0.8);}#mermaid-1786883869502 .edgeLabel rect{opacity:0.5;background-color:rgba(232,232,232, 0.8);fill:rgba(232,232,232, 0.8);}#mermaid-1786883869502 .labelBkg{background-color:rgba(232, 232, 232, 0.5);}#mermaid-1786883869502 .cluster rect{fill:#ffffde;stroke:#aaaa33;stroke-width:1px;}#mermaid-1786883869502 .cluster text{fill:#333;}#mermaid-1786883869502 .cluster span{color:#333;}#mermaid-1786883869502 div.mermaidTooltip{position:absolute;text-align:center;max-width:200px;padding:2px;font-family:"trebuchet ms",verdana,arial,sans-serif;font-size:12px;background:hsl(80, 100%, 96.2745098039%);border:1px solid #aaaa33;border-radius:2px;pointer-events:none;z-index:100;}#mermaid-1786883869502 .flowchartTitleText{text-anchor:middle;font-size:18px;fill:#333;}#mermaid-1786883869502 rect.text{fill:none;stroke-width:0;}#mermaid-1786883869502 .icon-shape,#mermaid-1786883869502 .image-shape{background-color:rgba(232,232,232, 0.8);text-align:center;}#mermaid-1786883869502 .icon-shape p,#mermaid-1786883869502 .image-shape p{background-color:rgba(232,232,232, 0.8);padding:2px;}#mermaid-1786883869502 .icon-shape .label rect,#mermaid-1786883869502 .image-shape .label rect{opacity:0.5;background-color:rgba(232,232,232, 0.8);fill:rgba(232,232,232, 0.8);}#mermaid-1786883869502 .label-icon{display:inline-block;height:1em;overflow:visible;vertical-align:-0.125em;}#mermaid-1786883869502 .node .label-icon path{fill:currentColor;stroke:revert;stroke-width:revert;}#mermaid-1786883869502 :root{--mermaid-font-family:"trebuchet ms",verdana,arial,sans-serif;}#mermaid-1786883869502 .fuente&gt;*{fill:#fff3d6!important;stroke:#926100!important;color:#1f2933!important;}#mermaid-1786883869502 .fuente span{fill:#fff3d6!important;stroke:#926100!important;color:#1f2933!important;}#mermaid-1786883869502 .fuente tspan{fill:#1f2933!important;}#mermaid-1786883869502 .proceso&gt;*{fill:#e8f0f8!important;stroke:#1a73b0!important;color:#1f2933!important;}#mermaid-1786883869502 .proceso span{fill:#e8f0f8!important;stroke:#1a73b0!important;color:#1f2933!important;}#mermaid-1786883869502 .proceso tspan{fill:#1f2933!important;}#mermaid-1786883869502 .datos&gt;*{fill:#e3f6e9!important;stroke:#1e7a3d!important;color:#1f2933!important;}#mermaid-1786883869502 .datos span{fill:#e3f6e9!important;stroke:#1e7a3d!important;color:#1f2933!important;}#mermaid-1786883869502 .datos tspan{fill:#1f2933!important;}#mermaid-1786883869502 .ui&gt;*{fill:#eef2f6!important;stroke:#0b3d68!important;color:#1f2933!important;}#mermaid-1786883869502 .ui span{fill:#eef2f6!important;stroke:#0b3d68!important;color:#1f2933!important;}#mermaid-1786883869502 .ui tspan{fill:#1f2933!important;}#mermaid-1786883869502 .salida&gt;*{fill:#fbe4e8!important;stroke:#a11d33!important;color:#1f2933!important;}#mermaid-1786883869502 .salida span{fill:#fbe4e8!important;stroke:#a11d33!important;color:#1f2933!important;}#mermaid-1786883869502 .salida tspan{fill:#1f2933!important;}</style><g><marker id="mermaid-1786883869502_flowchart-v2-pointEnd" class="marker flowchart-v2" viewBox="0 0 10 10" refX="5" refY="5" markerUnits="userSpaceOnUse" markerWidth="8" markerHeight="8" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" class="arrowMarkerPath" style="stroke-width: 1; stroke-dasharray: 1, 0;"></path></marker><marker id="mermaid-1786883869502_flowchart-v2-pointStart" class="marker flowchart-v2" viewBox="0 0 10 10" refX="4.5" refY="5" markerUnits="userSpaceOnUse" markerWidth="8" markerHeight="8" orient="auto"><path d="M 0 5 L 10 10 L 10 0 z" class="arrowMarkerPath" style="stroke-width: 1; stroke-dasharray: 1, 0;"></path></marker><marker id="mermaid-1786883869502_flowchart-v2-circleEnd" class="marker flowchart-v2" viewBox="0 0 10 10" refX="11" refY="5" markerUnits="userSpaceOnUse" markerWidth="11" markerHeight="11" orient="auto"><circle cx="5" cy="5" r="5" class="arrowMarkerPath" style="stroke-width: 1; stroke-dasharray: 1, 0;"></circle></marker><marker id="mermaid-1786883869502_flowchart-v2-circleStart" class="marker flowchart-v2" viewBox="0 0 10 10" refX="-1" refY="5" markerUnits="userSpaceOnUse" markerWidth="11" markerHeight="11" orient="auto"><circle cx="5" cy="5" r="5" class="arrowMarkerPath" style="stroke-width: 1; stroke-dasharray: 1, 0;"></circle></marker><marker id="mermaid-1786883869502_flowchart-v2-crossEnd" class="marker cross flowchart-v2" viewBox="0 0 11 11" refX="12" refY="5.2" markerUnits="userSpaceOnUse" markerWidth="11" markerHeight="11" orient="auto"><path d="M 1,1 l 9,9 M 10,1 l -9,9" class="arrowMarkerPath" style="stroke-width: 2; stroke-dasharray: 1, 0;"></path></marker><marker id="mermaid-1786883869502_flowchart-v2-crossStart" class="marker cross flowchart-v2" viewBox="0 0 11 11" refX="-1" refY="5.2" markerUnits="userSpaceOnUse" markerWidth="11" markerHeight="11" orient="auto"><path d="M 1,1 l 9,9 M 10,1 l -9,9" class="arrowMarkerPath" style="stroke-width: 2; stroke-dasharray: 1, 0;"></path></marker><g class="root"><g class="clusters"><g class="cluster " id="salidas" data-look="classic"><rect style="" x="8" y="1297.5373001098633" width="810.6171875" height="152"></rect><g class="cluster-label " transform="translate(379.51171875, 1297.5373001098633)"><foreignObject width="67.59375" height="44"><div xmlns="http://www.w3.org/1999/xhtml" style="display: table-cell; white-space: nowrap; line-height: 1.5;"><span class="nodeLabel "><p>SALIDAS</p></span></div></foreignObject></g></g><g class="cluster " id="pantallas" data-look="classic"><rect style="" x="19.9609375" y="1095.5373001098633" width="1125.984375" height="152"></rect><g class="cluster-label " transform="translate(455.8125, 1095.5373001098633)"><foreignObject width="254.28125" height="44"><div xmlns="http://www.w3.org/1999/xhtml" style="display: table-cell; white-space: nowrap; line-height: 1.5;"><span class="nodeLabel "><p>DASHBOARD (HTTPS, con sesion)</p></span></div></foreignObject></g></g><g class="cluster " id="base" data-look="classic"><rect style="" x="1165.9453125" y="892.3858795166016" width="687.0390625" height="355.1514205932617"></rect><g class="cluster-label " transform="translate(1378.14453125, 892.3858795166016)"><foreignObject width="262.640625" height="44"><div xmlns="http://www.w3.org/1999/xhtml" style="display: table-cell; white-space: nowrap; line-height: 1.5;"><span class="nodeLabel "><p>BASE DE DATOS (fuente de verdad)</p></span></div></foreignObject></g></g><g class="cluster " id="importacion" data-look="classic"><rect style="" x="1143.4453125" y="266.38587951660156" width="685.1171875" height="528"></rect><g class="cluster-label " transform="translate(1354.26171875, 266.38587951660156)"><foreignObject width="263.484375" height="44"><div xmlns="http://www.w3.org/1999/xhtml" style="display: table-cell; white-space: nowrap; line-height: 1.5;"><span class="nodeLabel "><p>IMPORTACION (el Excel solo se lee)</p></span></div></foreignObject></g></g><g class="cluster " id="origen" data-look="classic"><rect style="" x="1332.265625" y="8" width="284.5" height="184.38587951660156"></rect><g class="cluster-label " transform="translate(1400.578125, 8)"><foreignObject width="147.875" height="44"><div xmlns="http://www.w3.org/1999/xhtml" style="display: table-cell; white-space: nowrap; line-height: 1.5;"><span class="nodeLabel "><p>ORIGEN DE DATOS</p></span></div></foreignObject></g></g></g><g class="edgePaths"><path d="M1474.516,167.386L1474.516,171.553C1474.516,175.719,1474.516,184.053,1474.516,194.386C1474.516,204.719,1474.516,217.053,1474.516,229.386C1474.516,241.719,1474.516,254.053,1474.516,263.719C1474.516,273.386,1474.516,280.386,1474.516,283.886L1474.516,287.386" id="L_excel_sanitizer_0" class=" edge-thickness-normal edge-pattern-solid edge-thickness-normal edge-pattern-solid flowchart-link" style=";" data-edge="true" data-et="edge" data-id="L_excel_sanitizer_0" data-points="W3sieCI6MTQ3NC41MTU2MjUsInkiOjE2Ny4zODU4Nzk1MTY2MDE1Nn0seyJ4IjoxNDc0LjUxNTYyNSwieSI6MTkyLjM4NTg3OTUxNjYwMTU2fSx7IngiOjE0NzQuNTE1NjI1LCJ5IjoyMjkuMzg1ODc5NTE2NjAxNTZ9LHsieCI6MTQ3NC41MTU2MjUsInkiOjI2Ni4zODU4Nzk1MTY2MDE1Nn0seyJ4IjoxNDc0LjUxNTYyNSwieSI6MjkxLjM4NTg3OTUxNjYwMTU2fV0=" marker-end="url(#mermaid-1786883869502_flowchart-v2-pointEnd)"></path><path d="M1474.516,417.386L1474.516,421.553C1474.516,425.719,1474.516,434.053,1474.516,441.719C1474.516,449.386,1474.516,456.386,1474.516,459.886L1474.516,463.386" id="L_sanitizer_detector_0" class=" edge-thickness-normal edge-pattern-solid edge-thickness-normal edge-pattern-solid flowchart-link" style=";" data-edge="true" data-et="edge" data-id="L_sanitizer_detector_0" data-points="W3sieCI6MTQ3NC41MTU2MjUsInkiOjQxNy4zODU4Nzk1MTY2MDE1Nn0seyJ4IjoxNDc0LjUxNTYyNSwieSI6NDQyLjM4NTg3OTUxNjYwMTU2fSx7IngiOjE0NzQuNTE1NjI1LCJ5Ijo0NjcuMzg1ODc5NTE2NjAxNTZ9XQ==" marker-end="url(#mermaid-1786883869502_flowchart-v2-pointEnd)"></path><path d="M1571.527,545.386L1586.866,551.553C1602.205,557.719,1632.884,570.053,1648.223,581.719C1663.563,593.386,1663.563,604.386,1663.563,609.886L1663.563,615.386" id="L_detector_mapper_0" class=" edge-thickness-normal edge-pattern-solid edge-thickness-normal edge-pattern-solid flowchart-link" style=";" data-edge="true" data-et="edge" data-id="L_detector_mapper_0" data-points="W3sieCI6MTU3MS41MjY1MjEzODE1NzksInkiOjU0NS4zODU4Nzk1MTY2MDE2fSx7IngiOjE2NjMuNTYyNSwieSI6NTgyLjM4NTg3OTUxNjYwMTZ9LHsieCI6MTY2My41NjI1LCJ5Ijo2MTkuMzg1ODc5NTE2NjAxNn1d" marker-end="url(#mermaid-1786883869502_flowchart-v2-pointEnd)"></path><path d="M1361.577,545.386L1343.719,551.553C1325.861,557.719,1290.145,570.053,1272.288,594.886C1254.43,619.719,1254.43,657.053,1254.43,692.386C1254.43,727.719,1254.43,761.053,1254.43,785.886C1254.43,810.719,1254.43,827.053,1254.43,843.386C1254.43,859.719,1254.43,876.053,1271.609,891.465C1288.788,906.877,1323.147,921.368,1340.326,928.614L1357.506,935.86" id="L_detector_sqlite_0" class=" edge-thickness-normal edge-pattern-solid edge-thickness-normal edge-pattern-solid flowchart-link" style=";" data-edge="true" data-et="edge" data-id="L_detector_sqlite_0" data-points="W3sieCI6MTM2MS41NzY3ODg2NTEzMTU4LCJ5Ijo1NDUuMzg1ODc5NTE2NjAxNn0seyJ4IjoxMjU0LjQyOTY4NzUsInkiOjU4Mi4zODU4Nzk1MTY2MDE2fSx7IngiOjEyNTQuNDI5Njg3NSwieSI6Njk0LjM4NTg3OTUxNjYwMTZ9LHsieCI6MTI1NC40Mjk2ODc1LCJ5Ijo3OTQuMzg1ODc5NTE2NjAxNn0seyJ4IjoxMjU0LjQyOTY4NzUsInkiOjg0My4zODU4Nzk1MTY2MDE2fSx7IngiOjEyNTQuNDI5Njg3NSwieSI6ODkyLjM4NTg3OTUxNjYwMTZ9LHsieCI6MTM2MS4xOTE0MDYyNSwieSI6OTM3LjQxNDEyMTM1OTA5MTd9XQ==" marker-end="url(#mermaid-1786883869502_flowchart-v2-pointEnd)"></path><path d="M1449.66,545.386L1445.729,551.553C1441.799,557.719,1433.939,570.053,1430.008,594.886C1426.078,619.719,1426.078,657.053,1426.078,692.386C1426.078,727.719,1426.078,761.053,1426.078,785.886C1426.078,810.719,1426.078,827.053,1426.078,843.386C1426.078,859.719,1426.078,876.053,1426.583,887.737C1427.088,899.422,1428.099,906.458,1428.604,909.976L1429.109,913.493" id="L_detector_sqlite_2" class=" edge-thickness-normal edge-pattern-solid edge-thickness-normal edge-pattern-solid flowchart-link" style=";" data-edge="true" data-et="edge" data-id="L_detector_sqlite_2" data-points="W3sieCI6MTQ0OS42NTk1Mzk0NzM2ODQyLCJ5Ijo1NDUuMzg1ODc5NTE2NjAxNn0seyJ4IjoxNDI2LjA3ODEyNSwieSI6NTgyLjM4NTg3OTUxNjYwMTZ9LHsieCI6MTQyNi4wNzgxMjUsInkiOjY5NC4zODU4Nzk1MTY2MDE2fSx7IngiOjE0MjYuMDc4MTI1LCJ5Ijo3OTQuMzg1ODc5NTE2NjAxNn0seyJ4IjoxNDI2LjA3ODEyNSwieSI6ODQzLjM4NTg3OTUxNjYwMTZ9LHsieCI6MTQyNi4wNzgxMjUsInkiOjg5Mi4zODU4Nzk1MTY2MDE2fSx7IngiOjE0MjkuNjc3NzIwODQxMzEzLCJ5Ijo5MTcuNDUyODI4NDkxODM2Mn1d" marker-end="url(#mermaid-1786883869502_flowchart-v2-pointEnd)"></path><path d="M1663.563,769.386L1663.563,773.553C1663.563,777.719,1663.563,786.053,1663.563,798.386C1663.563,810.719,1663.563,827.053,1663.563,843.386C1663.563,859.719,1663.563,876.053,1639.127,892.539C1614.691,909.025,1565.819,925.664,1541.383,933.983L1516.947,942.303" id="L_mapper_sqlite_0" class=" edge-thickness-normal edge-pattern-solid edge-thickness-normal edge-pattern-solid flowchart-link" style=";" data-edge="true" data-et="edge" data-id="L_mapper_sqlite_0" data-points="W3sieCI6MTY2My41NjI1LCJ5Ijo3NjkuMzg1ODc5NTE2NjAxNn0seyJ4IjoxNjYzLjU2MjUsInkiOjc5NC4zODU4Nzk1MTY2MDE2fSx7IngiOjE2NjMuNTYyNSwieSI6ODQzLjM4NTg3OTUxNjYwMTZ9LHsieCI6MTY2My41NjI1LCJ5Ijo4OTIuMzg1ODc5NTE2NjAxNn0seyJ4IjoxNTEzLjE2MDE1NjI1LCJ5Ijo5NDMuNTkxOTE5OTU0MDMwMn1d" marker-end="url(#mermaid-1786883869502_flowchart-v2-pointEnd)"></path><path d="M1513.16,994.623L1545.329,1005.276C1577.497,1015.928,1641.835,1037.233,1674.003,1054.052C1706.172,1070.871,1706.172,1083.204,1706.172,1094.871C1706.172,1106.537,1706.172,1117.537,1706.172,1123.037L1706.172,1128.537" id="L_sqlite_backup_0" class=" edge-thickness-normal edge-pattern-solid edge-thickness-normal edge-pattern-solid flowchart-link" style=";" data-edge="true" data-et="edge" data-id="L_sqlite_backup_0" data-points="W3sieCI6MTUxMy4xNjAxNTYyNSwieSI6OTk0LjYyMzE1Mjg2ODcyMDR9LHsieCI6MTcwNi4xNzE4NzUsInkiOjEwNTguNTM3MzAwMTA5ODYzM30seyJ4IjoxNzA2LjE3MTg3NSwieSI6MTA5NS41MzczMDAxMDk4NjMzfSx7IngiOjE3MDYuMTcxODc1LCJ5IjoxMTMyLjUzNzMwMDEwOTg2MzN9XQ==" marker-end="url(#mermaid-1786883869502_flowchart-v2-pointEnd)"></path><path d="M1478.25,1019.36L1483.114,1025.89C1487.978,1032.419,1497.706,1045.478,1502.57,1058.174C1507.434,1070.871,1507.434,1083.204,1390.349,1100.275C1273.265,1117.345,1039.097,1139.153,922.012,1150.057L804.928,1160.961" id="L_sqlite_casos_0" class=" edge-thickness-normal edge-pattern-solid edge-thickness-normal edge-pattern-solid flowchart-link" style=";" data-edge="true" data-et="edge" data-id="L_sqlite_casos_0" data-points="W3sieCI6MTQ3OC4yNTAxMTU0MDUwODEsInkiOjEwMTkuMzYwNDM5NjEwMTA0M30seyJ4IjoxNTA3LjQzMzU5Mzc1LCJ5IjoxMDU4LjUzNzMwMDEwOTg2MzN9LHsieCI6MTUwNy40MzM1OTM3NSwieSI6MTA5NS41MzczMDAxMDk4NjMzfSx7IngiOjgwMC45NDUzMTI1LCJ5IjoxMTYxLjMzMTY5NDk1OTQ0MzJ9XQ==" marker-end="url(#mermaid-1786883869502_flowchart-v2-pointEnd)"></path><path d="M1403.626,1020.128L1399.653,1026.529C1395.68,1032.931,1387.735,1045.734,1383.762,1058.302C1379.789,1070.871,1379.789,1083.204,1239.118,1100.703C1098.446,1118.203,817.103,1140.868,676.432,1152.201L535.761,1163.533" id="L_sqlite_estad_0" class=" edge-thickness-normal edge-pattern-solid edge-thickness-normal edge-pattern-solid flowchart-link" style=";" data-edge="true" data-et="edge" data-id="L_sqlite_estad_0" data-points="W3sieCI6MTQwMy42MjYxODQ3MjY0NjUyLCJ5IjoxMDIwLjEyNzc5Njc5MDczOTR9LHsieCI6MTM3OS43ODkwNjI1LCJ5IjoxMDU4LjUzNzMwMDEwOTg2MzN9LHsieCI6MTM3OS43ODkwNjI1LCJ5IjoxMDk1LjUzNzMwMDEwOTg2MzN9LHsieCI6NTMxLjc3MzQzNzUsInkiOjExNjMuODU0NDEwMjQzNzczfV0=" marker-end="url(#mermaid-1786883869502_flowchart-v2-pointEnd)"></path><path d="M1361.191,996.402L1331.984,1006.758C1302.776,1017.114,1244.361,1037.826,1215.153,1054.348C1185.945,1070.871,1185.945,1083.204,1037.459,1100.511C888.973,1117.819,592,1140.1,443.514,1151.241L295.028,1162.382" id="L_sqlite_sector_0" class=" edge-thickness-normal edge-pattern-solid edge-thickness-normal edge-pattern-solid flowchart-link" style=";" data-edge="true" data-et="edge" data-id="L_sqlite_sector_0" data-points="W3sieCI6MTM2MS4xOTE0MDYyNSwieSI6OTk2LjQwMjQzOTAxOTMyODR9LHsieCI6MTE4NS45NDUzMTI1LCJ5IjoxMDU4LjUzNzMwMDEwOTg2MzN9LHsieCI6MTE4NS45NDUzMTI1LCJ5IjoxMDk1LjUzNzMwMDEwOTg2MzN9LHsieCI6MjkxLjAzOTA2MjUsInkiOjExNjIuNjgwOTc5MjAxNjIwOX1d" marker-end="url(#mermaid-1786883869502_flowchart-v2-pointEnd)"></path><path d="M1513.16,996.644L1541.995,1006.96C1570.831,1017.275,1628.501,1037.906,1657.337,1054.388C1686.172,1070.871,1686.172,1083.204,1590.964,1099.631C1495.755,1116.058,1305.339,1136.578,1210.131,1146.839L1114.922,1157.099" id="L_sqlite_otras_0" class=" edge-thickness-normal edge-pattern-solid edge-thickness-normal edge-pattern-solid flowchart-link" style=";" data-edge="true" data-et="edge" data-id="L_sqlite_otras_0" data-points="W3sieCI6MTUxMy4xNjAxNTYyNSwieSI6OTk2LjY0NDE5MzY1NTA2N30seyJ4IjoxNjg2LjE3MTg3NSwieSI6MTA1OC41MzczMDAxMDk4NjMzfSx7IngiOjE2ODYuMTcxODc1LCJ5IjoxMDk1LjUzNzMwMDEwOTg2MzN9LHsieCI6MTExMC45NDUzMTI1LCJ5IjoxMTU3LjUyNzYxNzkzNzY4OX1d" marker-end="url(#mermaid-1786883869502_flowchart-v2-pointEnd)"></path><path d="M800.945,1162.745L940.553,1151.544C1080.161,1140.342,1359.378,1117.94,1498.986,1100.572C1638.594,1083.204,1638.594,1070.871,1618.298,1055.728C1598.002,1040.586,1557.41,1022.634,1537.114,1013.659L1516.818,1004.683" id="L_casos_sqlite_0" class=" edge-thickness-normal edge-pattern-solid edge-thickness-normal edge-pattern-solid flowchart-link" style=";" data-edge="true" data-et="edge" data-id="L_casos_sqlite_0" data-points="W3sieCI6ODAwLjk0NTMxMjUsInkiOjExNjIuNzQ0ODI4NjA1NjQ4OH0seyJ4IjoxNjM4LjU5Mzc1LCJ5IjoxMDk1LjUzNzMwMDEwOTg2MzN9LHsieCI6MTYzOC41OTM3NSwieSI6MTA1OC41MzczMDAxMDk4NjMzfSx7IngiOjE1MTMuMTYwMTU2MjUsInkiOjEwMDMuMDY1MTU2NjQ3Nzg1Nn1d" marker-end="url(#mermaid-1786883869502_flowchart-v2-pointEnd)"></path><path d="M691.359,1222.537L691.359,1226.704C691.359,1230.871,691.359,1239.204,691.359,1247.537C691.359,1255.871,691.359,1264.204,691.359,1272.537C691.359,1280.871,691.359,1289.204,691.359,1298.871C691.359,1308.537,691.359,1319.537,691.359,1325.037L691.359,1330.537" id="L_casos_xlsx_0" class=" edge-thickness-normal edge-pattern-solid edge-thickness-normal edge-pattern-solid flowchart-link" style=";" data-edge="true" data-et="edge" data-id="L_casos_xlsx_0" data-points="W3sieCI6NjkxLjM1OTM3NSwieSI6MTIyMi41MzczMDAxMDk4NjMzfSx7IngiOjY5MS4zNTkzNzUsInkiOjEyNDcuNTM3MzAwMTA5ODYzM30seyJ4Ijo2OTEuMzU5Mzc1LCJ5IjoxMjcyLjUzNzMwMDEwOTg2MzN9LHsieCI6NjkxLjM1OTM3NSwieSI6MTI5Ny41MzczMDAxMDk4NjMzfSx7IngiOjY5MS4zNTkzNzUsInkiOjEzMzQuNTM3MzAwMTA5ODYzM31d" marker-end="url(#mermaid-1786883869502_flowchart-v2-pointEnd)"></path><path d="M173,1210.537L173,1216.704C173,1222.871,173,1235.204,173,1245.537C173,1255.871,173,1264.204,173,1272.537C173,1280.871,173,1289.204,173,1296.871C173,1304.537,173,1311.537,173,1315.037L173,1318.537" id="L_sector_pdf_0" class=" edge-thickness-normal edge-pattern-solid edge-thickness-normal edge-pattern-solid flowchart-link" style=";" data-edge="true" data-et="edge" data-id="L_sector_pdf_0" data-points="W3sieCI6MTczLCJ5IjoxMjEwLjUzNzMwMDEwOTg2MzN9LHsieCI6MTczLCJ5IjoxMjQ3LjUzNzMwMDEwOTg2MzN9LHsieCI6MTczLCJ5IjoxMjcyLjUzNzMwMDEwOTg2MzN9LHsieCI6MTczLCJ5IjoxMjk3LjUzNzMwMDEwOTg2MzN9LHsieCI6MTczLCJ5IjoxMzIyLjUzNzMwMDEwOTg2MzN9XQ==" marker-end="url(#mermaid-1786883869502_flowchart-v2-pointEnd)"></path><path d="M291.039,1163.454L456.344,1152.135C621.648,1140.815,952.258,1118.176,1117.563,1100.69C1282.867,1083.204,1282.867,1070.871,1295.389,1055.283C1307.91,1039.695,1332.952,1020.854,1345.474,1011.433L1357.995,1002.012" id="L_sector_sqlite_0" class=" edge-thickness-normal edge-pattern-solid edge-thickness-normal edge-pattern-solid flowchart-link" style=";" data-edge="true" data-et="edge" data-id="L_sector_sqlite_0" data-points="W3sieCI6MjkxLjAzOTA2MjUsInkiOjExNjMuNDU0Mzc5MTUyMjZ9LHsieCI6MTI4Mi44NjcxODc1LCJ5IjoxMDk1LjUzNzMwMDEwOTg2MzN9LHsieCI6MTI4Mi44NjcxODc1LCJ5IjoxMDU4LjUzNzMwMDEwOTg2MzN9LHsieCI6MTM2MS4xOTE0MDYyNSwieSI6OTk5LjYwNjk2MDc0NTg4Nn1d" marker-end="url(#mermaid-1786883869502_flowchart-v2-pointEnd)"></path></g><g class="edgeLabels"><g class="edgeLabel" transform="translate(1474.515625, 229.38587951660156)"><g class="label" data-id="L_excel_sanitizer_0" transform="translate(-96.484375, -12)"><foreignObject width="192.96875" height="44"><div xmlns="http://www.w3.org/1999/xhtml" class="labelBkg" style="display: table-cell; white-space: nowrap; line-height: 1.5; max-width: 200px; text-align: center;"><span class="edgeLabel "><p>--import o pantalla Importar</p></span></div></foreignObject></g></g><g class="edgeLabel"><g class="label" data-id="L_sanitizer_detector_0" transform="translate(0, 0)"><foreignObject width="0" height="20"><div xmlns="http://www.w3.org/1999/xhtml" class="labelBkg" style="display: table-cell; white-space: nowrap; line-height: 1.5; max-width: 200px; text-align: center;"><span class="edgeLabel "></span></div></foreignObject></g></g><g class="edgeLabel" transform="translate(1663.5625, 582.3858795166016)"><g class="label" data-id="L_detector_mapper_0" transform="translate(-59.1640625, -12)"><foreignObject width="118.328125" height="44"><div xmlns="http://www.w3.org/1999/xhtml" class="labelBkg" style="display: table-cell; white-space: nowrap; line-height: 1.5; max-width: 200px; text-align: center;"><span class="edgeLabel "><p>hojas de agenda</p></span></div></foreignObject></g></g><g class="edgeLabel" transform="translate(1254.4296875, 694.3858795166016)"><g class="label" data-id="L_detector_sqlite_0" transform="translate(-79.1640625, -12)"><foreignObject width="158.328125" height="44"><div xmlns="http://www.w3.org/1999/xhtml" class="labelBkg" style="display: table-cell; white-space: nowrap; line-height: 1.5; max-width: 200px; text-align: center;"><span class="edgeLabel "><p>escaneadas y subidas</p></span></div></foreignObject></g></g><g class="edgeLabel" transform="translate(1426.078125, 694.3858795166016)"><g class="label" data-id="L_detector_sqlite_2" transform="translate(-72.484375, -12)"><foreignObject width="144.96875" height="44"><div xmlns="http://www.w3.org/1999/xhtml" class="labelBkg" style="display: table-cell; white-space: nowrap; line-height: 1.5; max-width: 200px; text-align: center;"><span class="edgeLabel "><p>correos de comunas</p></span></div></foreignObject></g></g><g class="edgeLabel" transform="translate(1663.5625, 843.3858795166016)"><g class="label" data-id="L_mapper_sqlite_0" transform="translate(-84.9296875, -24)"><foreignObject width="169.859375" height="68"><div xmlns="http://www.w3.org/1999/xhtml" class="labelBkg" style="display: table-cell; white-space: nowrap; line-height: 1.5; max-width: 200px; text-align: center;"><span class="edgeLabel "><p>upsert por lote:<br>oficina + citacion + RUT</p></span></div></foreignObject></g></g><g class="edgeLabel"><g class="label" data-id="L_sqlite_backup_0" transform="translate(0, 0)"><foreignObject width="0" height="20"><div xmlns="http://www.w3.org/1999/xhtml" class="labelBkg" style="display: table-cell; white-space: nowrap; line-height: 1.5; max-width: 200px; text-align: center;"><span class="edgeLabel "></span></div></foreignObject></g></g><g class="edgeLabel"><g class="label" data-id="L_sqlite_casos_0" transform="translate(0, 0)"><foreignObject width="0" height="20"><div xmlns="http://www.w3.org/1999/xhtml" class="labelBkg" style="display: table-cell; white-space: nowrap; line-height: 1.5; max-width: 200px; text-align: center;"><span class="edgeLabel "></span></div></foreignObject></g></g><g class="edgeLabel"><g class="label" data-id="L_sqlite_estad_0" transform="translate(0, 0)"><foreignObject width="0" height="20"><div xmlns="http://www.w3.org/1999/xhtml" class="labelBkg" style="display: table-cell; white-space: nowrap; line-height: 1.5; max-width: 200px; text-align: center;"><span class="edgeLabel "></span></div></foreignObject></g></g><g class="edgeLabel"><g class="label" data-id="L_sqlite_sector_0" transform="translate(0, 0)"><foreignObject width="0" height="20"><div xmlns="http://www.w3.org/1999/xhtml" class="labelBkg" style="display: table-cell; white-space: nowrap; line-height: 1.5; max-width: 200px; text-align: center;"><span class="edgeLabel "></span></div></foreignObject></g></g><g class="edgeLabel"><g class="label" data-id="L_sqlite_otras_0" transform="translate(0, 0)"><foreignObject width="0" height="20"><div xmlns="http://www.w3.org/1999/xhtml" class="labelBkg" style="display: table-cell; white-space: nowrap; line-height: 1.5; max-width: 200px; text-align: center;"><span class="edgeLabel "></span></div></foreignObject></g></g><g class="edgeLabel" transform="translate(1638.59375, 1058.5373001098633)"><g class="label" data-id="L_casos_sqlite_0" transform="translate(-27.578125, -12)"><foreignObject width="55.15625" height="44"><div xmlns="http://www.w3.org/1999/xhtml" class="labelBkg" style="display: table-cell; white-space: nowrap; line-height: 1.5; max-width: 200px; text-align: center;"><span class="edgeLabel "><p>guardar</p></span></div></foreignObject></g></g><g class="edgeLabel"><g class="label" data-id="L_casos_xlsx_0" transform="translate(0, 0)"><foreignObject width="0" height="20"><div xmlns="http://www.w3.org/1999/xhtml" class="labelBkg" style="display: table-cell; white-space: nowrap; line-height: 1.5; max-width: 200px; text-align: center;"><span class="edgeLabel "></span></div></foreignObject></g></g><g class="edgeLabel"><g class="label" data-id="L_sector_pdf_0" transform="translate(0, 0)"><foreignObject width="0" height="20"><div xmlns="http://www.w3.org/1999/xhtml" class="labelBkg" style="display: table-cell; white-space: nowrap; line-height: 1.5; max-width: 200px; text-align: center;"><span class="edgeLabel "></span></div></foreignObject></g></g><g class="edgeLabel" transform="translate(1282.8671875, 1058.5373001098633)"><g class="label" data-id="L_sector_sqlite_0" transform="translate(-76.921875, -12)"><foreignObject width="153.84375" height="44"><div xmlns="http://www.w3.org/1999/xhtml" class="labelBkg" style="display: table-cell; white-space: nowrap; line-height: 1.5; max-width: 200px; text-align: center;"><span class="edgeLabel "><p>marcar como pedidas</p></span></div></foreignObject></g></g></g><g class="nodes"><g class="node default fuente " id="flowchart-excel-0" transform="translate(1474.515625, 100.19293975830078)"><path d="M0,15.795287187039765 a107.25,15.795287187039765 0,0,0 214.5,0 a107.25,15.795287187039765 0,0,0 -214.5,0 l0,102.79528718703976 a107.25,15.795287187039765 0,0,0 214.5,0 l0,-102.79528718703976" class="basic label-container" style="fill:#fff3d6 !important;stroke:#926100 !important" label-offset-y="15.795287187039765" transform="translate(-107.25, -67.19293078055965)"></path><g class="label" style="color:#1f2933 !important" transform="translate(-99.75, -26)"><rect></rect><foreignObject width="199.5" height="92"><div style="color: rgb(31, 41, 51) !important; display: table-cell; white-space: nowrap; line-height: 1.5; max-width: 200px; text-align: center;" xmlns="http://www.w3.org/1999/xhtml"><span style="color:#1f2933 !important" class="nodeLabel "><p>Excel en Google Drive<br>DETALLE CARPETAS 2026<br>23 hojas - 21.568 filas</p></span></div></foreignObject></g></g><g class="node default proceso " id="flowchart-sanitizer-1" transform="translate(1474.515625, 354.38587951660156)"><rect class="basic label-container" style="fill:#e8f0f8 !important;stroke:#1a73b0 !important" x="-130" y="-63" width="260" height="126"></rect><g class="label" style="color:#1f2933 !important" transform="translate(-100, -48)"><rect></rect><foreignObject width="200" height="116"><div style="color: rgb(31, 41, 51) !important; display: table; white-space: break-spaces; line-height: 1.5; max-width: 200px; text-align: center; width: 200px;" xmlns="http://www.w3.org/1999/xhtml"><span style="color:#1f2933 !important" class="nodeLabel "><p>WorkbookSanitizer<br>copia temporal sin las listas<br>desplegables que ClosedXML rechaza</p></span></div></foreignObject></g></g><g class="node default proceso " id="flowchart-detector-2" transform="translate(1474.515625, 506.38587951660156)"><rect class="basic label-container" style="fill:#e8f0f8 !important;stroke:#1a73b0 !important" x="-129.1796875" y="-39" width="258.359375" height="78"></rect><g class="label" style="color:#1f2933 !important" transform="translate(-99.1796875, -24)"><rect></rect><foreignObject width="198.359375" height="68"><div style="color: rgb(31, 41, 51) !important; display: table-cell; white-space: nowrap; line-height: 1.5; max-width: 200px; text-align: center;" xmlns="http://www.w3.org/1999/xhtml"><span style="color:#1f2933 !important" class="nodeLabel "><p>Deteccion por encabezados<br>no por nombre de hoja</p></span></div></foreignObject></g></g><g class="node default proceso " id="flowchart-mapper-3" transform="translate(1663.5625, 694.3858795166016)"><rect class="basic label-container" style="fill:#e8f0f8 !important;stroke:#1a73b0 !important" x="-130" y="-75" width="260" height="150"></rect><g class="label" style="color:#1f2933 !important" transform="translate(-100, -60)"><rect></rect><foreignObject width="200" height="140"><div style="color: rgb(31, 41, 51) !important; display: table; white-space: break-spaces; line-height: 1.5; max-width: 200px; text-align: center; width: 200px;" xmlns="http://www.w3.org/1999/xhtml"><span style="color:#1f2933 !important" class="nodeLabel "><p>AgendaRowMapper<br>valida RUT - normaliza estados<br>fecha o comuna - marca revision</p></span></div></foreignObject></g></g><g class="node default datos " id="flowchart-sqlite-4" transform="translate(1437.17578125, 969.4615898132324)"><path d="M0,13.717138666365791 a75.984375,13.717138666365791 0,0,0 151.96875,0 a75.984375,13.717138666365791 0,0,0 -151.96875,0 l0,76.7171386663658 a75.984375,13.717138666365791 0,0,0 151.96875,0 l0,-76.7171386663658" class="basic label-container" style="fill:#e3f6e9 !important;stroke:#1e7a3d !important" label-offset-y="13.717138666365791" transform="translate(-75.984375, -52.07570799954869)"></path><g class="label" style="color:#1f2933 !important" transform="translate(-68.484375, -14)"><rect></rect><foreignObject width="136.96875" height="68"><div style="color: rgb(31, 41, 51) !important; display: table-cell; white-space: nowrap; line-height: 1.5; max-width: 200px; text-align: center;" xmlns="http://www.w3.org/1999/xhtml"><span style="color:#1f2933 !important" class="nodeLabel "><p>SQLite carpetas.db<br>21.627 casos</p></span></div></foreignObject></g></g><g class="node default datos " id="flowchart-backup-5" transform="translate(1706.171875, 1171.5373001098633)"><rect class="basic label-container" style="fill:#e3f6e9 !important;stroke:#1e7a3d !important" x="-111.8125" y="-39" width="223.625" height="78"></rect><g class="label" style="color:#1f2933 !important" transform="translate(-81.8125, -24)"><rect></rect><foreignObject width="163.625" height="68"><div style="color: rgb(31, 41, 51) !important; display: table-cell; white-space: nowrap; line-height: 1.5; max-width: 200px; text-align: center;" xmlns="http://www.w3.org/1999/xhtml"><span style="color:#1f2933 !important" class="nodeLabel "><p>Respaldo automatico<br>al arrancar - ultimas 10</p></span></div></foreignObject></g></g><g class="node default ui " id="flowchart-casos-6" transform="translate(691.359375, 1171.5373001098633)"><rect class="basic label-container" style="fill:#eef2f6 !important;stroke:#0b3d68 !important" x="-109.5859375" y="-51" width="219.171875" height="102"></rect><g class="label" style="color:#1f2933 !important" transform="translate(-79.5859375, -36)"><rect></rect><foreignObject width="159.171875" height="92"><div style="color: rgb(31, 41, 51) !important; display: table-cell; white-space: nowrap; line-height: 1.5; max-width: 200px; text-align: center;" xmlns="http://www.w3.org/1999/xhtml"><span style="color:#1f2933 !important" class="nodeLabel "><p>Casos<br>editar - filtrar - ordenar<br>colores por estado</p></span></div></foreignObject></g></g><g class="node default ui " id="flowchart-estad-7" transform="translate(436.40625, 1171.5373001098633)"><rect class="basic label-container" style="fill:#eef2f6 !important;stroke:#0b3d68 !important" x="-95.3671875" y="-39" width="190.734375" height="78"></rect><g class="label" style="color:#1f2933 !important" transform="translate(-65.3671875, -24)"><rect></rect><foreignObject width="130.734375" height="68"><div style="color: rgb(31, 41, 51) !important; display: table-cell; white-space: nowrap; line-height: 1.5; max-width: 200px; text-align: center;" xmlns="http://www.w3.org/1999/xhtml"><span style="color:#1f2933 !important" class="nodeLabel "><p>Estadisticas<br>atencion - graficos</p></span></div></foreignObject></g></g><g class="node default ui " id="flowchart-sector-8" transform="translate(173, 1171.5373001098633)"><rect class="basic label-container" style="fill:#eef2f6 !important;stroke:#0b3d68 !important" x="-118.0390625" y="-39" width="236.078125" height="78"></rect><g class="label" style="color:#1f2933 !important" transform="translate(-88.0390625, -24)"><rect></rect><foreignObject width="176.078125" height="68"><div style="color: rgb(31, 41, 51) !important; display: table-cell; white-space: nowrap; line-height: 1.5; max-width: 200px; text-align: center;" xmlns="http://www.w3.org/1999/xhtml"><span style="color:#1f2933 !important" class="nodeLabel "><p>Informes Archivo / Of. 43<br>imprimibles</p></span></div></foreignObject></g></g><g class="node default ui " id="flowchart-otras-9" transform="translate(980.9453125, 1171.5373001098633)"><rect class="basic label-container" style="fill:#eef2f6 !important;stroke:#0b3d68 !important" x="-130" y="-39" width="260" height="78"></rect><g class="label" style="color:#1f2933 !important" transform="translate(-100, -24)"><rect></rect><foreignObject width="200" height="68"><div style="color: rgb(31, 41, 51) !important; display: table; white-space: break-spaces; line-height: 1.5; max-width: 200px; text-align: center; width: 200px;" xmlns="http://www.w3.org/1999/xhtml"><span style="color:#1f2933 !important" class="nodeLabel "><p>Comunas - Papelera - Usuarios</p></span></div></foreignObject></g></g><g class="node default salida " id="flowchart-pdf-10" transform="translate(173, 1373.5373001098633)"><rect class="basic label-container" style="fill:#fbe4e8 !important;stroke:#a11d33 !important" x="-130" y="-51" width="260" height="102"></rect><g class="label" style="color:#1f2933 !important" transform="translate(-100, -36)"><rect></rect><foreignObject width="200" height="92"><div style="color: rgb(31, 41, 51) !important; display: table; white-space: break-spaces; line-height: 1.5; max-width: 200px; text-align: center; width: 200px;" xmlns="http://www.w3.org/1999/xhtml"><span style="color:#1f2933 !important" class="nodeLabel "><p>PDF de solicitud<br>nombre - RUT - ultima carpeta</p></span></div></foreignObject></g></g><g class="node default salida " id="flowchart-xlsx-11" transform="translate(691.359375, 1373.5373001098633)"><rect class="basic label-container" style="fill:#fbe4e8 !important;stroke:#a11d33 !important" x="-92.2578125" y="-39" width="184.515625" height="78"></rect><g class="label" style="color:#1f2933 !important" transform="translate(-62.2578125, -24)"><rect></rect><foreignObject width="124.515625" height="68"><div style="color: rgb(31, 41, 51) !important; display: table-cell; white-space: nowrap; line-height: 1.5; max-width: 200px; text-align: center;" xmlns="http://www.w3.org/1999/xhtml"><span style="color:#1f2933 !important" class="nodeLabel "><p>Export .xlsx<br>de la vista filtrada</p></span></div></foreignObject></g></g></g></g></g></svg></div>
+</body></html>

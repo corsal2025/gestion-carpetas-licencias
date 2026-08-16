@@ -1,0 +1,57 @@
+flowchart TB
+    subgraph origen["ORIGEN DE DATOS"]
+        excel[("Excel en Google Drive<br/>DETALLE CARPETAS 2026<br/>23 hojas - 21.568 filas")]
+    end
+
+    subgraph importacion["IMPORTACION (el Excel solo se lee)"]
+        sanitizer["WorkbookSanitizer<br/>copia temporal sin las listas<br/>desplegables que ClosedXML rechaza"]
+        detector["Deteccion por encabezados<br/>no por nombre de hoja"]
+        mapper["AgendaRowMapper<br/>valida RUT - normaliza estados<br/>fecha o comuna - marca revision"]
+    end
+
+    subgraph base["BASE DE DATOS (fuente de verdad)"]
+        sqlite[("SQLite carpetas.db<br/>21.627 casos")]
+        backup["Respaldo automatico<br/>al arrancar - ultimas 10"]
+    end
+
+    subgraph pantallas["DASHBOARD (HTTPS, con sesion)"]
+        casos["Casos<br/>editar - filtrar - ordenar<br/>colores por estado"]
+        estad["Estadisticas<br/>atencion - graficos"]
+        sector["Informes Archivo / Of. 43<br/>imprimibles"]
+        otras["Comunas - Papelera - Usuarios"]
+    end
+
+    subgraph salidas["SALIDAS"]
+        pdf["PDF de solicitud<br/>nombre - RUT - ultima carpeta"]
+        xlsx["Export .xlsx<br/>de la vista filtrada"]
+    end
+
+    excel -->|"--import o pantalla Importar"| sanitizer
+    sanitizer --> detector
+    detector -->|"hojas de agenda"| mapper
+    detector -->|"escaneadas y subidas"| sqlite
+    detector -->|"correos de comunas"| sqlite
+    mapper -->|"upsert por lote:<br/>oficina + citacion + RUT"| sqlite
+
+    sqlite --> backup
+    sqlite --> casos
+    sqlite --> estad
+    sqlite --> sector
+    sqlite --> otras
+
+    casos -->|"guardar"| sqlite
+    casos --> xlsx
+    sector --> pdf
+    sector -->|"marcar como pedidas"| sqlite
+
+    classDef fuente fill:#fff3d6,stroke:#926100,color:#1f2933
+    classDef proceso fill:#e8f0f8,stroke:#1a73b0,color:#1f2933
+    classDef datos fill:#e3f6e9,stroke:#1e7a3d,color:#1f2933
+    classDef ui fill:#eef2f6,stroke:#0b3d68,color:#1f2933
+    classDef salida fill:#fbe4e8,stroke:#a11d33,color:#1f2933
+
+    class excel fuente
+    class sanitizer,detector,mapper proceso
+    class sqlite,backup datos
+    class casos,estad,sector,otras ui
+    class pdf,xlsx salida
