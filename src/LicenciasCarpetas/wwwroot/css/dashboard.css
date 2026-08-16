@@ -1289,3 +1289,55 @@ body.cases-page main > .card.table-card {
 body.cases-page main > .card form {
     flex-wrap: wrap;
 }
+
+/* Fila con cambios sin guardar: el color ya cambió al elegir la opción, pero en la base sigue el
+   valor anterior hasta apretar Guardar. El borde punteado avisa de esa diferencia. */
+table.cases-index tbody tr.fila-sin-guardar td:first-child {
+    box-shadow: inset 3px 0 0 #d97706;
+}
+
+table.cases-index tbody tr.fila-sin-guardar button[type="submit"] {
+    outline: 2px solid #d97706;
+    outline-offset: 1px;
+}
+
+/* ── Precedencia de colores en la tabla de Casos ─────────────────────────────────────────────
+   El color del estado es el idioma con que se lee la agenda: tiene que ganarle a la franja
+   alterna, al fondo blanco de las columnas fijas y al resaltado del cursor. Antes perdía contra
+   los tres, y la fila aparecía a medio pintar o se despintaba al pasar el mouse. */
+table.cases-index tbody tr.estado-primeralicencia td { background: #FF00FF !important; }
+table.cases-index tbody tr.estado-subidaaconaset td { background: #FFFF00 !important; }
+table.cases-index tbody tr.estado-subidaconf8 td { background: #BF9000 !important; }
+table.cases-index tbody tr.estado-subidaconoficio td { background: #FFE599 !important; }
+table.cases-index tbody tr.estado-cambiodomiciliosubidoaconaset td { background: #00FFFF !important; }
+table.cases-index tbody tr.estado-cambiodomiciliosubidoconcorreo td { background: #D0E0E3 !important; }
+table.cases-index tbody tr.estado-cambiodomiciliosolicitado td { background: #9FC5E8 !important; }
+table.cases-index tbody tr.estado-cambiodomicilio td { background: #3D85C6 !important; }
+table.cases-index tbody tr.estado-seencuentraenarchivos td { background: #6AA84F !important; }
+table.cases-index tbody tr.estado-seencuentraenoficina43 td { background: #8E7CC3 !important; }
+table.cases-index tbody tr.estado-noexistecarpeta td { background: #FF0000 !important; }
+table.cases-index tbody tr.estado-crearoficio td { background: #C27BA0 !important; }
+table.cases-index tbody tr.estado-crearcertificado td { background: #C27BA0 !important; }
+
+/* El cursor ya no repinta la fila: la oscurece un punto. Así se sigue viendo dónde está el mouse
+   sin perder el color del estado. */
+table.cases-index tbody tr:hover td {
+    filter: brightness(0.94);
+}
+
+/* Marcada y "requiere revisión" siguen mandando sobre el color del estado — van después a
+   propósito, para ganar con la misma prioridad. */
+table.cases-index tbody tr:has(input[name="markedValue"]:checked) td {
+    background: #bfe3b4 !important;
+}
+
+table.cases-index tbody tr.row-needs-review td {
+    background: var(--color-review-bg) !important;
+}
+
+/* Los campos siguen blancos por dentro, para escribir cómodo sobre cualquier color de fila. */
+table.cases-index tbody td input,
+table.cases-index tbody td select {
+    background: #ffffff !important;
+    color: var(--color-text);
+}
