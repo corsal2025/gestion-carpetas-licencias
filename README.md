@@ -19,6 +19,9 @@ nunca se modifica: solo se lee.
 | Hoja `CORREOS CAMBIO DE DOMICLIO` | Pantalla **Comunas** (`/Comunas`), buscable y editable |
 | Copiar/pegar entre hojas para reportes | **Exportar a Excel** respetando los filtros aplicados |
 
+| Colores de fila por `ESTADO DE LA CARPETA` (formato condicional) | Los mismos 13 colores del libro, copiados de sus reglas. Cambian al elegir otro estado, sin recargar |
+| `COUNTIF` que marcaba RUT repetidos en violeta | El RUT se resalta cuando esa persona aparece más de una vez en lo que se está mirando |
+
 Además de lo que hacía el Excel:
 
 - **RUT validado** con dígito verificador y normalizado a `13.025.150-1`. Los RUT inválidos se
@@ -29,7 +32,26 @@ Además de lo que hacía el Excel:
 - **Variantes de escritura unificadas**: `ESPERA EXÁMEN`/`ESPERA EXAMEN`,
   `SE ENCUENTRA EN OF.43`/`OF. 43`, `CAMBIO DE DOM SUBIDO CON CORREO`/`CAMBIO DOM. SUBIDO CON CORREO`
   colapsan a un solo valor de catálogo.
-- **Trazabilidad**: cada caso guarda de qué hoja y fila del Excel salió.
+- **Trazabilidad**: cada caso guarda de qué hoja y fila del Excel salió, y quién lo editó por última
+  vez desde el dashboard.
+- **Hojas reconocidas por su contenido, no por su nombre**: el libro se renombra (`ESCANEADAS Y
+  SUBIDAS` pasó a `HOJA ESTADISTICAS`) y la importación sigue encontrándolas por sus encabezados.
+- **Fecha de subida automática**: marcar cualquier estado de subida (Conaset, F8, oficio, cambio de
+  domicilio) escribe la fecha del día. Una fecha ya escrita no se toca.
+- **Orden con tildes correcto**: `ÁLVARO`, `MUÑOZ` y `PÉREZ` ordenan donde corresponde, no después
+  de la Z.
+
+## Campos que el Excel no tiene
+
+Se escriben a mano y **una reimportación nunca los pisa**, porque el libro no trae columna para ellos:
+
+| Campo | Para qué |
+| --- | --- |
+| **Penúltima carpeta** | Fecha de la carpeta anterior a la última. No influye en el sector |
+| **Código F8** | Código del caso F8, texto libre |
+| **Licencias** | Clases que el contribuyente viene a obtener (A1–A5, B, C, D, E, F). Selección múltiple |
+| **Atendido** | Si la persona asistió. Alimenta el % de atención de Estadísticas |
+| **Marcar** | Marca personal del operador; también elige qué entra en los informes de sector |
 
 ## Requisitos
 
@@ -85,10 +107,21 @@ La ruta por defecto del Excel se configura en `Carpetas:DefaultWorkbookPath` (ve
   atención, estado, decisión e idoneidad; alta manual de filas nuevas; marcado personal; envío a la
   papelera; exportación a `.xlsx` de **toda** la vista filtrada (sin tope de filas). Cualquier
   encabezado ordena por esa columna, y un segundo clic invierte el orden.
+  Las carpetas ya subidas a Conaset bajan al final de la lista, ordenadas por fecha de subida: son
+  trabajo terminado y dejan arriba lo pendiente.
 - `/Papelera`: casos eliminados, con restauración. Nada se borra de verdad hasta confirmarlo ahí.
 - `/Usuarios`: crear cuentas, cambiarle la contraseña a quien la olvidó, eliminar usuarios.
+- `/Sector/Archivo` y `/Sector/Oficina43`: **documento imprimible** para pedir carpetas físicas, con
+  escudo municipal, destino, período, quién solicita, total, filas numeradas y firmas. Filtrable por
+  día o mes de citación. Muestra nombre, RUT y fecha de última carpeta, con el mes escrito
+  (`15/marzo/2024`) para que nadie confunda día con mes en papel.
+  El botón **"Marcar como pedidas"** registra lo que salió impreso y esas carpetas no vuelven a
+  aparecer en el siguiente documento; "Volver a pedir" las devuelve a la lista.
 - `/Estadisticas`: día a día del mes elegido — escaneadas y subidas editables, agendadas/atendidas y
-  % de atención por oficina calculados, más el desglose por estado de carpeta y decisión final.
+  % de atención por oficina calculados, desglose por estado de carpeta y decisión final, y **tres
+  gráficos de barras**: atención por oficina, licencias por clase (profesionales destacadas) y
+  estados de carpeta, cada barra con el mismo color que esa fila tiene en Casos. Los gráficos son
+  CSS puro, sin librerías: un equipo sin internet no puede quedarse con la pantalla en blanco.
 - `/Sector/Archivo` y `/Sector/Oficina43`: listado imprimible (imprimir del navegador → PDF) de las
   carpetas a retirar. Por defecto muestra solo los casos marcados; hay un enlace para ver todo el sector.
 - `/Comunas`: directorio de correos por municipio.
@@ -129,11 +162,12 @@ migración fallida, **no** contra la falla del disco. Para eso hay que copiar `d
 dotnet test -c Release
 ```
 
-141 pruebas: catálogos y variantes de escritura, validación de RUT, lectura de celdas (fecha real,
-serial de Excel, texto tipeado), mapeo de filas, deduplicación al reimportar, filtros, orden
-(incluido el orden correcto de nombres con tilde) y paginación del repositorio, papelera,
-estadísticas, saneado del libro, exportación completa, autenticación (bloqueo por intentos
-fallidos, mayúsculas en el usuario, restablecimiento) y respaldos.
+267 pruebas: catálogos y variantes de escritura, validación de RUT, lectura de celdas (fecha real,
+serial de Excel, texto tipeado), mapeo de filas, deduplicación al reimportar, detección de hojas por
+contenido, filtros, orden (incluido el de nombres con tilde y el hundimiento de lo ya subido),
+paginación, papelera, asistencia, clases de licencia, colores por estado, RUT repetidos, informes de
+sector por período, estadísticas, saneado del libro, exportación completa, autenticación (bloqueo por
+intentos fallidos, mayúsculas en el usuario, restablecimiento) y respaldos.
 
 ### CI
 
@@ -175,7 +209,8 @@ segundo plano, se abre cuando el operador la necesita.
   desplegables de las hojas `PLANTILLA` superan los 255 caracteres que acepta. La importación
   detecta ese fallo, hace una copia temporal sin los nodos `dataValidation` y la lee desde ahí
   (`Import/WorkbookSanitizer.cs`). El archivo original queda intacto.
-- **La importación tarda ~90 segundos** para las ~21.000 filas del libro completo.
+- **La importación tarda ~15 segundos** para las ~21.500 filas del libro completo (una transacción
+  por hoja; fila por fila tardaba minuto y medio).
 - **Datos personales en reposo**: la base SQLite guarda nombres y RUT sin cifrar; depende del
   cifrado de disco del equipo. Está en `data/`, ignorado por git.
 
