@@ -4,12 +4,14 @@ using LicenciasCarpetas.Persistence;
 namespace LicenciasCarpetas.Tests;
 
 /// <summary>
-/// "ATENCIÓN" is written by hand every day in the workbook, and it is what tells whether the person
-/// actually showed up — so editing it has to keep the derived Attended flag in step.
+/// "ATENCIÓN" es una nota libre del libro (por ejemplo "SI, EN AV. ARGENTINA"). Al importar sirve
+/// para deducir si la persona asistió, pero desde que existe la casilla "Atendido" la asistencia ya
+/// no depende de ese texto: editar la nota no marca ni desmarca a nadie.
+/// Ver <see cref="AttendanceAndUploadDateTests"/>.
 /// </summary>
 public class AttentionEditingTests
 {
-    private static long InsertCase(SqliteTestDatabase db, string? attention)
+    private static long InsertCase(SqliteTestDatabase db, string? attention, bool attended)
         => db.Cases.Insert(new FolderCase
         {
             FullName = "JUAN PEREZ",
@@ -17,48 +19,74 @@ public class AttentionEditingTests
             CitationDate = new DateOnly(2026, 1, 2),
             Office = Office.AvenidaArgentina,
             AttentionNote = attention,
-            Attended = attention is not null
+            Attended = attended
         });
 
     [Fact]
-    public void Writing_the_attention_note_marks_the_person_as_attended()
+    public void The_note_is_stored_as_written()
     {
         using var db = new SqliteTestDatabase();
-        var id = InsertCase(db, attention: null);
+        var id = InsertCase(db, attention: null, attended: false);
 
         db.Cases.UpdateEditableFields(id, "JUAN PEREZ", "13.025.150-1", new DateOnly(2026, 1, 2),
             null, null, null, null, null, null, "SI, EN AV. ARGENTINA", needsReview: false);
 
-        var stored = db.Cases.FindById(id)!;
-        Assert.Equal("SI, EN AV. ARGENTINA", stored.AttentionNote);
-        Assert.True(stored.Attended);
+        Assert.Equal("SI, EN AV. ARGENTINA", db.Cases.FindById(id)!.AttentionNote);
     }
 
     [Fact]
-    public void Clearing_the_attention_note_marks_the_person_as_not_attended()
+    public void The_note_can_be_cleared()
     {
         using var db = new SqliteTestDatabase();
-        var id = InsertCase(db, attention: "SI, EN AV. ARGENTINA");
+        var id = InsertCase(db, attention: "SI, EN AV. ARGENTINA", attended: true);
 
         db.Cases.UpdateEditableFields(id, "JUAN PEREZ", "13.025.150-1", new DateOnly(2026, 1, 2),
             null, null, null, null, null, null, null, needsReview: false);
 
-        var stored = db.Cases.FindById(id)!;
-        Assert.Null(stored.AttentionNote);
-        Assert.False(stored.Attended);
+        Assert.Null(db.Cases.FindById(id)!.AttentionNote);
+    }
+
+    /// <summary>
+    /// Ésta es la regresión que costó datos: la asistencia se derivaba de la nota, así que guardar
+    /// una fila con ese campo vacío marcaba como ausente a alguien que sí había ido, y el porcentaje
+    /// de atención bajaba solo.
+    /// </summary>
+    [Fact]
+    public void Clearing_the_note_no_longer_marks_the_person_as_absent()
+    {
+        using var db = new SqliteTestDatabase();
+        var id = InsertCase(db, attention: "SI, EN AV. ARGENTINA", attended: true);
+
+        db.Cases.UpdateEditableFields(id, "JUAN PEREZ", "13.025.150-1", new DateOnly(2026, 1, 2),
+            null, null, null, null, null, null, null, needsReview: false);
+
+        Assert.True(db.Cases.FindById(id)!.Attended);
+        Assert.Equal(1, db.Cases.DailyAttendance(2026, 1).Single().Attended);
     }
 
     [Fact]
-    public void Attendance_counts_follow_the_edited_note()
+    public void Writing_a_note_does_not_mark_attendance_by_itself()
     {
         using var db = new SqliteTestDatabase();
-        var id = InsertCase(db, attention: null);
-
-        Assert.Equal(0, db.Cases.DailyAttendance(2026, 1).Single().Attended);
+        var id = InsertCase(db, attention: null, attended: false);
 
         db.Cases.UpdateEditableFields(id, "JUAN PEREZ", "13.025.150-1", new DateOnly(2026, 1, 2),
             null, null, null, null, null, null, "SI, EN AV. ARGENTINA", needsReview: false);
 
-        Assert.Equal(1, db.Cases.DailyAttendance(2026, 1).Single().Attended);
+        Assert.False(db.Cases.FindById(id)!.Attended);
+    }
+
+    /// <summary>Al importar el libro sí se deduce: es el único dato de asistencia que trae.</summary>
+    [Fact]
+    public void An_import_still_derives_attendance_from_the_note()
+    {
+        var mapped = LicenciasCarpetas.Import.AgendaRowMapper.Map(
+            new LicenciasCarpetas.Import.RawAgendaRow(
+                new DateTime(2026, 1, 2), null, null, null, null, "JUAN PEREZ", "13.025.150-1",
+                "SI, EN AV. ARGENTINA", null, null, null),
+            new LicenciasCarpetas.Import.AgendaSheet("ENERO AV. ARGENTINA", Office.AvenidaArgentina, 1),
+            rowNumber: 3);
+
+        Assert.True(mapped!.Attended);
     }
 }

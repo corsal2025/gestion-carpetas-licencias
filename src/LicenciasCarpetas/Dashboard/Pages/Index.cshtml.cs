@@ -96,9 +96,9 @@ public class IndexModel(IFolderCaseRepository cases, IExcelCaseExporter exporter
         var citationDate = ParseDate(citacion);
         var uploadedDate = ParseDate(subida);
 
-        // Marcar "SUBIDA A CONASET" es el acto de subirla: la fecha es hoy, y escribirla a mano es
+        // Marcar un estado de subida es el acto de subirla: la fecha es hoy, y escribirla a mano es
         // una oportunidad de equivocarse o de olvidarla. Una fecha ya escrita no se toca.
-        if (estado == FolderState.SubidaAConaset && uploadedDate is null)
+        if (estado is { } newState && IsUploadState(newState) && uploadedDate is null)
         {
             uploadedDate = DateOnly.FromDateTime(DateTime.Today);
         }
@@ -129,7 +129,8 @@ public class IndexModel(IFolderCaseRepository cases, IExcelCaseExporter exporter
 
     /// <summary>Adds a citation row by hand, the way a new line is typed into the agenda sheet.</summary>
     public IActionResult OnPostAdd(string? nombre, string? rut, string? citacion, Office office,
-        string? ultimaCarpeta, FolderState? estado, FinalDecision? decision, MoralIdoneity? idoneidad, string? atencion)
+        string? ultimaCarpeta, FolderState? estado, FinalDecision? decision, MoralIdoneity? idoneidad, string? atencion,
+        string? penultima = null, string? codigoF8 = null)
     {
         var fullName = string.IsNullOrWhiteSpace(nombre) ? null : nombre.Trim();
         if (fullName is null)
@@ -157,7 +158,13 @@ public class IndexModel(IFolderCaseRepository cases, IExcelCaseExporter exporter
             MoralIdoneity = idoneidad,
             AttentionNote = attention,
             Attended = attention is not null,
-            NeedsReview = normalizedRut is null || citationDate is null
+            PenultimateFolderDate = ParseDate(penultima),
+            CodigoF8 = string.IsNullOrWhiteSpace(codigoF8) ? null : codigoF8.Trim(),
+            NeedsReview = normalizedRut is null || citationDate is null,
+            // Un caso creado ya subido lleva la fecha del día, igual que al editarlo.
+            FolderUploadedDate = estado is { } state && IsUploadState(state)
+                ? DateOnly.FromDateTime(DateTime.Today)
+                : null
         };
 
         cases.Insert(folderCase);
@@ -171,6 +178,13 @@ public class IndexModel(IFolderCaseRepository cases, IExcelCaseExporter exporter
     public IActionResult OnPostToggleMarked(long id, bool markedValue)
     {
         cases.SetMarked(id, markedValue);
+        return new EmptyResult();
+    }
+
+    /// <summary>Asistencia del día: alimenta el % de atención de Estadísticas.</summary>
+    public IActionResult OnPostToggleAttended(long id, bool attendedValue)
+    {
+        cases.SetAttended(id, attendedValue);
         return new EmptyResult();
     }
 
@@ -283,6 +297,13 @@ public class IndexModel(IFolderCaseRepository cases, IExcelCaseExporter exporter
 
         return values;
     }
+
+    /// <summary>Los cinco estados que significan "la carpeta ya se subió", en cualquiera de sus vías.</summary>
+    private static bool IsUploadState(FolderState state) => state is FolderState.SubidaAConaset
+        or FolderState.SubidaConF8
+        or FolderState.SubidaConOficio
+        or FolderState.CambioDomicilioSubidoAConaset
+        or FolderState.CambioDomicilioSubidoConCorreo;
 
     /// <summary>Accepts what the operator is used to typing: "15-03-2024", "15/03/2024", "15 marzo 2024".</summary>
     internal static DateOnly? ParseDate(string? text)

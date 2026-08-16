@@ -123,6 +123,14 @@
             <input type="text" name="ultimaCarpeta" placeholder="dd-mm-aaaa o VIÑA DEL MAR" />
         </div>
         <div>
+            <label class="form-label">Penúltima carpeta</label>
+            <input type="text" name="penultima" placeholder="dd-mm-aaaa" />
+        </div>
+        <div>
+            <label class="form-label">Código F8</label>
+            <input type="text" name="codigoF8" placeholder="ej: F8-2026-114" />
+        </div>
+        <div>
             <label class="form-label">Estado de la carpeta</label>
             <select name="estado">
                 <option value="">—</option>
@@ -212,6 +220,7 @@
         <thead>
             <tr>
                 <th>Marcar</th>
+                <th title="La persona asistió a su citación. Alimenta el % de atención de Estadísticas">Atendido</th>
                 @* El texto va dentro de un <span>: escrito como "Oficina@Model...", Razor lee
                    "texto@algo" como una dirección de correo y lo imprime literal en vez de
                    evaluarlo. El ">" que cierra el span rompe esa heurística. *@
@@ -256,6 +265,14 @@
                         <input type="hidden" name="id" value="@item.Id" />
                         <input type="checkbox" name="markedValue" class="marked-checkbox" @(item.Marked ? "checked" : "")
                                onchange="submitCheckboxToggle(this, 'markedValue')" title="Marcar caso" />
+                    </form>
+                </td>
+                <td class="marked-cell">
+                    <form method="post" asp-page-handler="ToggleAttended" class="marked-form">
+                        <input type="hidden" name="id" value="@item.Id" />
+                        <input type="checkbox" name="attendedValue" class="marked-checkbox" @(item.Attended ? "checked" : "")
+                               onchange="submitCheckboxToggle(this, 'attendedValue')"
+                               title="@(item.Attended ? "Asistió" : "No asistió")" />
                     </form>
                 </td>
                 <td>
@@ -396,7 +413,8 @@
         if (!table) return;
 
         function placeRutColumn() {
-            var nameHeader = table.querySelector('thead th:nth-child(3)');
+            // Columna 4 = Nombre completo (1 Marcar, 2 Atendido, 3 Citación).
+            var nameHeader = table.querySelector('thead th:nth-child(4)');
             if (!nameHeader) return;
             table.style.setProperty('--sticky-rut-left', nameHeader.getBoundingClientRect().width + 'px');
         }

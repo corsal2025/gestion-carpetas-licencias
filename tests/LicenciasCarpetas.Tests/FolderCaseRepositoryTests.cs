@@ -173,7 +173,9 @@ public class FolderCaseRepositoryTests
         Assert.Equal("13.025.150-1", stored.Rut);
         Assert.Null(stored.FolderStateRaw);
         Assert.Equal(FolderState.SubidaAConaset, stored.FolderState);
-        Assert.True(stored.Attended);
+        Assert.Equal("SI, EN AV. ARGENTINA", stored.AttentionNote);
+        // La asistencia ya no se deduce del texto de ATENCIÓN: tiene su propia casilla.
+        Assert.False(stored.Attended);
         Assert.False(stored.NeedsReview);
     }
 

@@ -525,7 +525,7 @@ table.cases-index td {
    Chilean name needs — and the rest sizes to its content. */
 table.cases-index th:nth-child(1), table.cases-index td:nth-child(1) { width: 46px; }
 
-table.cases-index td:nth-child(3) { min-width: 230px; }
+table.cases-index td:nth-child(4) { min-width: 230px; }
 
 /* Nothing wraps and nothing is cut: each cell keeps its text on one line and the table grows to
    the right, scrolling inside its card. A truncated name or state is worse than a scrollbar. */
@@ -1095,54 +1095,54 @@ table.cases-index thead th {
     background: #eef2f6;
 }
 
-table.cases-index th:nth-child(3),
-table.cases-index td:nth-child(3),
 table.cases-index th:nth-child(4),
-table.cases-index td:nth-child(4) {
+table.cases-index td:nth-child(4),
+table.cases-index th:nth-child(5),
+table.cases-index td:nth-child(5) {
     position: sticky;
     z-index: 1;
     background: #ffffff;
 }
 
-table.cases-index th:nth-child(3),
-table.cases-index td:nth-child(3) { left: 0; }
-
 table.cases-index th:nth-child(4),
-table.cases-index td:nth-child(4) {
+table.cases-index td:nth-child(4) { left: 0; }
+
+table.cases-index th:nth-child(5),
+table.cases-index td:nth-child(5) {
     left: var(--sticky-rut-left, 260px);
     /* La línea marca dónde termina lo fijo y empieza lo que se desplaza. */
     box-shadow: 1px 0 0 var(--color-border);
 }
 
-table.cases-index thead th:nth-child(3),
-table.cases-index thead th:nth-child(4) {
+table.cases-index thead th:nth-child(4),
+table.cases-index thead th:nth-child(5) {
     z-index: 3;
     background: #eef2f6;
 }
 
-table.cases-index tbody tr.row-alt td:nth-child(3),
-table.cases-index tbody tr.row-alt td:nth-child(4) { background: #fafbfc; }
+table.cases-index tbody tr.row-alt td:nth-child(4),
+table.cases-index tbody tr.row-alt td:nth-child(5) { background: #fafbfc; }
 
-table.cases-index tbody tr:hover td:nth-child(3),
-table.cases-index tbody tr:hover td:nth-child(4) { background: #f0f6fb; }
+table.cases-index tbody tr:hover td:nth-child(4),
+table.cases-index tbody tr:hover td:nth-child(5) { background: #f0f6fb; }
 
-table.cases-index tbody tr:has(input[name="markedValue"]:checked) td:nth-child(3),
-table.cases-index tbody tr:has(input[name="markedValue"]:checked) td:nth-child(4) {
+table.cases-index tbody tr:has(input[name="markedValue"]:checked) td:nth-child(4),
+table.cases-index tbody tr:has(input[name="markedValue"]:checked) td:nth-child(5) {
     background: #bfe3b4 !important;
 }
 
-table.cases-index tbody tr:has(input[name="markedValue"]:checked):hover td:nth-child(3),
-table.cases-index tbody tr:has(input[name="markedValue"]:checked):hover td:nth-child(4) {
+table.cases-index tbody tr:has(input[name="markedValue"]:checked):hover td:nth-child(4),
+table.cases-index tbody tr:has(input[name="markedValue"]:checked):hover td:nth-child(5) {
     background: #aed89f !important;
 }
 
-table.cases-index tbody tr.row-needs-review td:nth-child(3),
-table.cases-index tbody tr.row-needs-review td:nth-child(4) {
+table.cases-index tbody tr.row-needs-review td:nth-child(4),
+table.cases-index tbody tr.row-needs-review td:nth-child(5) {
     background: var(--color-review-bg) !important;
 }
 
-table.cases-index tbody tr.row-needs-review:hover td:nth-child(3),
-table.cases-index tbody tr.row-needs-review:hover td:nth-child(4) {
+table.cases-index tbody tr.row-needs-review:hover td:nth-child(4),
+table.cases-index tbody tr.row-needs-review:hover td:nth-child(5) {
     background: #f6d0d8 !important;
 }
 
@@ -1277,7 +1277,7 @@ table.cases-index tbody td select {
 
 /* RUT repetido: el libro lo pinta violeta con un COUNTIF. Marca a la misma persona citada dos
    veces dentro de lo que se está mirando. */
-table.cases-index tbody tr.rut-duplicado td:nth-child(4) input {
+table.cases-index tbody tr.rut-duplicado td:nth-child(5) input {
     background: #f3e0ff;
     border-color: #9900FF;
     font-weight: 700;

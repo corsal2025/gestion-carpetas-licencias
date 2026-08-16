@@ -42,6 +42,10 @@ public interface IFolderCaseRepository
         string? attentionNote, bool needsReview);
     void SetMarked(long id, bool marked);
 
+    /// <summary>Whether the person showed up. Ticked from the cases screen and counted on the
+    /// statistics screen; independent of the ATENCIÓN note.</summary>
+    void SetAttended(long id, bool attended);
+
     /// <summary>The two hand-typed fields the workbook does not carry: F8 code and penúltima carpeta.</summary>
     void UpdateCaseDetails(long id, string? codigoF8, DateOnly? penultimateFolderDate);
 
@@ -615,11 +619,13 @@ public sealed class FolderCaseRepository(string connectionString) : IFolderCaseR
                 FinalDecisionRaw = NULL,
                 MoralIdoneity = $idoneity,
                 AttentionNote = $attention,
-                Attended = $attended,
                 NeedsReview = $needsReview,
                 UpdatedAt = $updatedAt
             WHERE Id = $id
             """;
+        // Attended queda fuera a propósito: lo maneja su propia casilla (SetAttended). Derivarlo
+        // aquí del texto de ATENCIÓN hacía que guardar una fila con ese campo vacío marcara a la
+        // persona como ausente sin que nadie lo pidiera.
         command.Parameters.AddWithValue("$fullName", Nullable(fullName));
         command.Parameters.AddWithValue("$fullNameSort", Nullable(SortKey(fullName)));
         command.Parameters.AddWithValue("$rut", Nullable(rut));
@@ -631,7 +637,6 @@ public sealed class FolderCaseRepository(string connectionString) : IFolderCaseR
         command.Parameters.AddWithValue("$decision", finalDecision is { } decision ? (int)decision : DBNull.Value);
         command.Parameters.AddWithValue("$idoneity", moralIdoneity is { } idoneity ? (int)idoneity : DBNull.Value);
         command.Parameters.AddWithValue("$attention", Nullable(attentionNote));
-        command.Parameters.AddWithValue("$attended", attentionNote is not null ? 1 : 0);
         command.Parameters.AddWithValue("$needsReview", needsReview ? 1 : 0);
         command.Parameters.AddWithValue("$updatedAt", DateTimeOffset.UtcNow.ToString("O"));
         command.Parameters.AddWithValue("$id", id);
@@ -683,6 +688,17 @@ public sealed class FolderCaseRepository(string connectionString) : IFolderCaseR
         using var connection = Open();
         using var command = connection.CreateCommand();
         command.CommandText = "UPDATE FolderCase SET SectorPrintedAt = NULL WHERE Id = $id";
+        command.Parameters.AddWithValue("$id", id);
+        command.ExecuteNonQuery();
+    }
+
+    public void SetAttended(long id, bool attended)
+    {
+        using var connection = Open();
+        using var command = connection.CreateCommand();
+        command.CommandText = "UPDATE FolderCase SET Attended = $attended, UpdatedAt = $updatedAt WHERE Id = $id";
+        command.Parameters.AddWithValue("$attended", attended ? 1 : 0);
+        command.Parameters.AddWithValue("$updatedAt", DateTimeOffset.UtcNow.ToString("O"));
         command.Parameters.AddWithValue("$id", id);
         command.ExecuteNonQuery();
     }
