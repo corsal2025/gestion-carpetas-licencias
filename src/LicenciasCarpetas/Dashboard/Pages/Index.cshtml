@@ -2,6 +2,9 @@
 @model LicenciasCarpetas.Dashboard.Pages.IndexModel
 @{
     ViewData["Title"] = "Casos";
+    // Esta pantalla fija su tabla al alto de la ventana para tener siempre a la vista la barra
+    // de desplazamiento lateral; ninguna otra lo hace.
+    ViewData["BodyClass"] = "viewport-locked";
 }
 
 @if (Model.Message is not null)

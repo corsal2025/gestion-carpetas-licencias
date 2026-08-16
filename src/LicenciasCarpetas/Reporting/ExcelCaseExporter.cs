@@ -17,6 +17,8 @@ public sealed class ExcelCaseExporter : IExcelCaseExporter
         "FECHA DE LA CITACIÓN",
         "FECHA CUANDO SE SUBIO LA CARPETA",
         "FECHA ULTIMA CARPETA",
+        "PENÚLTIMA CARPETA",
+        "CÓDIGO F8",
         "NOMBRE COMPLETO",
         "RUT",
         "ATENCIÓN",
@@ -55,14 +57,16 @@ public sealed class ExcelCaseExporter : IExcelCaseExporter
                 worksheet.Cell(row, 3).Value = item.LastFolderComuna ?? string.Empty;
             }
 
-            worksheet.Cell(row, 4).Value = item.FullName ?? string.Empty;
-            worksheet.Cell(row, 5).Value = item.Rut ?? string.Empty;
-            worksheet.Cell(row, 6).Value = item.AttentionNote ?? string.Empty;
-            worksheet.Cell(row, 7).Value = item.MoralIdoneity is { } idoneity ? MoralIdoneityCatalog.Display(idoneity) : string.Empty;
-            worksheet.Cell(row, 8).Value = item.FolderStateText;
-            worksheet.Cell(row, 9).Value = item.FinalDecisionText;
-            worksheet.Cell(row, 10).Value = item.Sector is null ? string.Empty : FolderSectorCatalog.Display(item.Sector);
-            worksheet.Cell(row, 11).Value = item.NeedsReview ? "SÍ" : string.Empty;
+            SetDate(worksheet.Cell(row, 4), item.PenultimateFolderDate);
+            worksheet.Cell(row, 5).Value = item.CodigoF8 ?? string.Empty;
+            worksheet.Cell(row, 6).Value = item.FullName ?? string.Empty;
+            worksheet.Cell(row, 7).Value = item.Rut ?? string.Empty;
+            worksheet.Cell(row, 8).Value = item.AttentionNote ?? string.Empty;
+            worksheet.Cell(row, 9).Value = item.MoralIdoneity is { } idoneity ? MoralIdoneityCatalog.Display(idoneity) : string.Empty;
+            worksheet.Cell(row, 10).Value = item.FolderStateText;
+            worksheet.Cell(row, 11).Value = item.FinalDecisionText;
+            worksheet.Cell(row, 12).Value = item.Sector is null ? string.Empty : FolderSectorCatalog.Display(item.Sector);
+            worksheet.Cell(row, 13).Value = item.NeedsReview ? "SÍ" : string.Empty;
             row++;
         }
 

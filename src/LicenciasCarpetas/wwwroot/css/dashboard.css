@@ -416,9 +416,18 @@ body.cases-page main {
        card instead of stretching the page, so the header and filters stay put.
        `scroll`, not `auto`: the bar is always drawn, so the columns to the right announce
        themselves instead of hiding until someone happens to swipe sideways. */
-    overflow-x: scroll;
+    /* Automática por defecto: en Papelera, Comunas o Usuarios la tabla cabe y una barra dibujada
+       siempre sería un adorno inútil. */
+    overflow-x: auto;
     scrollbar-width: auto;
     scrollbar-gutter: stable;
+}
+
+/* Forzada solo donde de verdad hay columnas fuera de pantalla (Casos y la tabla diaria de
+   Estadísticas): ahí la barra es la única pista de que a la derecha queda información. */
+.card.table-card:has(table.cases-index),
+.card.table-card:has(table.table-wide) {
+    overflow-x: scroll;
 }
 
 /* A visible, grabbable horizontal bar — the default overlay scrollbar is nearly invisible on a
@@ -1206,25 +1215,26 @@ table.cases.table-wide td {
    para alcanzarla. Fijando la página al alto de la ventana, la tarjeta termina siempre en el
    borde inferior visible: la tabla se desplaza por dentro, en vertical y en horizontal, y la
    barra queda a mano sin bajar nada. */
-body.cases-page {
+/* SOLO en Casos. Fijar el alto de la ventana es lo que mantiene la barra lateral a la vista, pero
+   aplicado a todas las pantallas dejaba fuera de alcance lo que no cupiera: el documento de Sector,
+   la pantalla de importación y la de contraseña quedaban cortados sin forma de desplazarse. Las
+   demás pantallas se desplazan como una página normal. */
+body.viewport-locked {
     height: 100vh;
     overflow: hidden;
 }
 
-body.cases-page main {
+body.viewport-locked main {
     overflow: hidden;
+    /* La tabla llega hasta el borde inferior: sin ese hueco final la barra lateral queda más
+       abajo que la pantalla. */
+    padding-bottom: 8px;
 }
 
-body.cases-page .card.table-card {
+body.viewport-locked .card.table-card {
     flex: 1 1 auto;
     /* Un piso, para que en pantallas bajas la tabla no se reduzca a una franja inservible. */
     min-height: 220px;
-}
-
-/* La tabla llega hasta el borde inferior de la ventana: sin ese hueco final, la barra de
-   desplazamiento lateral queda pegada abajo y a la vista sin bajar nada. */
-body.cases-page main {
-    padding-bottom: 8px;
 }
 
 /* ── Colores de fila por estado de la carpeta ────────────────────────────────────────────────

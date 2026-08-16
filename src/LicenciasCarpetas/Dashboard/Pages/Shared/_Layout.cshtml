@@ -7,7 +7,9 @@
     <link rel="icon" type="image/svg+xml" href="~/favicon.svg" />
     <link rel="stylesheet" href="~/css/dashboard.css" asp-append-version="true" />
 </head>
-<body class="cases-page">
+@* "viewport-locked" solo lo pide la pantalla de Casos, que fija su tabla al alto de la ventana.
+   El resto se desplaza como una página normal. *@
+<body class="cases-page @ViewData["BodyClass"]">
     <header class="app-header">
         <div class="brand">
             <img src="~/images/logo-municipalidad.png" alt="Municipalidad de Valparaíso" class="brand-logo" />
