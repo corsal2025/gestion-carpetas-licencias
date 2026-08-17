@@ -23,6 +23,11 @@ public class SectorModel(IFolderCaseRepository cases) : PageModel
 
     public string? Message { get; private set; }
 
+    /// <summary>La lista llegó al tope de filas: el documento no trae todas las carpetas del sector.
+    /// Decirlo importa — es un papel que se firma, y un total incompleto presentado como total es
+    /// peor que no imprimirlo.</summary>
+    public bool ReachedLimit => Cases.Count >= FolderCaseRepository.SectorListLimit;
+
     /// <summary>Citation day the document is being prepared for, if the operator picked one.</summary>
     public DateOnly? CitationDay { get; private set; }
 

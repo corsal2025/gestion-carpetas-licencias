@@ -1291,7 +1291,9 @@ body.cases-page main > * {
     flex: 0 0 auto;
 }
 
-body.cases-page main > .card.table-card {
+/* Estirar la tarjeta para llenar la ventana solo tiene sentido donde la tabla es el contenido
+   principal y se desplaza por dentro. En el resto dejaba un hueco blanco enorme bajo la tabla. */
+body.viewport-locked main > .card.table-card {
     flex: 1 1 auto;
 }
 
@@ -1557,4 +1559,16 @@ table.cases-index tbody td select {
 .grafico-valor {
     font-weight: 600;
     white-space: nowrap;
+}
+
+
+/* Los campos de fecha vacios repetian "dd-mm-aaaa" en cada fila: con 100 filas, la pantalla se
+   llena de un texto que nadie necesita leer. La ayuda aparece al pararse en el campo, que es
+   cuando sirve. */
+table.cases-index input::placeholder {
+    color: transparent;
+}
+
+table.cases-index input:focus::placeholder {
+    color: #9aa5b1;
 }

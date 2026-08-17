@@ -72,6 +72,10 @@ public interface IFolderCaseRepository
 /// <summary>Plain SQLite, no ORM — same approach as the sibling OutlookComunaRouter service.</summary>
 public sealed class FolderCaseRepository(string connectionString) : IFolderCaseRepository
 {
+    /// <summary>Tope de filas del listado de sector. Existe para que "ver todo el sector" no intente
+    /// imprimir miles de páginas; la pantalla avisa cuando la lista llegó al tope.</summary>
+    public const int SectorListLimit = 2000;
+
     public void EnsureSchema()
     {
         using var connection = Open();
@@ -561,7 +565,7 @@ public sealed class FolderCaseRepository(string connectionString) : IFolderCaseR
             WHERE DeletedAt IS NULL AND LastFolderDate IS NOT NULL
               AND {sectorClause} {markedClause} {printedClause} {periodClause}
             ORDER BY CitationDate DESC, FullNameSort COLLATE NOCASE ASC
-            LIMIT 2000
+            LIMIT {SectorListLimit}
             """;
         command.Parameters.AddWithValue("$cutoff", cutoff);
 

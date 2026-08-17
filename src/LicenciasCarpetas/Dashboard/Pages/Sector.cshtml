@@ -17,6 +17,14 @@
     <p style="margin:0 0 10px; font-size:0.85rem;">
         Documento para solicitar carpetas físicas a <strong>@destino</strong>.
         @Model.Cases.Count carpeta(s) en esta lista.
+        @if (Model.ReachedLimit)
+        {
+            <strong>Hay más carpetas de las que caben en un documento</strong>
+            <text>
+                (@LicenciasCarpetas.Persistence.FolderCaseRepository.SectorListLimit por vez).
+                Filtre por día o mes, o marque los casos que necesita, para pedirlas por tandas.
+            </text>
+        }
     </p>
 
     @* Período del documento: un día concreto (la agenda de ese día) o un mes completo. *@
@@ -99,7 +107,14 @@
             <dt>Período</dt><dd>@Model.PeriodLabel</dd>
             <dt>Fecha</dt><dd>@Model.IssuedOn.ToString("dd-MM-yyyy")</dd>
             <dt>Solicita</dt><dd>@Model.OperatorName</dd>
-            <dt>Total</dt><dd>@Model.Cases.Count carpeta(s)</dd>
+            <dt>Total</dt>
+            <dd>
+                @Model.Cases.Count carpeta(s)
+                @if (Model.ReachedLimit)
+                {
+                    <text>— lista parcial, alcanzó el máximo por documento</text>
+                }
+            </dd>
         </dl>
     </header>
 
