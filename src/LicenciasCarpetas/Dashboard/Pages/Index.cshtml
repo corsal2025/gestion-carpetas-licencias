@@ -548,6 +548,31 @@
             }
         });
     });
+
+    // Las filas de una tabla pintan sus propios bordes por encima de cualquier hijo absoluto de una
+    // fila anterior — z-index no alcanza para escapar de ese orden. `position: fixed`, calculado a
+    // mano desde el resumen, saca el panel de la tabla por completo. Como queda anclado a coordenadas
+    // de pantalla y no de fila, se cierra solo si la tabla se desplaza para no dejarlo flotando lejos
+    // de la celda que lo abrió.
+    document.querySelectorAll('.licencias-celda').forEach(function (cell) {
+        cell.addEventListener('toggle', function () {
+            var panel = cell.querySelector('.licencias-opciones');
+            if (!cell.open || !panel) return;
+            var rect = cell.querySelector('summary').getBoundingClientRect();
+            panel.style.position = 'fixed';
+            panel.style.top = (rect.bottom + 4) + 'px';
+            panel.style.left = rect.left + 'px';
+        });
+    });
+
+    var tableCard = document.querySelector('.card.table-card');
+    if (tableCard) {
+        tableCard.addEventListener('scroll', function () {
+            document.querySelectorAll('.licencias-celda[open]').forEach(function (cell) {
+                cell.removeAttribute('open');
+            });
+        });
+    }
 </script>
 <script>
     // Nombre y RUT quedan fijos al desplazarse en horizontal. El nombre ancla en 0; el RUT tiene

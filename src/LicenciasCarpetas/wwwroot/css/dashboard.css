@@ -1541,8 +1541,11 @@ table.cases-index tbody td select {
 .licencias-celda summary::-webkit-details-marker { display: none; }
 
 /* Las opciones flotan sobre la tabla: dentro de la celda estirarían la fila al abrirse. Un ancho
-   angosto (2 columnas, no 5) las mantiene sobre su propia columna en vez de invadir la de al lado
-   — la fila de abajo se veía "por debajo" del panel cuando el panel se estiraba hasta ahí. */
+   angosto (2 columnas, no 5) las mantiene sobre su propia columna en vez de invadir la de al lado.
+   position:absolute es solo el estado inicial/sin-JS: en cuanto se abre, el script de Index.cshtml
+   lo cambia a position:fixed con coordenadas calculadas — sin eso, los bordes de las filas de abajo
+   se pintan encima del panel pese al z-index, porque una tabla pinta el fondo/borde de cada fila
+   como su propia capa, y eso no lo puede ganar un descendiente absoluto de una fila anterior. */
 .licencias-celda[open] .licencias-opciones {
     position: absolute;
     top: calc(100% + 4px);
