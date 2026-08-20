@@ -407,7 +407,6 @@ body.cases-page main {
    table's own scrollLeft, not window.scrollX, so that page-level overflow read back as "jumping
    to the left" on every reload. */
 .card.table-card {
-    flex: 1;
     width: 100%;
     min-height: 0;
     min-width: 0;
