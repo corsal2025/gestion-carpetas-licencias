@@ -46,6 +46,12 @@ public static class TextNormalizer
         return builder.ToString().TrimEnd();
     }
 
+    /// <summary>Upper-cases for display, keeping accents ("BASTIÁN") — unlike <see cref="Normalize"/>,
+    /// which strips them for matching. Every name on screen is shown in caps no matter how it was
+    /// typed or how the source system (workbook or citas export) wrote it.</summary>
+    public static string? DisplayUpper(string? text)
+        => string.IsNullOrWhiteSpace(text) ? text : text.Trim().ToUpper(CultureInfo.GetCultureInfo("es-CL"));
+
     /// <summary>Normalize plus removal of every non-alphanumeric character — the loosest form,
     /// used for catalog matching where only the letters carry meaning.</summary>
     public static string NormalizeLoose(string? text)

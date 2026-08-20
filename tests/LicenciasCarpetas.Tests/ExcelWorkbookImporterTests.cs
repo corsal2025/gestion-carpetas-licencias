@@ -205,6 +205,45 @@ public class ExcelWorkbookImporterTests
     }
 
     [Fact]
+    public void Imports_a_citas_export_sheet_by_its_headers()
+    {
+        var (importer, db) = Build();
+        using (db)
+        using (var workbook = new XLWorkbook())
+        {
+            var citas = workbook.Worksheets.Add("citas_20260819_143008");
+            citas.Cell(1, 1).Value = "Fecha Cita";
+            citas.Cell(1, 2).Value = "Hora Inicio";
+            citas.Cell(1, 3).Value = "RUT";
+            citas.Cell(1, 4).Value = "Nombre";
+            citas.Cell(1, 5).Value = "Email";
+            citas.Cell(1, 6).Value = "Telefono";
+            citas.Cell(1, 7).Value = "Tramite";
+            citas.Cell(1, 8).Value = "Ubicacion";
+            citas.Cell(2, 1).Value = new DateTime(2026, 8, 20);
+            citas.Cell(2, 3).Value = "13.025.150-1";
+            citas.Cell(2, 4).Value = "Juan Esteban Villagra Silva";
+            citas.Cell(2, 5).Value = "juan@correo.cl";
+            citas.Cell(2, 6).Value = "56950648787";
+            citas.Cell(2, 7).Value = "Renovacion clase B";
+            citas.Cell(2, 8).Value = "Av. Argentina";
+
+            var summary = importer.Import(workbook);
+
+            Assert.Equal(1, summary.SheetsRead);
+            Assert.Equal(1, summary.CasesInserted);
+
+            var imported = Assert.Single(db.Cases.Query(new CaseFilter(), 0, 50));
+            Assert.Equal("JUAN ESTEBAN VILLAGRA SILVA", imported.FullName);
+            Assert.Equal("13.025.150-1", imported.Rut);
+            Assert.Equal("juan@correo.cl", imported.Email);
+            Assert.Equal("56950648787", imported.CellPhone);
+            Assert.Equal(Office.AvenidaArgentina, imported.Office);
+            Assert.Equal("B", imported.LicenceClasses);
+        }
+    }
+
+    [Fact]
     public void A_missing_file_is_reported_as_such()
     {
         var (importer, db) = Build();

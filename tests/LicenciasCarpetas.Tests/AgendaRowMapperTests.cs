@@ -125,7 +125,7 @@ public class AgendaRowMapperTests
             Sheet,
             rowNumber: 7);
 
-        Assert.Equal("Gabriel Cancino", mapped!.FullName);
+        Assert.Equal("GABRIEL CANCINO", mapped!.FullName);
     }
 
     [Fact]

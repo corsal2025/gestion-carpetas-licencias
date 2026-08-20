@@ -121,6 +121,8 @@ public sealed class FolderCaseRepository(string connectionString) : IFolderCaseR
         AddColumnIfMissing(connection, "CodigoF8");
         AddColumnIfMissing(connection, "UpdatedBy");
         AddColumnIfMissing(connection, "LicenceClasses");
+        AddColumnIfMissing(connection, "Email");
+        AddColumnIfMissing(connection, "CellPhone");
         BackfillFullNameSort(connection);
     }
 
@@ -299,13 +301,13 @@ public sealed class FolderCaseRepository(string connectionString) : IFolderCaseR
                 FirstName, LastName, FullName, FullNameSort, Rut, Office, AttentionNote, Attended,
                 MoralIdoneity, FolderState, FolderStateRaw, FinalDecision, FinalDecisionRaw,
                 SourceSheet, SourceRow, NeedsReview, Marked, CreatedAt, UpdatedAt,
-                PenultimateFolderDate, CodigoF8, LicenceClasses)
+                PenultimateFolderDate, CodigoF8, LicenceClasses, Email, CellPhone)
             VALUES (
                 $citationDate, $uploadedDate, $lastFolderDate, $lastFolderComuna,
                 $firstName, $lastName, $fullName, $fullNameSort, $rut, $office, $attention, $attended,
                 $idoneity, $state, $stateRaw, $decision, $decisionRaw,
                 $sheet, $row, $needsReview, $marked, $createdAt, $updatedAt,
-                $penultimate, $codigoF8, $licences);
+                $penultimate, $codigoF8, $licences, $email, $cellPhone);
             SELECT last_insert_rowid();
             """;
         BindWritableFields(command, folderCase);
@@ -316,11 +318,13 @@ public sealed class FolderCaseRepository(string connectionString) : IFolderCaseR
         command.Parameters.AddWithValue("$marked", folderCase.Marked ? 1 : 0);
         command.Parameters.AddWithValue("$createdAt", folderCase.CreatedAt.ToString("O"));
         command.Parameters.AddWithValue("$updatedAt", folderCase.UpdatedAt.ToString("O"));
-        // Only on insert: an import must never overwrite these two, since the workbook has no
-        // column for either (same reasoning as Marked).
+        // Only on insert: an import must never overwrite these, since the master workbook has no
+        // column for any of them (same reasoning as Marked).
         command.Parameters.AddWithValue("$penultimate", Nullable(Text(folderCase.PenultimateFolderDate)));
         command.Parameters.AddWithValue("$codigoF8", Nullable(folderCase.CodigoF8));
         command.Parameters.AddWithValue("$licences", Nullable(folderCase.LicenceClasses));
+        command.Parameters.AddWithValue("$email", Nullable(folderCase.Email));
+        command.Parameters.AddWithValue("$cellPhone", Nullable(folderCase.CellPhone));
 
         return (long)command.ExecuteScalar()!;
     }
@@ -351,7 +355,9 @@ public sealed class FolderCaseRepository(string connectionString) : IFolderCaseR
                 SourceSheet = $sheet,
                 SourceRow = $row,
                 NeedsReview = $needsReview,
-                UpdatedAt = $updatedAt
+                UpdatedAt = $updatedAt,
+                Email = COALESCE($email, Email),
+                CellPhone = COALESCE($cellPhone, CellPhone)
             WHERE Id = $id
             """;
         BindWritableFields(command, folderCase);
@@ -360,6 +366,10 @@ public sealed class FolderCaseRepository(string connectionString) : IFolderCaseR
         command.Parameters.AddWithValue("$sheet", Nullable(folderCase.SourceSheet));
         command.Parameters.AddWithValue("$row", folderCase.SourceRow);
         command.Parameters.AddWithValue("$updatedAt", DateTimeOffset.UtcNow.ToString("O"));
+        // COALESCE keeps whatever the master workbook import (no email/phone columns) already had —
+        // only a citas import, which does carry these, overwrites them.
+        command.Parameters.AddWithValue("$email", Nullable(folderCase.Email));
+        command.Parameters.AddWithValue("$cellPhone", Nullable(folderCase.CellPhone));
         command.Parameters.AddWithValue("$id", id);
         command.ExecuteNonQuery();
     }
@@ -1002,7 +1012,9 @@ public sealed class FolderCaseRepository(string connectionString) : IFolderCaseR
         PenultimateFolderDate = ReadDate(reader, "PenultimateFolderDate"),
         CodigoF8 = ReadText(reader, "CodigoF8"),
         UpdatedBy = ReadText(reader, "UpdatedBy"),
-        LicenceClasses = ReadText(reader, "LicenceClasses")
+        LicenceClasses = ReadText(reader, "LicenceClasses"),
+        Email = ReadText(reader, "Email"),
+        CellPhone = ReadText(reader, "CellPhone")
     };
 
     private static string? ReadText(SqliteDataReader reader, string column)

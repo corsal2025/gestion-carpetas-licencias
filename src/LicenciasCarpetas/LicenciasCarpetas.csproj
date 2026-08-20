@@ -5,6 +5,9 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <UserSecretsId>dotnet-LicenciasCarpetas-6f1c07a1-58a1-4f2c-9f21-3d4b8b6c9a10</UserSecretsId>
+    <!-- Same escudo municipal icon as outlook-comuna-router: embedded in the exe so the taskbar
+         and the desktop shortcut show it without any extra IconLocation wiring. -->
+    <ApplicationIcon>wwwroot\img\app-icon.ico</ApplicationIcon>
   </PropertyGroup>
 
   <ItemGroup>

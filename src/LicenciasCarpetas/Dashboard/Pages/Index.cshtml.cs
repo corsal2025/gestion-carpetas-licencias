@@ -111,7 +111,7 @@ public class IndexModel(IFolderCaseRepository cases, IExcelCaseExporter exporter
             : null;
 
         var normalizedRut = RutValidator.NormalizeAndValidate(rut);
-        var fullName = string.IsNullOrWhiteSpace(nombre) ? null : nombre.Trim();
+        var fullName = TextNormalizer.DisplayUpper(nombre);
         var needsReview = fullName is null || normalizedRut is null || citationDate is null;
 
         cases.UpdateEditableFields(id, fullName, normalizedRut ?? rut?.Trim(), citationDate, uploadedDate,
@@ -134,7 +134,7 @@ public class IndexModel(IFolderCaseRepository cases, IExcelCaseExporter exporter
         string? ultimaCarpeta, FolderState? estado, FinalDecision? decision, MoralIdoneity? idoneidad, string? atencion,
         string? penultima = null, string? codigoF8 = null)
     {
-        var fullName = string.IsNullOrWhiteSpace(nombre) ? null : nombre.Trim();
+        var fullName = TextNormalizer.DisplayUpper(nombre);
         if (fullName is null)
         {
             return RedirectWithMessage("Falta el nombre completo — no se agregó el caso.", isError: true);
@@ -311,5 +311,8 @@ public class IndexModel(IFolderCaseRepository cases, IExcelCaseExporter exporter
     internal static DateOnly? ParseDate(string? text)
         => SpanishDate.TryParse(text, out var date) ? date : null;
 
-    public static string FormatDate(DateOnly? date) => date is { } value ? value.ToString("dd-MM-yyyy") : string.Empty;
+    /// <summary>"15/marzo/2024" — spelling the month out removes the day/month ambiguity of a plain
+    /// numeric date, same reasoning as the printed sector list.</summary>
+    public static string FormatDate(DateOnly? date)
+        => date is { } value ? $"{value.Day}/{SpanishDate.MonthName(value.Month)}/{value.Year}" : string.Empty;
 }

@@ -60,6 +60,11 @@ public sealed class FolderCase
     public string? FirstName { get; set; }
     public string? LastName { get; set; }
 
+    /// <summary>Correo y celular, leídos del export de citas cuando ese sistema los trae. El libro
+    /// maestro no tiene estas columnas, así que una importación de él nunca las toca.</summary>
+    public string? Email { get; set; }
+    public string? CellPhone { get; set; }
+
     /// <summary>"NOMBRE COMPLETO" — what every screen and printed document shows.</summary>
     public string? FullName { get; set; }
 

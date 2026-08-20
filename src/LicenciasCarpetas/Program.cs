@@ -18,6 +18,17 @@ var builder = WebApplication.CreateBuilder(new WebApplicationOptions
 
 var options = builder.Configuration.GetSection(CarpetasOptions.SectionName).Get<CarpetasOptions>()
     ?? throw new InvalidOperationException($"Missing '{CarpetasOptions.SectionName}' configuration section.");
+
+// No configured upload folder means a fresh install: create "Excels Licencias" on the operator's own
+// Desktop so there is always a discoverable place to drop workbooks, no config edit required.
+if (string.IsNullOrWhiteSpace(options.UploadDirectory))
+{
+    options.UploadDirectory = Path.Combine(
+        Environment.GetFolderPath(Environment.SpecialFolder.DesktopDirectory),
+        "Excels Licencias");
+}
+Directory.CreateDirectory(options.UploadDirectory);
+
 builder.Services.AddSingleton(options);
 
 // SQLite resolves a relative path against the process's working directory, which changes with how

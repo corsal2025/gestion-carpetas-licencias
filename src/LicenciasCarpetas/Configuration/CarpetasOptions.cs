@@ -10,6 +10,10 @@ public sealed class CarpetasOptions
     /// <summary>Default workbook offered on the import screen — the operator can point at any other file.</summary>
     public string DefaultWorkbookPath { get; set; } = string.Empty;
 
+    /// <summary>Folder where uploaded workbooks land. Empty means "Excels Licencias" on the operator's Desktop,
+    /// created automatically on first run so a fresh install always has somewhere to drop files.</summary>
+    public string UploadDirectory { get; set; } = string.Empty;
+
     /// <summary>Folder where generated .xlsx exports are written.</summary>
     public string ExportDirectory { get; set; } = "data/exports";
 

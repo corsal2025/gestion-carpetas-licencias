@@ -26,6 +26,7 @@ public static class AgendaRowMapper
         {
             fullName = null;
         }
+        fullName = TextNormalizer.DisplayUpper(fullName);
 
         var validatedRut = RutValidator.NormalizeAndValidate(rawRut);
         var rawState = CellValue.ToText(raw.FolderState);

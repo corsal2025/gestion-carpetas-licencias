@@ -12,8 +12,8 @@
     <p class="message-banner @(Model.MessageIsError ? "message-error" : "")">@Model.Message</p>
 }
 
-<div class="card" style="padding:16px 20px; margin-bottom:16px;">
-    <form method="get" style="display:flex; gap:10px; align-items:flex-end; flex-wrap:wrap;">
+<div class="card" style="padding:5px 12px; margin-bottom:8px;">
+    <form method="get" class="filters-bar" style="display:flex; gap:3px 8px; align-items:flex-end; flex-wrap:wrap;">
         <div>
             <label class="form-label" for="office">Oficina</label>
             <select name="office" id="office" onchange="this.form.submit()">
@@ -84,18 +84,13 @@
             <input type="checkbox" name="otherComuna" value="true" checked="@Model.OtherComuna" onchange="this.form.submit()" />
             Carpeta en otra comuna
         </label>
-        <button type="submit" class="btn-primary" style="padding:8px 16px;">Filtrar</button>
-        <a asp-page="/Index" class="nav-pill">Limpiar</a>
-        <a asp-page="/Index" asp-page-handler="Export"
-           asp-route-office="@Model.Office" asp-route-year="@Model.Year" asp-route-month="@Model.Month"
-           asp-route-estado="@Model.Estado" asp-route-decision="@Model.Decision" asp-route-sector="@Model.Sector"
-           asp-route-needsReview="@Model.NeedsReview" asp-route-otherComuna="@Model.OtherComuna"
-           asp-route-search="@Model.Search" class="nav-pill">Exportar a Excel</a>
+        <button type="submit" class="btn-primary" style="padding:3px 12px; font-size:0.75rem;">Filtrar</button>
+        <a asp-page="/Index" class="nav-pill" style="font-size:0.72rem;">Limpiar</a>
     </form>
 </div>
 
-<details class="card" style="padding:16px 20px; margin-bottom:16px;">
-    <summary style="cursor:pointer; font-size:0.9rem; font-weight:600;">Agregar caso a la agenda</summary>
+<details class="card" style="padding:8px 14px; margin-bottom:10px;">
+    <summary style="cursor:pointer; font-size:0.85rem; font-weight:600;">Agregar caso a la agenda</summary>
     <form method="post" asp-page-handler="Add" style="display:flex; gap:10px; align-items:flex-end; flex-wrap:wrap; margin-top:12px;">
         <div>
             <label class="form-label">Nombre completo</label>
@@ -107,7 +102,7 @@
         </div>
         <div>
             <label class="form-label">Fecha citación</label>
-            <input type="text" name="citacion" placeholder="dd-mm-aaaa" />
+            <input type="text" name="citacion" placeholder="dd/mes/aaaa" />
         </div>
         <div>
             <label class="form-label">Oficina</label>
@@ -120,11 +115,11 @@
         </div>
         <div>
             <label class="form-label">Última carpeta (fecha o comuna)</label>
-            <input type="text" name="ultimaCarpeta" placeholder="dd-mm-aaaa o VIÑA DEL MAR" />
+            <input type="text" name="ultimaCarpeta" placeholder="dd/mes/aaaa o VIÑA DEL MAR" />
         </div>
         <div>
             <label class="form-label">Penúltima carpeta</label>
-            <input type="text" name="penultima" placeholder="dd-mm-aaaa" />
+            <input type="text" name="penultima" placeholder="dd/mes/aaaa" />
         </div>
         <div>
             <label class="form-label">Código F8</label>
@@ -204,6 +199,12 @@
             <a class="nav-pill" asp-page="/Index" asp-all-route-data="@Model.RouteValues(Model.PageNumber + 1)">Siguiente →</a>
         }
     }
+
+    <a asp-page="/Index" asp-page-handler="Export"
+       asp-route-office="@Model.Office" asp-route-year="@Model.Year" asp-route-month="@Model.Month"
+       asp-route-estado="@Model.Estado" asp-route-decision="@Model.Decision" asp-route-sector="@Model.Sector"
+       asp-route-needsReview="@Model.NeedsReview" asp-route-otherComuna="@Model.OtherComuna"
+       asp-route-search="@Model.Search" class="nav-pill" style="margin-left:auto;">Exportar a Excel</a>
 </div>
 
 @* Sugerencias de la columna ATENCIÓN tal como se escriben en el libro; el campo sigue siendo texto
@@ -232,8 +233,8 @@
                 <th><a asp-page="/Index" asp-all-route-data="@Model.SortRouteValues(CaseSort.LastFolderDate)" class="sort-link"><span>Última carpeta</span>@Model.SortIndicator(CaseSort.LastFolderDate)</a></th>
                 @* Sector va junto a Última carpeta: es la fecha de la que se calcula. *@
                 <th>Sector</th>
-                <th title="Fecha de la carpeta anterior a la última. No influye en el sector">Penúltima carpeta</th>
                 <th title="Código del caso F8. Texto libre">Código F8</th>
+                <th title="Fecha de la carpeta anterior a la última. No influye en el sector">Penúltima carpeta</th>
                 <th title="Clases que el contribuyente viene a obtener. Se pueden marcar varias">Licencias</th>
                 <th><a asp-page="/Index" asp-all-route-data="@Model.SortRouteValues(CaseSort.FolderState)" class="sort-link"><span>Estado carpeta</span>@Model.SortIndicator(CaseSort.FolderState)</a></th>
                 <th>Idoneidad</th>
@@ -250,17 +251,25 @@
             @* El color de la fila viene del estado de la carpeta, igual que en el Excel. *@
             var estadoClass = FolderStateCatalog.CssClass(item.FolderState);
             var duplicadoClass = Model.DuplicateRuts.Contains(item.Rut ?? string.Empty) ? "rut-duplicado" : "";
+            @* Idoneidad moral en alerta o por revisar: la fila entera avisa, no solo la celda —
+               es lo primero que se necesita ver al mirar la agenda del día. *@
+            var idoneidadClass = item.MoralIdoneity switch
+            {
+                MoralIdoneity.Alertada => "row-alertada",
+                MoralIdoneity.Revisar => "row-revisar",
+                _ => ""
+            };
             rowIndex++;
 
             @* Cada campo se dimensiona según lo que contiene, así ningún nombre ni comuna queda
                cortado; la tabla crece hacia la derecha y la tarjeta se desplaza en horizontal. *@
             var lastFolderText = item.LastFolderDate is { } lastDate
-                ? lastDate.ToString("dd-MM-yyyy")
+                ? LicenciasCarpetas.Dashboard.Pages.IndexModel.FormatDate(lastDate)
                 : item.LastFolderComuna ?? string.Empty;
             var nameSize = Math.Max(26, (item.FullName?.Length ?? 0) + 2);
             var lastFolderSize = Math.Max(12, lastFolderText.Length + 2);
             var attentionSize = Math.Max(16, (item.AttentionNote?.Length ?? 0) + 2);
-            <tr class="@rowClass @estadoClass @duplicadoClass @reviewClass">
+            <tr class="@rowClass @estadoClass @duplicadoClass @reviewClass @idoneidadClass">
                 <td class="marked-cell">
                     <form method="post" asp-page-handler="ToggleMarked" class="marked-form">
                         <input type="hidden" name="id" value="@item.Id" />
@@ -284,13 +293,21 @@
                           asp-route-search="@Model.Search" asp-route-p="@Model.PageNumber">
                         <input type="hidden" name="id" value="@item.Id" />
                     </form>
-                    <input type="text" name="citacion" form="case-form-@item.Id" class="input-inline" size="12"
-                           value="@LicenciasCarpetas.Dashboard.Pages.IndexModel.FormatDate(item.CitationDate)" placeholder="dd-mm-aaaa" />
+                    <input type="text" name="citacion" form="case-form-@item.Id" class="input-inline" size="15"
+                           value="@LicenciasCarpetas.Dashboard.Pages.IndexModel.FormatDate(item.CitationDate)" placeholder="dd/mes/aaaa" />
                 </td>
                 <td class="name-cell">
                     @if (item.NeedsReview)
                     {
                         <span class="review-alert" title="Requiere revisión — datos incompletos en la fila original">⚠</span>
+                    }
+                    @if (item.MoralIdoneity == MoralIdoneity.Alertada)
+                    {
+                        <span class="idoneidad-icon" title="Idoneidad moral: ALERTADA">🚨</span>
+                    }
+                    else if (item.MoralIdoneity == MoralIdoneity.Revisar)
+                    {
+                        <span class="idoneidad-icon" title="Idoneidad moral: REVISAR">⚠️</span>
                     }
                     <input type="text" name="nombre" form="case-form-@item.Id" class="input-inline name-input"
                            size="@nameSize" value="@item.FullName" placeholder="Nombre completo" />
@@ -300,8 +317,11 @@
                 </td>
                 <td class="text-cell">@OfficeCatalog.Display(item.Office)</td>
                 <td>
-                    <input type="text" name="subida" form="case-form-@item.Id" class="input-inline" size="12"
-                           value="@LicenciasCarpetas.Dashboard.Pages.IndexModel.FormatDate(item.FolderUploadedDate)" placeholder="dd-mm-aaaa" />
+                    @* Solo la escribe el sistema al marcar un estado de "ya subida" (fillUploadDateIfMissing) —
+                       readonly, no disabled, para que el valor siga viajando al guardar. *@
+                    <input type="text" name="subida" form="case-form-@item.Id" class="input-inline" size="15"
+                           value="@LicenciasCarpetas.Dashboard.Pages.IndexModel.FormatDate(item.FolderUploadedDate)"
+                           placeholder="—" readonly title="Se completa sola al marcar un estado de subida" />
                 </td>
                 <td>
                     <input type="text" name="ultimaCarpeta" form="case-form-@item.Id" class="input-inline"
@@ -310,14 +330,14 @@
                 </td>
                 <td class="text-cell">@FolderSectorCatalog.Display(item.Sector)</td>
                 <td>
-                    <input type="text" name="penultima" form="case-form-@item.Id" class="input-inline" size="12"
-                           value="@LicenciasCarpetas.Dashboard.Pages.IndexModel.FormatDate(item.PenultimateFolderDate)"
-                           placeholder="dd-mm-aaaa" />
-                </td>
-                <td>
                     <input type="text" name="codigoF8" form="case-form-@item.Id" class="input-inline"
                            size="@Math.Max(12, (item.CodigoF8?.Length ?? 0) + 2)" value="@item.CodigoF8"
                            placeholder="—" />
+                </td>
+                <td>
+                    <input type="text" name="penultima" form="case-form-@item.Id" class="input-inline" size="15"
+                           value="@LicenciasCarpetas.Dashboard.Pages.IndexModel.FormatDate(item.PenultimateFolderDate)"
+                           placeholder="dd/mes/aaaa" />
                 </td>
                 <td>
                     @* Selección múltiple sin lista desplegable con Ctrl: un resumen que se abre y
@@ -359,7 +379,7 @@
                     </select>
                 </td>
                 <td>
-                    <select name="idoneidad" form="case-form-@item.Id" class="input-inline">
+                    <select name="idoneidad" form="case-form-@item.Id" class="input-inline" onchange="repaintIdoneidad(this)">
                         <option value="">—</option>
                         @foreach (var idoneity in MoralIdoneityCatalog.All)
                         {
@@ -414,7 +434,39 @@
             row.classList.add('estado-' + select.value.toLowerCase());
         }
 
+        fillUploadDateIfMissing(row, select.value);
         markUnsaved(select);
+    }
+
+    // Mismo criterio que el servidor (OnPostSave): elegir un estado de "ya subida" escribe la fecha
+    // de hoy en Subida carpeta, salvo que ya tenga una — nunca pisa una fecha real ya cargada. Se
+    // hace también acá para que se vea al tiro, no recién después de guardar y recargar.
+    var uploadStates = ['SubidaAConaset', 'SubidaConF8', 'SubidaConOficio',
+        'CambioDomicilioSubidoAConaset', 'CambioDomicilioSubidoConCorreo'];
+    var spanishMonths = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio',
+        'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
+
+    function fillUploadDateIfMissing(row, estadoValue) {
+        var subidaInput = row.querySelector('input[name="subida"]');
+        if (!subidaInput) return;
+
+        if (uploadStates.indexOf(estadoValue) === -1) {
+            // Se destildó el estado de subida: la fecha que se puso sola se borra con él. Una fecha
+            // real, tipeada a mano, queda — el atributo solo marca la que puso este script.
+            if (subidaInput.dataset.autofilled === 'true') {
+                subidaInput.value = '';
+                delete subidaInput.dataset.autofilled;
+                markUnsaved(subidaInput);
+            }
+            return;
+        }
+
+        if (subidaInput.value.trim() !== '') return;
+
+        var today = new Date();
+        subidaInput.value = today.getDate() + '/' + spanishMonths[today.getMonth()] + '/' + today.getFullYear();
+        subidaInput.dataset.autofilled = 'true';
+        markUnsaved(subidaInput);
     }
 
     // Cambiar el desplegable no guarda nada: sin este aviso, el color nuevo hace creer que sí.
@@ -423,11 +475,79 @@
         if (row) row.classList.add('fila-sin-guardar');
     }
 
+    // Igual que repaintRow con el estado de la carpeta: sin esto, el parpadeo y el ícono junto al
+    // nombre solo aparecían después de guardar y recargar, y el operador no tenía forma de saber que
+    // la selección "prendió" hasta ese momento.
+    var idoneidadIcons = { Alertada: '🚨', Revisar: '⚠️' };
+    var idoneidadTitles = { Alertada: 'Idoneidad moral: ALERTADA', Revisar: 'Idoneidad moral: REVISAR' };
+
+    function repaintIdoneidad(select) {
+        var row = select.closest('tr');
+        if (!row) return;
+
+        row.classList.remove('row-alertada', 'row-revisar');
+        if (select.value) {
+            row.classList.add('row-' + select.value.toLowerCase());
+        }
+
+        var nameCell = row.querySelector('.name-cell');
+        if (nameCell) {
+            var existing = nameCell.querySelector('.idoneidad-icon');
+            if (existing) existing.remove();
+
+            if (select.value && idoneidadIcons[select.value]) {
+                var icon = document.createElement('span');
+                icon.className = 'idoneidad-icon';
+                icon.title = idoneidadTitles[select.value];
+                icon.textContent = idoneidadIcons[select.value];
+                nameCell.insertBefore(icon, nameCell.firstChild);
+            }
+        }
+
+        markUnsaved(select);
+    }
+
+    // Alterna la clase que hace parpadear las filas en ALERTADA. Va en <body>, no por fila: así una
+    // fila que pasa a ALERTADA después de cargada (repaintIdoneidad) también parpadea sin más código.
+    setInterval(function () {
+        document.body.classList.toggle('idoneidad-flash');
+    }, 500);
+
     document.querySelectorAll('table.cases-index tbody input, table.cases-index tbody select')
         .forEach(function (field) {
             if (field.type === 'checkbox') return;
-            field.addEventListener('input', function () { markUnsaved(field); });
+            field.addEventListener('input', function () {
+                // Si el operador toca la fecha a mano deja de ser "la que puso el script": ya no se
+                // borra sola si después destilda el estado de subida.
+                if (field.name === 'subida') delete field.dataset.autofilled;
+                markUnsaved(field);
+            });
         });
+
+    // Marcar una casilla no repinta el <summary> por su cuenta — sin esto, el resumen se queda en
+    // lo que trajo el servidor hasta guardar la fila, y el operador no ve lo que acaba de tildar.
+    document.querySelectorAll('.licencias-celda input[type="checkbox"]')
+        .forEach(function (checkbox) {
+            checkbox.addEventListener('change', function () {
+                var cell = checkbox.closest('.licencias-celda');
+                var summary = cell.querySelector('summary');
+                var selected = Array.from(cell.querySelectorAll('input[type="checkbox"]:checked'))
+                    .map(function (c) { return c.value; });
+                summary.textContent = selected.length > 0 ? selected.join(', ') : '—';
+                markUnsaved(checkbox);
+            });
+        });
+
+    // <details> se queda abierto hasta el próximo clic en su propio resumen — sin esto, el panel de
+    // casillas se queda tildado en pantalla aunque el operador ya haya seguido trabajando en otra
+    // celda. Un clic fuera de la celda lo cierra, como cualquier menú desplegable.
+    document.addEventListener('click', function (event) {
+        document.querySelectorAll('.licencias-celda[open]').forEach(function (cell) {
+            if (!cell.contains(event.target)) {
+                cell.removeAttribute('open');
+            }
+        });
+    });
 </script>
 <script>
     // Nombre y RUT quedan fijos al desplazarse en horizontal. El nombre ancla en 0; el RUT tiene

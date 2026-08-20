@@ -77,6 +77,16 @@ public sealed class ExcelWorkbookImporter(
                 continue;
             }
 
+            // Citas export from the booking system: a different tool than the master workbook, its
+            // own headers ("FECHA CITA", not "FECHA DE LA CITACION"), one flat sheet instead of one
+            // per office/month. Only name, RUT, date, office, email, phone and a best-effort licence
+            // class come from here — everything else is filled in by hand later.
+            if (HasHeader(sheet, "FECHA CITA") && HasHeader(sheet, "RUT") && HasHeader(sheet, "NOMBRE"))
+            {
+                ImportCitas(sheet, summary);
+                continue;
+            }
+
             if (HasHeader(sheet, "ESCANEADAS") && HasHeader(sheet, "SUBIDAS"))
             {
                 ImportCounters(sheet, summary);
@@ -157,6 +167,68 @@ public sealed class ExcelWorkbookImporter(
         }
 
         // Toda la hoja se graba junta: una transacción por hoja en vez de una escritura por fila.
+        foreach (var outcome in cases.UpsertMany(mappedRows))
+        {
+            if (outcome == UpsertOutcome.Inserted)
+            {
+                summary.CasesInserted++;
+            }
+            else
+            {
+                summary.CasesUpdated++;
+            }
+        }
+    }
+
+    private void ImportCitas(IXLWorksheet sheet, ImportSummary summary)
+    {
+        var headers = FindHeaderRow(sheet, "FECHA CITA");
+        if (headers is null)
+        {
+            summary.Warnings.Add($"Hoja '{sheet.Name}': no se encontró la fila de encabezados de citas, se omitió completa.");
+            return;
+        }
+
+        var (headerRow, columns) = headers.Value;
+        var citationColumn = Column(columns, "FECHA CITA");
+        var rutColumn = Column(columns, "RUT");
+        var nameColumn = Column(columns, "NOMBRE");
+        var emailColumn = Column(columns, "EMAIL");
+        var phoneColumn = Column(columns, "TELEFONO");
+        var tramiteColumn = Column(columns, "TRAMITE");
+        var ubicacionColumn = Column(columns, "UBICACION");
+
+        summary.SheetsRead++;
+
+        var mappedRows = new List<Domain.FolderCase>();
+        var lastRow = sheet.LastRowUsed()?.RowNumber() ?? headerRow;
+        for (var rowNumber = headerRow + 1; rowNumber <= lastRow; rowNumber++)
+        {
+            var row = sheet.Row(rowNumber);
+            var raw = new RawCitasRow(
+                Read(row, citationColumn),
+                Read(row, rutColumn),
+                Read(row, nameColumn),
+                Read(row, emailColumn),
+                Read(row, phoneColumn),
+                Read(row, tramiteColumn),
+                Read(row, ubicacionColumn));
+
+            var mapped = CitasRowMapper.Map(raw, rowNumber, sheet.Name);
+            if (mapped is null)
+            {
+                continue;
+            }
+
+            summary.RowsRead++;
+            if (mapped.NeedsReview)
+            {
+                summary.CasesNeedingReview++;
+            }
+
+            mappedRows.Add(mapped);
+        }
+
         foreach (var outcome in cases.UpsertMany(mappedRows))
         {
             if (outcome == UpsertOutcome.Inserted)

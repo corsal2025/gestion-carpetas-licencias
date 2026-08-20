@@ -482,7 +482,7 @@ table.cases tbody tr:hover { background: #f0f6fb; }
    names off mid-word. Columns size themselves; the card scrolls sideways when they don't fit. */
 table.cases-index {
     table-layout: auto;
-    font-size: 0.72rem;
+    font-size: 0.64rem;
     width: max-content;
     min-width: 100%;
 }
@@ -499,17 +499,18 @@ table.cases-index tbody tr.row-alt {
 }
 
 table.cases-index th {
-    padding: 6px 6px;
-    font-size: 0.66rem;
-    line-height: 1.2;
+    padding: 4px 5px;
+    font-size: 0.6rem;
+    line-height: 1.15;
 }
 
 table.cases-index td {
-    padding: 5px 6px;
+    padding: 3px 5px;
     font-weight: 700;
 }
 
-table.cases-index td input {
+table.cases-index td input,
+table.cases-index td select {
     font-weight: 700;
 }
 
@@ -639,6 +640,14 @@ table.cases-index .input-inline {
     font-size: 0.74rem;
 }
 
+/* Subida carpeta: solo la escribe el sistema (fillUploadDateIfMissing), nunca a mano — el gris
+   avisa que tocarla con el teclado no hace nada. */
+table.cases-index .input-inline[readonly] {
+    background: #f0f2f4 !important;
+    color: var(--color-text-muted);
+    cursor: not-allowed;
+}
+
 table.cases-index td.name-cell {
     text-align: left;
 }
@@ -652,7 +661,7 @@ table.cases-index td.name-cell .name-input {
     width: 100%;
     min-width: 46ch;
     box-sizing: border-box;
-    font-size: 0.66rem;
+    font-size: 0.6rem;
     padding-left: 3px;
     padding-right: 3px;
 }
@@ -801,6 +810,17 @@ table.cases-index td.review-cell {
     text-align: left;
 }
 
+.idoneidad-icon {
+    flex: none;
+    font-size: 0.95rem;
+    margin-right: 2px;
+    cursor: help;
+}
+
+/* El parpadeo de ALERTADA y el color de REVISAR se resuelven al final de este archivo — el color
+   real, no un @keyframes: !important dentro de una animación CSS lo ignora el navegador, así que
+   una animación jamás le gana al fondo blanco que ya llevan los input/select de la celda. */
+
 table.cases-index td.text-cell {
     white-space: nowrap;
     text-align: center;
@@ -853,6 +873,25 @@ table.cases-index td.text-cell {
     font-size: 0.8rem;
     color: var(--color-text-muted);
     margin-bottom: 4px;
+}
+
+/* Scoped to the Casos filter bar only, so the rest of the app (Add-case form included) keeps its
+   normal control size — this one just needs to give the table below more vertical room. */
+.filters-bar .form-label {
+    font-size: 0.62rem;
+    margin-bottom: 1px;
+    line-height: 1.1;
+}
+
+.filters-bar select,
+.filters-bar input[type="text"] {
+    padding: 2px 4px;
+    font-size: 0.72rem;
+    line-height: 1.2;
+}
+
+.filters-bar label[style*="display:flex"] {
+    font-size: 0.7rem !important;
 }
 
 .input-block {
@@ -1483,6 +1522,10 @@ table.cases-index tbody td select {
 }
 
 /* Selección múltiple de clases dentro de la celda: resumen cerrado, casillas al abrir. */
+.licencias-celda {
+    position: relative;
+}
+
 .licencias-celda summary {
     cursor: pointer;
     list-style: none;
@@ -1492,18 +1535,24 @@ table.cases-index tbody td select {
     background: #fff;
     white-space: nowrap;
     min-width: 74px;
+    font-weight: 700;
 }
 
 .licencias-celda summary::-webkit-details-marker { display: none; }
 
-/* Las opciones flotan sobre la tabla: dentro de la celda estirarían la fila al abrirse. */
+/* Las opciones flotan sobre la tabla: dentro de la celda estirarían la fila al abrirse. Un ancho
+   angosto (2 columnas, no 5) las mantiene sobre su propia columna en vez de invadir la de al lado
+   — la fila de abajo se veía "por debajo" del panel cuando el panel se estiraba hasta ahí. */
 .licencias-celda[open] .licencias-opciones {
     position: absolute;
-    z-index: 5;
+    top: calc(100% + 4px);
+    left: 0;
+    z-index: 20;
     display: grid;
-    grid-template-columns: repeat(5, auto);
-    gap: 2px 10px;
+    grid-template-columns: repeat(2, auto);
+    gap: 3px 10px;
     padding: 8px 10px;
+    width: max-content;
     background: #fff;
     border: 1px solid var(--color-border);
     border-radius: 6px;
@@ -1515,6 +1564,7 @@ table.cases-index tbody td select {
     align-items: center;
     gap: 4px;
     font-size: 0.7rem;
+    font-weight: 700;
     white-space: nowrap;
 }
 
@@ -1570,4 +1620,22 @@ table.cases-index input::placeholder {
 
 table.cases-index input:focus::placeholder {
     color: #9aa5b1;
+}
+
+/* ── Idoneidad moral: ALERTADA y REVISAR ──────────────────────────────────────────────────────
+   Van al final del archivo a propósito: mismo truco que "marcada" y "requiere revisión" más
+   arriba, ganar el empate de especificidad por ser la última regla, no por ser más específica.
+   Las dos parpadean con el mismo mecanismo: un script en Index.cshtml alterna esta clase en <body>
+   cada medio segundo — una animación @keyframes no sirve porque !important dentro de un keyframe
+   se ignora, y sin !important pierde contra el fondo blanco fijo de los input/select. */
+body.idoneidad-flash table.cases-index tbody tr.row-alertada td {
+    background: #ff4d4d !important;
+}
+
+table.cases-index tbody tr.row-revisar td {
+    background: #fff3b0 !important;
+}
+
+body.idoneidad-flash table.cases-index tbody tr.row-revisar td {
+    background: #ffe14d !important;
 }
