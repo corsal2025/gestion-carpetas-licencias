@@ -28,9 +28,12 @@
                 <a asp-page="/Index">Casos</a>
                 <a asp-page="/Estadisticas">Estadísticas</a>
             </div>
-            <div class="nav-group">
-                <a asp-page="/Sector" asp-route-sector="Archivo" class="nav-pill nav-doc">Archivo</a>
-                <a asp-page="/Sector" asp-route-sector="Oficina43" class="nav-pill nav-doc">Oficina 43</a>
+            <div class="nav-group nav-group-labeled">
+                <span class="nav-group-label">Reportes</span>
+                <span class="nav-group-pills">
+                    <a asp-page="/Sector" asp-route-sector="Archivo" class="nav-pill nav-doc">Archivo</a>
+                    <a asp-page="/Sector" asp-route-sector="Oficina43" class="nav-pill nav-doc">Oficina 43</a>
+                </span>
             </div>
             <div class="nav-group">
                 <a asp-page="/Comunas" class="nav-pill nav-reference">Comunas</a>
