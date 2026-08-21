@@ -315,6 +315,27 @@ nav.app-nav form button:hover { background: rgba(255, 255, 255, 0.22); }
     padding-left: 8px;
 }
 
+/* Grupo con título propio arriba de sus píldoras (en vez de un rótulo suelto al lado, que se leía
+   como una pastilla más rota) — columna en dos filas: título chico, píldoras debajo. */
+.nav-group-labeled {
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+}
+
+.nav-group-label {
+    color: rgba(255, 255, 255, 0.55);
+    font-size: 0.62rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+}
+
+.nav-group-labeled .nav-group-pills {
+    display: flex;
+    gap: 3px;
+}
+
 .nav-search {
     display: flex;
     gap: 4px;
@@ -1586,15 +1607,64 @@ table.cases-index tbody td select {
     white-space: nowrap;
 }
 
+.observaciones-panel {
+    width: 260px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.observaciones-panel-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: var(--color-text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+    border-bottom: 1px solid var(--color-border);
+    padding-bottom: 6px;
+}
+
+.observaciones-panel-header span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.observaciones-cerrar {
+    flex: 0 0 auto;
+    border: none;
+    background: none;
+    cursor: pointer;
+    font-size: 1rem;
+    line-height: 1;
+    color: var(--color-text-muted);
+    padding: 0 2px;
+}
+
+.observaciones-cerrar:hover {
+    color: var(--color-text);
+}
+
 .observaciones-panel textarea {
-    width: 220px;
+    width: 100%;
     height: 72px;
-    font-size: 0.78rem;
+    font-size: 0.8rem;
     font-family: inherit;
     resize: vertical;
     border: 1px solid var(--color-border);
     border-radius: 4px;
-    padding: 6px;
+    padding: 6px 8px;
+    box-sizing: border-box;
+}
+
+.observaciones-panel-hint {
+    font-size: 0.68rem;
+    color: var(--color-text-muted);
+    font-style: italic;
 }
 
 /* El ícono cambia de 📝 a 🗒️ al tipear (ver Index.cshtml), pero eso no sobrevive un refresh de

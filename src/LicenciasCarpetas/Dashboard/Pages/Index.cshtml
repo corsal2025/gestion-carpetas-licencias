@@ -322,8 +322,13 @@
                         <details class="popover-celda observaciones-celda">
                             <summary title="Observaciones">@(string.IsNullOrWhiteSpace(item.Observations) ? "📝" : "🗒️")</summary>
                             <div class="popover-panel observaciones-panel">
-                                <textarea name="observaciones" form="case-form-@item.Id" class="input-inline"
+                                <div class="observaciones-panel-header">
+                                    <span>Observación — @item.FullName</span>
+                                    <button type="button" class="observaciones-cerrar" aria-label="Cerrar" title="Cerrar">×</button>
+                                </div>
+                                <textarea name="observaciones" form="case-form-@item.Id"
                                           placeholder="Observación sobre esta persona…">@item.Observations</textarea>
+                                <span class="observaciones-panel-hint">Se guarda con el botón Guardar de la fila.</span>
                             </div>
                         </details>
                     </span>
@@ -562,6 +567,13 @@
             });
         });
 
+    document.querySelectorAll('.observaciones-cerrar')
+        .forEach(function (boton) {
+            boton.addEventListener('click', function () {
+                boton.closest('.observaciones-celda').removeAttribute('open');
+            });
+        });
+
     // <details> se queda abierto hasta el próximo clic en su propio resumen — sin esto, el panel
     // (licencias u observaciones) se queda en pantalla aunque el operador ya haya seguido trabajando
     // en otra celda. Un clic fuera de la celda lo cierra, como cualquier menú desplegable.
@@ -578,14 +590,20 @@
     // mano desde el resumen, saca el panel de la tabla por completo. Como queda anclado a coordenadas
     // de pantalla y no de fila, se cierra solo si la tabla se desplaza para no dejarlo flotando lejos
     // de la celda que lo abrió. Genérico para LICENCIAS y OBSERVACIONES: mismo problema, mismo panel.
+    // Nombre y RUT son columnas sticky con fondo opaco: en la franja donde se superponen con un
+    // panel fijo, pintan encima pese al z-index (mismo tipo de problema que las filas de la tabla,
+    // pero las sticky lo hacen incluso contra position:fixed). El panel nunca puede empezar más a
+    // la izquierda que el borde derecho del RUT — así no hay superposición que perder.
+    var rutHeader = document.querySelector('table.cases-index thead th:nth-child(5)');
     document.querySelectorAll('.popover-celda').forEach(function (cell) {
         cell.addEventListener('toggle', function () {
             var panel = cell.querySelector('.popover-panel');
             if (!cell.open || !panel) return;
             var rect = cell.querySelector('summary').getBoundingClientRect();
+            var minLeft = rutHeader ? rutHeader.getBoundingClientRect().right + 6 : 0;
             panel.style.position = 'fixed';
             panel.style.top = (rect.bottom + 4) + 'px';
-            panel.style.left = rect.left + 'px';
+            panel.style.left = Math.max(rect.left, minLeft) + 'px';
             if (panel.classList.contains('observaciones-panel')) {
                 panel.querySelector('textarea').focus();
             }
