@@ -27,6 +27,9 @@ public interface IUserRepository
     /// <summary>Rol y acceso a módulos externos — separado del alta y del cambio de clave porque
     /// se edita después, no solo al crear la cuenta.</summary>
     void UpdateRole(long id, UserRole role, bool canAccessCambioDomicilio, bool canAccessF8Urgentes);
+
+    /// <summary>Firma personal que se agrega a los correos salientes de Cambio de Domicilio.</summary>
+    void UpdateEmailFooter(long id, string? footer);
 }
 
 public sealed class UserRepository(string connectionString) : IUserRepository
@@ -54,6 +57,7 @@ public sealed class UserRepository(string connectionString) : IUserRepository
         AddColumnIfMissing(connection, "Role", "TEXT NOT NULL DEFAULT 'Administrador'");
         AddColumnIfMissing(connection, "CanAccessCambioDomicilio", "INTEGER NOT NULL DEFAULT 0");
         AddColumnIfMissing(connection, "CanAccessF8Urgentes", "INTEGER NOT NULL DEFAULT 0");
+        AddColumnIfMissing(connection, "EmailFooter", "TEXT NULL");
     }
 
     private static void AddColumnIfMissing(SqliteConnection connection, string column, string definition)
@@ -254,6 +258,17 @@ public sealed class UserRepository(string connectionString) : IUserRepository
             ? role
             : UserRole.Administrador,
         CanAccessCambioDomicilio = reader.GetInt32(reader.GetOrdinal("CanAccessCambioDomicilio")) == 1,
-        CanAccessF8Urgentes = reader.GetInt32(reader.GetOrdinal("CanAccessF8Urgentes")) == 1
+        CanAccessF8Urgentes = reader.GetInt32(reader.GetOrdinal("CanAccessF8Urgentes")) == 1,
+        EmailFooter = reader.IsDBNull(reader.GetOrdinal("EmailFooter")) ? null : reader.GetString(reader.GetOrdinal("EmailFooter"))
     };
+
+    public void UpdateEmailFooter(long id, string? footer)
+    {
+        using var connection = Open();
+        using var command = connection.CreateCommand();
+        command.CommandText = "UPDATE DashboardUser SET EmailFooter = $footer WHERE Id = $id";
+        command.Parameters.AddWithValue("$footer", (object?)footer ?? DBNull.Value);
+        command.Parameters.AddWithValue("$id", id);
+        command.ExecuteNonQuery();
+    }
 }

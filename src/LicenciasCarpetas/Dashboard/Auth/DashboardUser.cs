@@ -16,4 +16,8 @@ public sealed class DashboardUser
     /// escalafón el acceso a módulos externos es incondicional.</summary>
     public bool CanAccessCambioDomicilio { get; set; }
     public bool CanAccessF8Urgentes { get; set; }
+
+    /// <summary>Personal signature appended to outgoing Cambio de Domicilio emails (confirmación,
+    /// rectificación) — set once, reused on every send. Null/empty means no footer.</summary>
+    public string? EmailFooter { get; set; }
 }

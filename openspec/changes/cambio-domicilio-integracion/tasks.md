@@ -50,21 +50,21 @@ para convertirse directamente en PRs encadenados si el usuario así lo decide.
 
 ## Phase 3 — Extraction, Directories, Routing
 
-- [ ] 3.1 Create `src/LicenciasCarpetas/CambioDomicilio/Extraction/RutValidator.cs` (port from sibling) + port sibling's existing test file to `tests/LicenciasCarpetas.Tests/CambioDomicilio/Extraction/RutValidatorTests.cs`
-- [ ] 3.2 Create `src/LicenciasCarpetas/CambioDomicilio/Extraction/PersonDataExtractor.cs` (port from sibling) + port sibling's existing test file to `tests/LicenciasCarpetas.Tests/CambioDomicilio/Extraction/PersonDataExtractorTests.cs`
-- [ ] 3.3 Create `src/LicenciasCarpetas/CambioDomicilio/Directories/IComunaDirectory.cs` + `ComunaDirectory.cs` (port from sibling, CSV format untouched) + port sibling's existing `ResolveByDomain` test coverage to `tests/LicenciasCarpetas.Tests/CambioDomicilio/Directories/ComunaDirectoryTests.cs` (exact match, single-owner domain fallback, ambiguous-owner unresolved scenarios from routing spec)
-- [ ] 3.4 Create `src/LicenciasCarpetas/CambioDomicilio/Routing/AddressChangeRoutingService.cs` (port from sibling) + `tests/LicenciasCarpetas.Tests/CambioDomicilio/Routing/AddressChangeRoutingServiceTests.cs`
-- [ ] 3.5 Create `src/LicenciasCarpetas/CambioDomicilio/Routing/CambioDomicilioSyncService.cs` (port sibling `RouterWorker.cs`, converted from `BackgroundService` to plain singleton per design.md — `RunCycleAsync` public, `SemaphoreSlim cycleGuard` as private readonly field) + `tests/LicenciasCarpetas.Tests/CambioDomicilio/Routing/CambioDomicilioSyncServiceTests.cs` (cover overlap-prevention scenario from routing spec using fake dependencies)
+- [x] 3.1 Create `src/LicenciasCarpetas/CambioDomicilio/Extraction/RutValidator.cs` (port from sibling) + port sibling's existing test file to `tests/LicenciasCarpetas.Tests/CambioDomicilio/Extraction/RutValidatorTests.cs`
+- [x] 3.2 Create `src/LicenciasCarpetas/CambioDomicilio/Extraction/PersonDataExtractor.cs` (port from sibling) + port sibling's existing test file to `tests/LicenciasCarpetas.Tests/CambioDomicilio/Extraction/PersonDataExtractorTests.cs`
+- [x] 3.3 Create `src/LicenciasCarpetas/CambioDomicilio/Directories/IComunaDirectory.cs` + `ComunaDirectory.cs` (port from sibling, CSV format untouched) + port sibling's existing `ResolveByDomain` test coverage to `tests/LicenciasCarpetas.Tests/CambioDomicilio/Directories/ComunaDirectoryTests.cs` (exact match, single-owner domain fallback, ambiguous-owner unresolved scenarios from routing spec)
+- [x] 3.4 Create `src/LicenciasCarpetas/CambioDomicilio/Routing/AddressChangeRoutingService.cs` (port from sibling) + `tests/LicenciasCarpetas.Tests/CambioDomicilio/Routing/AddressChangeRoutingServiceTests.cs`
+- [x] 3.5 Create `src/LicenciasCarpetas/CambioDomicilio/Routing/CambioDomicilioSyncService.cs` (port sibling `RouterWorker.cs`, converted from `BackgroundService` to plain singleton per design.md — `RunCycleAsync` public, `SemaphoreSlim cycleGuard` as private readonly field) + `tests/LicenciasCarpetas.Tests/CambioDomicilio/Routing/CambioDomicilioSyncServiceTests.cs` (cover overlap-prevention scenario from routing spec using fake dependencies)
 
 ## Phase 4 — Ews, Notifications, Reporting, Statistics
 
-- [ ] 4.1 Create `src/LicenciasCarpetas/CambioDomicilio/Ews/{IEwsClient.cs,EwsClient.cs}` (port from sibling)
-- [ ] 4.2 Create `src/LicenciasCarpetas/CambioDomicilio/Ews/{IEmailReader.cs,IEmailMover.cs,EwsEmailReader.cs}` (port sibling `Mail/IEmailReader.cs` + `Ews/EwsEmailReader.cs`, folded per design.md) + `tests/LicenciasCarpetas.Tests/CambioDomicilio/Ews/EwsEmailReaderTests.cs` if sibling has coverage to port
-- [ ] 4.3 Create `src/LicenciasCarpetas/CambioDomicilio/Ews/{IMailSender.cs,EwsMailSender.cs}` (port sibling `Mail/IMailSender.cs` + `Ews/EwsMailSender.cs`, folded per design.md)
-- [ ] 4.4 Create `src/LicenciasCarpetas/CambioDomicilio/Ews/{EwsFolderRef.cs,EwsMessages.cs,EwsResponseParser.cs}` (port from sibling) + port sibling's existing `EwsResponseParser` tests if any
-- [ ] 4.5 Create `src/LicenciasCarpetas/CambioDomicilio/Notifications/{INotificationChannel.cs,EmailNotificationChannel.cs,EmailTemplates.cs,WindowsToastNotificationChannel.cs}` (port from sibling as-is)
-- [ ] 4.6 Create `src/LicenciasCarpetas/CambioDomicilio/Reporting/{ICsvReportWriter.cs,CsvReportWriter.cs}` (port from sibling) + `tests/LicenciasCarpetas.Tests/CambioDomicilio/Reporting/CsvReportWriterTests.cs` (cycle reporting accuracy scenario from routing spec)
-- [ ] 4.7 Create `src/LicenciasCarpetas/CambioDomicilio/Statistics/CambioDomicilioStatisticsService.cs` (port sibling `Statistics/StatisticsService.cs`, renamed per design.md)
+- [x] 4.1 Create `src/LicenciasCarpetas/CambioDomicilio/Ews/{IEwsClient.cs,EwsClient.cs}` (port from sibling)
+- [x] 4.2 Create `src/LicenciasCarpetas/CambioDomicilio/Ews/{IEmailReader.cs,IEmailMover.cs,EwsEmailReader.cs}` (port sibling `Mail/IEmailReader.cs` + `Ews/EwsEmailReader.cs`, folded per design.md) + `tests/LicenciasCarpetas.Tests/CambioDomicilio/Ews/EwsEmailReaderTests.cs` if sibling has coverage to port
+- [x] 4.3 Create `src/LicenciasCarpetas/CambioDomicilio/Ews/{IMailSender.cs,EwsMailSender.cs}` (port sibling `Mail/IMailSender.cs` + `Ews/EwsMailSender.cs`, folded per design.md)
+- [x] 4.4 Create `src/LicenciasCarpetas/CambioDomicilio/Ews/{EwsFolderRef.cs,EwsMessages.cs,EwsResponseParser.cs}` (port from sibling) + port sibling's existing `EwsResponseParser` tests if any
+- [x] 4.5 Create `src/LicenciasCarpetas/CambioDomicilio/Notifications/{INotificationChannel.cs,EmailNotificationChannel.cs,EmailTemplates.cs,WindowsToastNotificationChannel.cs}` (port from sibling as-is)
+- [x] 4.6 Create `src/LicenciasCarpetas/CambioDomicilio/Reporting/{ICsvReportWriter.cs,CsvReportWriter.cs}` (port from sibling) + `tests/LicenciasCarpetas.Tests/CambioDomicilio/Reporting/CsvReportWriterTests.cs` (cycle reporting accuracy scenario from routing spec)
+- [x] 4.7 Create `src/LicenciasCarpetas/CambioDomicilio/Statistics/CambioDomicilioStatisticsService.cs` (port sibling `Statistics/StatisticsService.cs`, renamed per design.md)
 
 ## Phase 5 — Dashboard pages + host wiring
 
