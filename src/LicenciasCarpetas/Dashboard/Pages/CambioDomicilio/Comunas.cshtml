@@ -1,0 +1,60 @@
+@page
+@model LicenciasCarpetas.Dashboard.Pages.CambioDomicilio.ComunasModel
+@{ ViewData["Title"] = "Comunas — Cambio de Domicilio"; }
+<partial name="_CambioDomicilioNav" />
+
+        @if (Model.Message is not null)
+        {
+            <p class="message-banner" style="@(Model.MessageIsError ? "background:#fbe4e8;border-color:#a11d33;color:#a11d33;" : "")">@Model.Message</p>
+        }
+
+        <div class="card" style="padding: 20px 24px; margin-bottom: 16px;">
+            <form method="post" asp-page-handler="AddContact" style="display:flex; gap:8px; align-items:flex-end; flex-wrap:wrap;">
+                <div>
+                    <label class="form-label" for="new-comuna">Comuna</label>
+                    <input type="text" name="comuna" id="new-comuna" required placeholder="ej: Villa Alemana"
+                           style="border:1px solid var(--color-border); border-radius:4px; padding:6px 8px; font-size:0.85rem;" />
+                </div>
+                <div>
+                    <label class="form-label" for="new-domain">Dominio del correo</label>
+                    <input type="text" name="domain" id="new-domain" required placeholder="ej: villaalemana.cl"
+                           style="border:1px solid var(--color-border); border-radius:4px; padding:6px 8px; font-size:0.85rem;" />
+                </div>
+                <div>
+                    <label class="form-label" for="new-email">Correo de contacto</label>
+                    <input type="email" name="email" id="new-email" required placeholder="ej: contacto@villaalemana.cl"
+                           style="border:1px solid var(--color-border); border-radius:4px; padding:6px 8px; font-size:0.85rem; min-width:260px;" />
+                </div>
+                <button type="submit" class="btn-primary" style="padding:8px 16px;">Agregar comuna</button>
+            </form>
+        </div>
+
+        <div class="card">
+            <table class="cases">
+                <thead>
+                    <tr>
+                        <th>Comuna</th>
+                        <th>Dominio</th>
+                        <th>Correo de contacto</th>
+                        <th>Acción</th>
+                    </tr>
+                </thead>
+                <tbody>
+                @foreach (var contact in Model.Contacts)
+                {
+                    <tr>
+                        <td>@contact.Comuna</td>
+                        <td>@contact.Domain</td>
+                        <td colspan="2">
+                            <form method="post" asp-page-handler="UpdateEmail" style="display:flex; gap:8px; align-items:center;">
+                                <input type="hidden" name="comuna" value="@contact.Comuna" />
+                                <input type="email" name="email" value="@contact.ContactEmail" required style="flex:1; min-width:280px; border:1px solid var(--color-border); border-radius:4px; padding:4px 6px; font-size:0.85rem;" />
+                                <button type="submit" class="btn-primary">Guardar</button>
+                            </form>
+                        </td>
+                    </tr>
+                }
+                </tbody>
+            </table>
+        </div>
+    <script src="~/js/scroll-preserve.js" asp-append-version="true"></script>

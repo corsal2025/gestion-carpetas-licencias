@@ -295,6 +295,62 @@ a.nav-pdf-oficina43 {
 }
 a.nav-pdf-oficina43:hover { background: rgba(255, 196, 0, 0.3); }
 
+/* Comunas y Descartados: consultas/mantención, no un track propio — mismo gris mudo que las
+   píldoras "reference" del nav de arriba, sin depender de su selector (viven en .app-subnav). */
+a.nav-cd-tool {
+    background: rgba(148, 163, 184, 0.16);
+    border: 1px solid rgba(148, 163, 184, 0.55);
+    color: #cbd5e1;
+    font-weight: 600;
+    border-radius: 999px;
+    padding: 6px 14px;
+    text-decoration: none;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+    font-size: var(--font-md);
+    transition: background 0.15s ease;
+}
+a.nav-cd-tool:hover { background: rgba(148, 163, 184, 0.28); }
+
+/* Barra de filtros de Casos (Cambio de Domicilio): vive en una tarjeta clara, no en el header
+   oscuro, así que no puede reusar las reglas de nav.app-nav — mismo dibujo, paleta clara propia. */
+.cd-filter-bar a,
+.cd-filter-bar button {
+    border-radius: 999px;
+    font-weight: 600;
+    border: 1px solid var(--color-border);
+    background: #fff;
+    color: var(--color-text-muted);
+    padding: 4px 12px;
+    font-size: var(--font-sm);
+    text-decoration: none;
+    cursor: pointer;
+    white-space: nowrap;
+}
+.cd-filter-bar a:hover,
+.cd-filter-bar button:hover { background: var(--color-pending-bg); }
+.cd-filter-bar a.active {
+    background: var(--color-primary);
+    border-color: var(--color-primary);
+    color: #fff;
+}
+.cd-filter-bar button.nav-sync {
+    background: rgba(30, 122, 61, 0.12);
+    border-color: var(--color-confirmed);
+    color: var(--color-confirmed);
+}
+.cd-filter-bar button.nav-sync:hover { background: var(--color-confirmed-bg); }
+.cd-filter-bar input[type="text"] {
+    border: 1px solid var(--color-border);
+    border-radius: 4px;
+    padding: 5px 8px;
+    font-size: var(--font-sm);
+}
+.cd-filter-bar .nav-search-clear {
+    font-size: var(--font-sm);
+    color: var(--color-text-muted);
+}
+
 nav.app-nav form button {
     background: rgba(255, 255, 255, 0.12);
     color: #fff;

@@ -1,0 +1,14 @@
+@* Tira propia del módulo, debajo del header compartido. div.app-subnav y las píldoras
+   nav-casos/nav-certificado/nav-estadisticas/nav-pdf-archivo/nav-pdf-oficina43 ya tenían estilo
+   listo en dashboard.css (mismo origen que la app hermana) — Comunas y Descartados son las únicas
+   dos sin color propio todavía, comparten nav-cd-tool. *@
+<div class="app-subnav">
+    <span class="app-subnav-label">Cambio de Domicilio</span>
+    <a asp-page="/CambioDomicilio/Index" class="nav-casos">Casos</a>
+    <a asp-page="/CambioDomicilio/Certificado" class="nav-certificado">Certificado</a>
+    <a asp-page="/CambioDomicilio/Comunas" class="nav-cd-tool">Comunas</a>
+    <a asp-page="/CambioDomicilio/Discarded" class="nav-cd-tool">Descartados</a>
+    <a asp-page="/CambioDomicilio/Estadisticas" class="nav-estadisticas">Estadísticas</a>
+    <a asp-page="/CambioDomicilio/Sector" asp-route-sector="Archivo" class="nav-pdf-archivo">PDF Archivo</a>
+    <a asp-page="/CambioDomicilio/Sector" asp-route-sector="Oficina43" class="nav-pdf-oficina43">PDF Oficina 43</a>
+</div>

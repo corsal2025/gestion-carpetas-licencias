@@ -1,4 +1,12 @@
 using System.Diagnostics;
+using LicenciasCarpetas.CambioDomicilio;
+using LicenciasCarpetas.CambioDomicilio.Data;
+using LicenciasCarpetas.CambioDomicilio.Directories;
+using LicenciasCarpetas.CambioDomicilio.Ews;
+using LicenciasCarpetas.CambioDomicilio.Notifications;
+using LicenciasCarpetas.CambioDomicilio.Reporting;
+using LicenciasCarpetas.CambioDomicilio.Routing;
+using LicenciasCarpetas.CambioDomicilio.Statistics;
 using LicenciasCarpetas.Configuration;
 using LicenciasCarpetas.Dashboard.Auth;
 using LicenciasCarpetas.F8;
@@ -60,6 +68,28 @@ builder.Services.AddSingleton<IUrgentRequestRepository>(_ => new UrgentRequestRe
 // operador realmente manda un correo desde F8, no en cada arranque del servidor.
 builder.Services.AddOptions<SmtpOptions>().Bind(builder.Configuration.GetSection(SmtpOptions.SectionName));
 builder.Services.AddTransient<IEmailSender, SmtpEmailSender>();
+
+// Módulo Cambio de Domicilio: mismo trato — misma carpetas.db (tablas PersonRequest,
+// DeletedSourceMessage, DiscardedEmail), mismo login. Sin CambioDomicilio:Ews configurado, EwsClient
+// recién falla cuando alguien de verdad usa "Sincronizar ahora", no al arrancar (ver EwsClient.cs).
+var cambioDomicilioOptions = builder.Configuration.GetSection(CambioDomicilioOptions.SectionName)
+    .Get<CambioDomicilioOptions>() ?? new CambioDomicilioOptions();
+builder.Services.AddSingleton(cambioDomicilioOptions);
+builder.Services.AddSingleton<ICambioDomicilioRequestRepository>(_ => new CambioDomicilioRequestRepository(connectionString));
+builder.Services.AddSingleton<LicenciasCarpetas.CambioDomicilio.Data.IDiscardedEmailRepository>(
+    _ => new LicenciasCarpetas.CambioDomicilio.Data.DiscardedEmailRepository(connectionString));
+builder.Services.AddSingleton<IComunaDirectory, ComunaDirectory>();
+builder.Services.AddSingleton<IEwsClient, EwsClient>();
+builder.Services.AddSingleton<EwsEmailReader>();
+builder.Services.AddSingleton<LicenciasCarpetas.CambioDomicilio.Ews.IEmailReader>(sp => sp.GetRequiredService<EwsEmailReader>());
+builder.Services.AddSingleton<IEmailMover>(sp => sp.GetRequiredService<EwsEmailReader>());
+builder.Services.AddSingleton<LicenciasCarpetas.CambioDomicilio.Ews.IMailSender, EwsMailSender>();
+builder.Services.AddSingleton<ICsvReportWriter, CsvReportWriter>();
+builder.Services.AddSingleton<INotificationChannel, WindowsToastNotificationChannel>();
+builder.Services.AddSingleton<INotificationChannel, EmailNotificationChannel>();
+builder.Services.AddSingleton<AddressChangeRoutingService>();
+builder.Services.AddSingleton<CambioDomicilioSyncService>();
+builder.Services.AddSingleton<CambioDomicilioStatisticsService>();
 
 builder.Services
     .AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
@@ -262,6 +292,8 @@ static void EnsureSchemas(IServiceProvider services)
     services.GetRequiredService<IComunaContactRepository>().EnsureSchema();
     services.GetRequiredService<IUserRepository>().EnsureSchema();
     services.GetRequiredService<IUrgentRequestRepository>().EnsureSchema();
+    services.GetRequiredService<ICambioDomicilioRequestRepository>().EnsureSchema();
+    services.GetRequiredService<LicenciasCarpetas.CambioDomicilio.Data.IDiscardedEmailRepository>().EnsureSchema();
 }
 
 static string ReadPasswordMasked()

@@ -68,15 +68,15 @@ para convertirse directamente en PRs encadenados si el usuario así lo decide.
 
 ## Phase 5 — Dashboard pages + host wiring
 
-- [ ] 5.1 Create `src/LicenciasCarpetas/Dashboard/Pages/CambioDomicilio/{Index.cshtml,Index.cshtml.cs}` (port sibling `Dashboard/Pages/Index.cshtml.cs`, `OnPostSyncNowAsync` per design.md's exact snippet, `[Authorize(Policy = "CambioDomicilioAccess")]`)
-- [ ] 5.2 Create `src/LicenciasCarpetas/Dashboard/Pages/CambioDomicilio/{Discarded.cshtml,Discarded.cshtml.cs}` (port from sibling)
-- [ ] 5.3 Create `src/LicenciasCarpetas/Dashboard/Pages/CambioDomicilio/{Comunas.cshtml,Comunas.cshtml.cs}` (port from sibling)
-- [ ] 5.4 Create `src/LicenciasCarpetas/Dashboard/Pages/CambioDomicilio/{Estadisticas.cshtml,Estadisticas.cshtml.cs}` (port from sibling)
-- [ ] 5.5 Create `src/LicenciasCarpetas/Dashboard/Pages/CambioDomicilio/{Certificado.cshtml,Certificado.cshtml.cs}` (port from sibling)
-- [ ] 5.6 Create `src/LicenciasCarpetas/Dashboard/Pages/CambioDomicilio/{Sector.cshtml,Sector.cshtml.cs}` (port from sibling)
-- [ ] 5.7 Edit `src/LicenciasCarpetas/Program.cs`: add DI registration block (options binding + all services from design.md's DI block, after the F8 block ~line 62) and add the two `EnsureSchema()` calls to `EnsureSchemas()` right after `IUrgentRequestRepository.EnsureSchema()` (~line 258)
-- [ ] 5.8 Edit `appsettings.json`: add `CambioDomicilio:` section per design.md's config table (excluding `Ews:Username`/`Ews:Password`)
-- [ ] 5.9 Edit `src/LicenciasCarpetas/Dashboard/Pages/Shared/_Layout.cshtml`: replace external link at line 78 with `asp-page="/CambioDomicilio/Index"`, gated to `CambioDomicilioAccess`-authorized users only, and update the stale comment on lines 72-75
+- [x] 5.1 Create `src/LicenciasCarpetas/Dashboard/Pages/CambioDomicilio/{Index.cshtml,Index.cshtml.cs}` (port sibling `Dashboard/Pages/Index.cshtml.cs`, `OnPostSyncNowAsync` per design.md's exact snippet, `[Authorize(Policy = "CambioDomicilioAccess")]`)
+- [x] 5.2 Create `src/LicenciasCarpetas/Dashboard/Pages/CambioDomicilio/{Discarded.cshtml,Discarded.cshtml.cs}` (port from sibling)
+- [x] 5.3 Create `src/LicenciasCarpetas/Dashboard/Pages/CambioDomicilio/{Comunas.cshtml,Comunas.cshtml.cs}` (port from sibling)
+- [x] 5.4 Create `src/LicenciasCarpetas/Dashboard/Pages/CambioDomicilio/{Estadisticas.cshtml,Estadisticas.cshtml.cs}` (port from sibling)
+- [x] 5.5 Create `src/LicenciasCarpetas/Dashboard/Pages/CambioDomicilio/{Certificado.cshtml,Certificado.cshtml.cs}` (port from sibling)
+- [x] 5.6 Create `src/LicenciasCarpetas/Dashboard/Pages/CambioDomicilio/{Sector.cshtml,Sector.cshtml.cs}` (port from sibling)
+- [x] 5.7 Edit `src/LicenciasCarpetas/Program.cs`: add DI registration block (options binding + all services from design.md's DI block, after the F8 block ~line 62) and add the two `EnsureSchema()` calls to `EnsureSchemas()` right after `IUrgentRequestRepository.EnsureSchema()` (~line 258)
+- [x] 5.8 Edit `appsettings.json`: add `CambioDomicilio:` section per design.md's config table (excluding `Ews:Username`/`Ews:Password`)
+- [x] 5.9 Edit `src/LicenciasCarpetas/Dashboard/Pages/Shared/_Layout.cshtml`: replace external link at line 78 with `asp-page="/CambioDomicilio/Index"`, gated to `CambioDomicilioAccess`-authorized users only, and update the stale comment on lines 72-75
 
 ## Phase 6 — End-to-end smoke pass
 

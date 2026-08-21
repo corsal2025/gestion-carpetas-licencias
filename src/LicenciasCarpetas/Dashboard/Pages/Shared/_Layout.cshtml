@@ -69,13 +69,12 @@
                 <div class="nav-group nav-group-labeled">
                     <span class="nav-group-label">Módulos</span>
                     <span class="nav-group-pills">
-                        @* F8 ya no es una app aparte: mismo proceso, mismo login, misma
-                           carpetas.db — el link es una ruta interna, filtrada por el mismo claim
-                           que gatea la página del lado del servidor. Cambio de Domicilio sigue
-                           siendo una app externa (su turno de integrarse todavía no llega). *@
+                        @* Ninguno de los dos es una app aparte ya: mismo proceso, mismo login,
+                           misma carpetas.db — los links son rutas internas, filtradas por el
+                           mismo claim que gatea cada página del lado del servidor. *@
                         @if (puedeCambioDomicilio)
                         {
-                            <a href="https://localhost:5001" target="_blank" rel="noopener" class="nav-pill nav-module">Cambio de Domicilio</a>
+                            <a asp-page="/CambioDomicilio/Index" class="nav-pill nav-module">Cambio de Domicilio</a>
                         }
                         @if (puedeF8)
                         {
