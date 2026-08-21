@@ -337,7 +337,9 @@ table.cases tbody tr:hover { background: #f0f6fb; }
 
 table.cases-index {
     table-layout: fixed;
-    font-size: 0.8rem;
+    /* Mismo tamaño que la tabla de Casos en el modelo central (dashboard.css) — antes 0.8rem
+       acá volvía la tabla de F8 visiblemente más grande que la del resto de la app. */
+    font-size: 0.64rem;
     width: 100%;
     min-width: 0;
 }
@@ -355,7 +357,7 @@ table.cases-index tbody tr.row-alt {
 
 table.cases-index th {
     padding: 6px 6px;
-    font-size: 0.66rem;
+    font-size: 0.6rem;
     line-height: 1.2;
 }
 
