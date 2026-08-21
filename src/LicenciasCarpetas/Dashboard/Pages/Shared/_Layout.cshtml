@@ -14,11 +14,22 @@
 @* "viewport-locked" solo lo pide la pantalla de Casos, que fija su tabla al alto de la ventana.
    El resto se desplaza como una página normal. *@
 <body class="cases-page @ViewData["BodyClass"]">
+    @{
+        // El título del bloque de marca y qué opción del desplegable "Módulos" se marca activa
+        // salen los dos de BrandNavigation.Resolve — antes cada uno recalculaba la ruta actual por
+        // su cuenta, con riesgo real de desincronizarse entre sí; ver BrandNavigation.cs y sus tests.
+        var nav = LicenciasCarpetas.Dashboard.Pages.Shared.BrandNavigation.Resolve(Context.Request.Path);
+        var brandTitle = nav.Title;
+        var enCambioDomicilio = nav.EnCambioDomicilio;
+        var enF8 = nav.EnF8;
+        var enGestionLicencias = nav.EnGestionLicencias;
+        var estadisticasPage = nav.EstadisticasPage;
+    }
     <header class="app-header">
         <div class="brand">
             <img src="~/images/logo-municipalidad.png" alt="Municipalidad de Valparaíso" class="brand-logo" />
             <span>
-                Gestión de Licencias
+                @brandTitle
                 <small>Municipalidad de Valparaíso</small>
                 <small>Depto. Licencias de Conducir</small>
             </span>
@@ -37,13 +48,6 @@
                con una línea divisoria entre grupos (.nav-group ya la dibuja) y el color ya definido
                en el CSS para cada tipo de acción, reutilizado en vez de inventado. Cada grupo/link
                aparece solo si el rol de la sesión puede abrir esa pantalla. *@
-            <div class="nav-group nav-group-tools">
-                <a asp-page="/Index">Casos</a>
-                @if (puedeVerReportesYReferencia)
-                {
-                    <a asp-page="/Estadisticas">Estadísticas</a>
-                }
-            </div>
             @if (puedeVerReportesYReferencia)
             {
                 <div class="nav-group nav-group-labeled">
@@ -64,25 +68,43 @@
                     <a asp-page="/Importar" class="nav-pill nav-sync">Importar Excel</a>
                 </div>
             }
-            @if (puedeCambioDomicilio || puedeF8)
-            {
-                <div class="nav-group nav-group-labeled">
-                    <span class="nav-group-label">Módulos</span>
-                    <span class="nav-group-pills">
-                        @* Ninguno de los dos es una app aparte ya: mismo proceso, mismo login,
-                           misma carpetas.db — los links son rutas internas, filtradas por el
-                           mismo claim que gatea cada página del lado del servidor. *@
+            @{
+                // Estadísticas de cuál: cada módulo tiene la suya propia (Estadisticas.cshtml en
+                // Casos, CambioDomicilio y F8, cada una con sus propios números) — estadisticasPage
+                // (BrandNavigation) sigue al módulo activo en vez de forzar siempre el de Casos.
+                var puedeVerEstadisticasDelModuloActivo = enCambioDomicilio || enF8 || puedeVerReportesYReferencia;
+            }
+            <div class="nav-group">
+                @* Casos (Gestión de Licencias) es un módulo más de la lista, igual que los otros dos —
+                   ninguno es una app aparte ya: mismo proceso, mismo login, misma carpetas.db — los
+                   links son rutas internas, filtradas por el mismo claim que gatea cada página del
+                   lado del servidor. Un solo botón con desplegable en vez de píldoras sueltas: más
+                   prolijo y escala si se suma un cuarto módulo. *@
+                <div class="nav-modules" data-nav-modules>
+                    <button type="button" class="nav-pill nav-module nav-modules-toggle" aria-haspopup="true" aria-expanded="false">
+                        Módulos: @brandTitle
+                        <span class="nav-modules-caret" aria-hidden="true">▾</span>
+                    </button>
+                    @* Sin role="menu"/"menuitem": esa semántica ARIA le promete al lector de pantalla
+                       navegación con flechas, que esto no implementa (solo clic/Tab/Escape) — una
+                       lista de links común, que es lo que realmente es, no genera esa expectativa falsa. *@
+                    <div class="nav-modules-panel">
+                        <a asp-page="/Index" class="@(enGestionLicencias ? "active" : "")">Gestión de Licencias</a>
                         @if (puedeCambioDomicilio)
                         {
-                            <a asp-page="/CambioDomicilio/Index" class="nav-pill nav-module">Cambio de Domicilio</a>
+                            <a asp-page="/CambioDomicilio/Index" class="@(enCambioDomicilio ? "active" : "")">Cambio de Domicilio</a>
                         }
                         @if (puedeF8)
                         {
-                            <a asp-page="/F8/Index" class="nav-pill nav-module">F8 Urgentes</a>
+                            <a asp-page="/F8/Index" class="@(enF8 ? "active" : "")">F8 Urgentes</a>
                         }
-                    </span>
+                    </div>
                 </div>
-            }
+                @if (puedeVerEstadisticasDelModuloActivo)
+                {
+                    <a asp-page="@estadisticasPage" class="nav-pill nav-module">Estadísticas</a>
+                }
+            </div>
             <div class="nav-group nav-group-end">
                 @if (User.IsInRole("Administrador"))
                 {
@@ -99,6 +121,34 @@
     </main>
 
     <script src="~/js/scroll-preserve.js" asp-append-version="true"></script>
+    <script>
+        // Menú "Módulos": botón + panel en vez de <details> para poder animar la apertura (display:none
+        // no transiciona) y cerrar al hacer clic afuera o con Escape, que <details> no trae de fábrica.
+        (function () {
+            var wrap = document.querySelector('[data-nav-modules]');
+            if (!wrap) return;
+            var toggle = wrap.querySelector('.nav-modules-toggle');
+
+            function close() {
+                wrap.classList.remove('open');
+                toggle.setAttribute('aria-expanded', 'false');
+            }
+            function isOpen() { return wrap.classList.contains('open'); }
+
+            toggle.addEventListener('click', function (event) {
+                event.stopPropagation();
+                var opening = !isOpen();
+                wrap.classList.toggle('open', opening);
+                toggle.setAttribute('aria-expanded', opening ? 'true' : 'false');
+            });
+            document.addEventListener('click', function (event) {
+                if (isOpen() && !wrap.contains(event.target)) close();
+            });
+            document.addEventListener('keydown', function (event) {
+                if (event.key === 'Escape' && isOpen()) close();
+            });
+        })();
+    </script>
     @await RenderSectionAsync("Scripts", required: false)
 </body>
 </html>
