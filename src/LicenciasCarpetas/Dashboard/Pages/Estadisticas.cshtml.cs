@@ -7,7 +7,7 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
 
 namespace LicenciasCarpetas.Dashboard.Pages;
 
-[Authorize]
+[Authorize(Roles = "Administrador,Jefatura,Coordinador")]
 public class EstadisticasModel(
     StatisticsService statistics,
     IDailyCounterRepository counters,

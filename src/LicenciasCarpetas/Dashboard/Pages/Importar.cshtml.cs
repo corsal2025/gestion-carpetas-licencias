@@ -6,7 +6,7 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
 
 namespace LicenciasCarpetas.Dashboard.Pages;
 
-[Authorize]
+[Authorize(Roles = "Administrador,Jefatura")]
 public class ImportarModel(IExcelWorkbookImporter importer, CarpetasOptions options) : PageModel
 {
     public string UploadDirectory => options.UploadDirectory;

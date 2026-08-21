@@ -16,10 +16,17 @@ public interface IUserRepository
 
     /// <summary>Usernames, for the operator who forgot which account they created.</summary>
     IReadOnlyList<string> AllUsernames();
+
+    /// <summary>Full rows, for the Usuarios screen — necesita rol y módulos, no solo el nombre.</summary>
+    IReadOnlyList<DashboardUser> AllUsers();
     void Delete(string username);
     void RecordFailedLogin(long id, int attempts, DateTimeOffset? lockedUntil);
     void ResetFailedLogins(long id);
     int Count();
+
+    /// <summary>Rol y acceso a módulos externos — separado del alta y del cambio de clave porque
+    /// se edita después, no solo al crear la cuenta.</summary>
+    void UpdateRole(long id, UserRole role, bool canAccessCambioDomicilio, bool canAccessF8Urgentes);
 }
 
 public sealed class UserRepository(string connectionString) : IUserRepository
@@ -41,6 +48,33 @@ public sealed class UserRepository(string connectionString) : IUserRepository
             );
             """;
         command.ExecuteNonQuery();
+
+        // Rol por defecto Administrador: una base creada antes de que existieran los roles no debe
+        // dejar a nadie afuera de una pantalla que ya usaba.
+        AddColumnIfMissing(connection, "Role", "TEXT NOT NULL DEFAULT 'Administrador'");
+        AddColumnIfMissing(connection, "CanAccessCambioDomicilio", "INTEGER NOT NULL DEFAULT 0");
+        AddColumnIfMissing(connection, "CanAccessF8Urgentes", "INTEGER NOT NULL DEFAULT 0");
+    }
+
+    private static void AddColumnIfMissing(SqliteConnection connection, string column, string definition)
+    {
+        using (var pragmaCommand = connection.CreateCommand())
+        {
+            pragmaCommand.CommandText = "PRAGMA table_info(DashboardUser)";
+            using var reader = pragmaCommand.ExecuteReader();
+            var nameOrdinal = reader.GetOrdinal("name");
+            while (reader.Read())
+            {
+                if (string.Equals(reader.GetString(nameOrdinal), column, StringComparison.OrdinalIgnoreCase))
+                {
+                    return;
+                }
+            }
+        }
+
+        using var alterCommand = connection.CreateCommand();
+        alterCommand.CommandText = $"ALTER TABLE DashboardUser ADD COLUMN {column} {definition}";
+        alterCommand.ExecuteNonQuery();
     }
 
     public DashboardUser? FindByUsername(string username)
@@ -70,14 +104,34 @@ public sealed class UserRepository(string connectionString) : IUserRepository
         using var connection = Open();
         using var command = connection.CreateCommand();
         command.CommandText = """
-            INSERT INTO DashboardUser (Username, PasswordHash, PasswordSalt, Iterations, FailedLoginAttempts, LockedUntil, CreatedAt)
-            VALUES ($username, $hash, $salt, $iterations, 0, NULL, $createdAt)
+            INSERT INTO DashboardUser (Username, PasswordHash, PasswordSalt, Iterations, FailedLoginAttempts,
+                LockedUntil, CreatedAt, Role, CanAccessCambioDomicilio, CanAccessF8Urgentes)
+            VALUES ($username, $hash, $salt, $iterations, 0, NULL, $createdAt, $role, $cambio, $f8)
             """;
         command.Parameters.AddWithValue("$username", user.Username);
         command.Parameters.AddWithValue("$hash", user.PasswordHash);
         command.Parameters.AddWithValue("$salt", user.PasswordSalt);
         command.Parameters.AddWithValue("$iterations", user.Iterations);
         command.Parameters.AddWithValue("$createdAt", user.CreatedAt.ToString("O"));
+        command.Parameters.AddWithValue("$role", user.Role.ToString());
+        command.Parameters.AddWithValue("$cambio", user.CanAccessCambioDomicilio ? 1 : 0);
+        command.Parameters.AddWithValue("$f8", user.CanAccessF8Urgentes ? 1 : 0);
+        command.ExecuteNonQuery();
+    }
+
+    public void UpdateRole(long id, UserRole role, bool canAccessCambioDomicilio, bool canAccessF8Urgentes)
+    {
+        using var connection = Open();
+        using var command = connection.CreateCommand();
+        command.CommandText = """
+            UPDATE DashboardUser
+            SET Role = $role, CanAccessCambioDomicilio = $cambio, CanAccessF8Urgentes = $f8
+            WHERE Id = $id
+            """;
+        command.Parameters.AddWithValue("$role", role.ToString());
+        command.Parameters.AddWithValue("$cambio", canAccessCambioDomicilio ? 1 : 0);
+        command.Parameters.AddWithValue("$f8", canAccessF8Urgentes ? 1 : 0);
+        command.Parameters.AddWithValue("$id", id);
         command.ExecuteNonQuery();
     }
 
@@ -154,6 +208,21 @@ public sealed class UserRepository(string connectionString) : IUserRepository
         return names;
     }
 
+    public IReadOnlyList<DashboardUser> AllUsers()
+    {
+        using var connection = Open();
+        using var command = connection.CreateCommand();
+        command.CommandText = "SELECT * FROM DashboardUser ORDER BY Username ASC";
+
+        var result = new List<DashboardUser>();
+        using var reader = command.ExecuteReader();
+        while (reader.Read())
+        {
+            result.Add(Map(reader));
+        }
+        return result;
+    }
+
     public int Count()
     {
         using var connection = Open();
@@ -180,6 +249,11 @@ public sealed class UserRepository(string connectionString) : IUserRepository
         LockedUntil = reader.IsDBNull(reader.GetOrdinal("LockedUntil"))
             ? null
             : DateTimeOffset.Parse(reader.GetString(reader.GetOrdinal("LockedUntil"))),
-        CreatedAt = DateTimeOffset.Parse(reader.GetString(reader.GetOrdinal("CreatedAt")))
+        CreatedAt = DateTimeOffset.Parse(reader.GetString(reader.GetOrdinal("CreatedAt"))),
+        Role = Enum.TryParse<UserRole>(reader.GetString(reader.GetOrdinal("Role")), out var role)
+            ? role
+            : UserRole.Administrador,
+        CanAccessCambioDomicilio = reader.GetInt32(reader.GetOrdinal("CanAccessCambioDomicilio")) == 1,
+        CanAccessF8Urgentes = reader.GetInt32(reader.GetOrdinal("CanAccessF8Urgentes")) == 1
     };
 }

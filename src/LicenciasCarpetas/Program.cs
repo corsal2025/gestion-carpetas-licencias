@@ -53,6 +53,9 @@ builder.Services
     .AddCookie(cookieOptions =>
     {
         cookieOptions.LoginPath = "/Login";
+        // Sin página de "acceso denegado" propia: un rol sin permiso para la pantalla que pidió
+        // por URL directa vuelve a Casos, que todos los roles pueden ver.
+        cookieOptions.AccessDeniedPath = "/Index";
         cookieOptions.Cookie.SecurePolicy = CookieSecurePolicy.Always; // dashboard is HTTPS-only
         cookieOptions.ExpireTimeSpan = TimeSpan.FromHours(8);
         cookieOptions.SlidingExpiration = true;

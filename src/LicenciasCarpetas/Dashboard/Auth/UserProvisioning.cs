@@ -20,7 +20,10 @@ public sealed class UserProvisioning(IUserRepository users)
 
     public bool HasNoUsers() => users.Count() == 0;
 
-    public ProvisioningResult Create(string? username, string? password, string? confirmation)
+    // El CLI (--add-user) no pasa rol: sigue siendo Administrador, para no dejar sin acceso a la
+    // primera cuenta de una instalación nueva. La pantalla Usuarios sí elige rol al crear.
+    public ProvisioningResult Create(string? username, string? password, string? confirmation,
+        UserRole role = UserRole.Administrador, bool canAccessCambioDomicilio = false, bool canAccessF8Urgentes = false)
     {
         var normalized = Normalize(username);
         if (normalized is null)
@@ -44,7 +47,10 @@ public sealed class UserProvisioning(IUserRepository users)
             Username = normalized,
             PasswordHash = hash,
             PasswordSalt = salt,
-            Iterations = iterations
+            Iterations = iterations,
+            Role = role,
+            CanAccessCambioDomicilio = canAccessCambioDomicilio,
+            CanAccessF8Urgentes = canAccessF8Urgentes
         });
 
         return ProvisioningResult.Created;

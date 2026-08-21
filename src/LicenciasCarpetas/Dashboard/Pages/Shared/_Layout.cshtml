@@ -19,40 +19,70 @@
                 <small>Depto. Licencias de Conducir</small>
             </span>
         </div>
+        @{
+            // Mismos roles que los [Authorize(Roles=...)] de cada PageModel — si una pantalla no
+            // deja entrar a un rol por URL directa, tampoco le muestra el link.
+            var puedeVerReportesYReferencia = User.IsInRole("Administrador") || User.IsInRole("Jefatura") || User.IsInRole("Coordinador");
+            var puedeImportar = User.IsInRole("Administrador") || User.IsInRole("Jefatura");
+            var puedeCambioDomicilio = User.HasClaim("mod:cambio-domicilio", "true");
+            var puedeF8 = User.HasClaim("mod:f8-urgentes", "true");
+        }
         <nav class="app-nav">
             @* Antes todo en una sola tira sin distinción; ahora agrupado por qué hace cada cosa —
                trabajo diario, documentos que se imprimen, consultas de referencia, sincronización —
                con una línea divisoria entre grupos (.nav-group ya la dibuja) y el color ya definido
-               en el CSS para cada tipo de acción, reutilizado en vez de inventado. *@
+               en el CSS para cada tipo de acción, reutilizado en vez de inventado. Cada grupo/link
+               aparece solo si el rol de la sesión puede abrir esa pantalla. *@
             <div class="nav-group nav-group-tools">
                 <a asp-page="/Index">Casos</a>
-                <a asp-page="/Estadisticas">Estadísticas</a>
+                @if (puedeVerReportesYReferencia)
+                {
+                    <a asp-page="/Estadisticas">Estadísticas</a>
+                }
             </div>
-            <div class="nav-group nav-group-labeled">
-                <span class="nav-group-label">Reportes</span>
-                <span class="nav-group-pills">
-                    <a asp-page="/Sector" asp-route-sector="Archivo" class="nav-pill nav-doc">Archivo</a>
-                    <a asp-page="/Sector" asp-route-sector="Oficina43" class="nav-pill nav-doc">Oficina 43</a>
-                </span>
-            </div>
-            <div class="nav-group">
-                <a asp-page="/Comunas" class="nav-pill nav-reference">Comunas</a>
-                <a asp-page="/Papelera" class="nav-pill nav-reference">Papelera</a>
-            </div>
-            <div class="nav-group">
-                <a asp-page="/Importar" class="nav-pill nav-sync">Importar Excel</a>
-            </div>
+            @if (puedeVerReportesYReferencia)
+            {
+                <div class="nav-group nav-group-labeled">
+                    <span class="nav-group-label">Reportes</span>
+                    <span class="nav-group-pills">
+                        <a asp-page="/Sector" asp-route-sector="Archivo" class="nav-pill nav-doc">Archivo</a>
+                        <a asp-page="/Sector" asp-route-sector="Oficina43" class="nav-pill nav-doc">Oficina 43</a>
+                    </span>
+                </div>
+                <div class="nav-group">
+                    <a asp-page="/Comunas" class="nav-pill nav-reference">Comunas</a>
+                    <a asp-page="/Papelera" class="nav-pill nav-reference">Papelera</a>
+                </div>
+            }
+            @if (puedeImportar)
+            {
+                <div class="nav-group">
+                    <a asp-page="/Importar" class="nav-pill nav-sync">Importar Excel</a>
+                </div>
+            }
             @* Apps aparte (su propio login, su propia base de datos) — el link solo abre la
                pestaña, no hay sesión compartida entre esta app y la de destino. *@
-            <div class="nav-group nav-group-labeled">
-                <span class="nav-group-label">Módulos</span>
-                <span class="nav-group-pills">
-                    <a href="https://localhost:5001" target="_blank" rel="noopener" class="nav-pill nav-module">Cambio de Domicilio</a>
-                    <a href="http://localhost:5209" target="_blank" rel="noopener" class="nav-pill nav-module">F8 Urgentes</a>
-                </span>
-            </div>
+            @if (puedeCambioDomicilio || puedeF8)
+            {
+                <div class="nav-group nav-group-labeled">
+                    <span class="nav-group-label">Módulos</span>
+                    <span class="nav-group-pills">
+                        @if (puedeCambioDomicilio)
+                        {
+                            <a href="https://localhost:5001" target="_blank" rel="noopener" class="nav-pill nav-module">Cambio de Domicilio</a>
+                        }
+                        @if (puedeF8)
+                        {
+                            <a href="http://localhost:5209" target="_blank" rel="noopener" class="nav-pill nav-module">F8 Urgentes</a>
+                        }
+                    </span>
+                </div>
+            }
             <div class="nav-group nav-group-end">
-                <a asp-page="/Usuarios" class="nav-pill">Usuarios</a>
+                @if (User.IsInRole("Administrador"))
+                {
+                    <a asp-page="/Usuarios" class="nav-pill">Usuarios</a>
+                }
                 <a asp-page="/ChangePassword" class="nav-pill nav-account">Cambiar contraseña</a>
                 <form asp-page="/Logout" method="post"><button type="submit" class="nav-pill nav-logout">Salir</button></form>
             </div>

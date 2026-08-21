@@ -10,4 +10,10 @@ public sealed class DashboardUser
     public int FailedLoginAttempts { get; set; }
     public DateTimeOffset? LockedUntil { get; set; }
     public DateTimeOffset CreatedAt { get; set; } = DateTimeOffset.UtcNow;
+    public UserRole Role { get; set; } = UserRole.Administrador;
+
+    /// <summary>Solo se consulta cuando <see cref="Role"/> es Administrativo — para el resto del
+    /// escalafón el acceso a módulos externos es incondicional.</summary>
+    public bool CanAccessCambioDomicilio { get; set; }
+    public bool CanAccessF8Urgentes { get; set; }
 }

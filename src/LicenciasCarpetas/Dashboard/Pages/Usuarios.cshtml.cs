@@ -11,9 +11,11 @@ namespace LicenciasCarpetas.Dashboard.Pages;
 /// the console (see /ForgotPassword) — an anonymous web reset would hand the whole agenda to
 /// anyone who can reach this port.
 /// </summary>
-[Authorize]
+[Authorize(Roles = "Administrador")]
 public class UsuariosModel(IUserRepository users, UserProvisioning provisioning) : PageModel
 {
+    public IReadOnlyList<DashboardUser> Users { get; private set; } = [];
+
     public IReadOnlyList<string> Usernames { get; private set; } = [];
 
     public string? CurrentUsername { get; private set; }
@@ -26,12 +28,35 @@ public class UsuariosModel(IUserRepository users, UserProvisioning provisioning)
         Load();
     }
 
-    public IActionResult OnPostCreate(string? usuario, string? clave, string? confirmacion)
+    public IActionResult OnPostCreate(string? usuario, string? clave, string? confirmacion,
+        UserRole rol = UserRole.Administrativo, bool moduloCambioDomicilio = false, bool moduloF8 = false)
     {
-        var result = provisioning.Create(usuario, clave, confirmacion);
+        var result = provisioning.Create(usuario, clave, confirmacion, rol, moduloCambioDomicilio, moduloF8);
         return Finish(result, result == ProvisioningResult.Created
             ? $"Usuario '{usuario?.Trim().ToLowerInvariant()}' creado."
             : UserProvisioning.Describe(result));
+    }
+
+    /// <summary>Rol y módulos se editan aparte de la clave — cambian con más frecuencia que una
+    /// contraseña, y mezclarlos en el mismo formulario forzaría a tocar la clave para cambiar solo
+    /// el rol.</summary>
+    public IActionResult OnPostUpdateRole(string usuario, UserRole rol, bool moduloCambioDomicilio = false, bool moduloF8 = false)
+    {
+        var target = users.FindByUsername(usuario);
+        if (target is null)
+        {
+            return Finish(ProvisioningResult.UserNotFound, UserProvisioning.Describe(ProvisioningResult.UserNotFound));
+        }
+
+        // El propio Administrador no puede quitarse a sí mismo el rol: dejaría la app sin nadie
+        // que pueda entrar a Usuarios a deshacer el error.
+        if (string.Equals(usuario, User.Identity?.Name, StringComparison.OrdinalIgnoreCase) && rol != UserRole.Administrador)
+        {
+            return Finish(ProvisioningResult.UsernameInvalid, "No puede quitarse a sí mismo el rol de Administrador.");
+        }
+
+        users.UpdateRole(target.Id, rol, moduloCambioDomicilio, moduloF8);
+        return Finish(ProvisioningResult.Created, $"Rol de '{usuario}' actualizado.");
     }
 
     public IActionResult OnPostSetPassword(string? usuario, string? clave, string? confirmacion)
@@ -68,6 +93,7 @@ public class UsuariosModel(IUserRepository users, UserProvisioning provisioning)
 
     private void Load()
     {
+        Users = users.AllUsers();
         Usernames = users.AllUsernames();
         CurrentUsername = User.Identity?.Name;
         Message = TempData["Message"] as string;

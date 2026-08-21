@@ -6,7 +6,7 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
 
 namespace LicenciasCarpetas.Dashboard.Pages;
 
-[Authorize]
+[Authorize(Roles = "Administrador,Jefatura,Coordinador")]
 public class PapeleraModel(IFolderCaseRepository cases) : PageModel
 {
     public IReadOnlyList<FolderCase> Cases { get; private set; } = [];

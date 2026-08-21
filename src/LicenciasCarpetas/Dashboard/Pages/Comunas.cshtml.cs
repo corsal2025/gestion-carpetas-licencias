@@ -6,7 +6,7 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
 
 namespace LicenciasCarpetas.Dashboard.Pages;
 
-[Authorize]
+[Authorize(Roles = "Administrador,Jefatura,Coordinador")]
 public class ComunasModel(IComunaContactRepository contacts) : PageModel
 {
     public IReadOnlyList<ComunaContact> Contacts { get; private set; } = [];
