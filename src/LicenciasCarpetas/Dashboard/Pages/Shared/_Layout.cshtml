@@ -20,14 +20,24 @@
             </span>
         </div>
         <nav class="app-nav">
+            @* Antes todo en una sola tira sin distinción; ahora agrupado por qué hace cada cosa —
+               trabajo diario, documentos que se imprimen, consultas de referencia, sincronización —
+               con una línea divisoria entre grupos (.nav-group ya la dibuja) y el color ya definido
+               en el CSS para cada tipo de acción, reutilizado en vez de inventado. *@
             <div class="nav-group nav-group-tools">
                 <a asp-page="/Index">Casos</a>
                 <a asp-page="/Estadisticas">Estadísticas</a>
-                <a asp-page="/Sector" asp-route-sector="Archivo">Archivo</a>
-                <a asp-page="/Sector" asp-route-sector="Oficina43">Oficina 43</a>
-                <a asp-page="/Comunas">Comunas</a>
-                <a asp-page="/Papelera">Papelera</a>
-                <a asp-page="/Importar">Importar Excel</a>
+            </div>
+            <div class="nav-group">
+                <a asp-page="/Sector" asp-route-sector="Archivo" class="nav-pill nav-doc">Archivo</a>
+                <a asp-page="/Sector" asp-route-sector="Oficina43" class="nav-pill nav-doc">Oficina 43</a>
+            </div>
+            <div class="nav-group">
+                <a asp-page="/Comunas" class="nav-pill nav-reference">Comunas</a>
+                <a asp-page="/Papelera" class="nav-pill nav-reference">Papelera</a>
+            </div>
+            <div class="nav-group">
+                <a asp-page="/Importar" class="nav-pill nav-sync">Importar Excel</a>
             </div>
             <div class="nav-group nav-group-end">
                 <a asp-page="/Usuarios" class="nav-pill">Usuarios</a>
