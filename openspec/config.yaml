@@ -1,0 +1,40 @@
+schema: spec-driven
+
+context: |
+  Tech stack: .NET 10, Razor Pages, SQLite with Microsoft.Data.Sqlite
+  Architecture: Razor Pages web application with Excel export (ClosedXML)
+  Testing: xunit framework with coverlet for code coverage
+  Database: SQLite (Microsoft.Data.Sqlite + SQLitePCLRaw)
+  Target framework: net10.0
+  Notable features: Accent-aware sorting, agenda/schedule management, attendance tracking
+
+strict_tdd: true
+test_command: dotnet test
+test_runner: xunit
+coverage_tool: coverlet
+
+rules:
+  proposal:
+    - Include rollback plan for database schema changes
+    - Consider impact on existing workbooks and SQLite migrations
+  specs:
+    - Use Given/When/Then for scenarios
+    - Use RFC 2119 keywords (MUST, SHALL, SHOULD, MAY)
+    - Document Excel export impact and constraints
+  design:
+    - Include sequence diagrams for Excel/database interactions
+    - Document architecture decisions affecting Razor Pages routing
+  tasks:
+    - Group by phase, use hierarchical numbering
+    - Keep tasks completable in one session
+    - Mark database migration tasks separately
+  apply:
+    tdd: true
+    test_command: dotnet test
+    build_command: dotnet build
+  verify:
+    test_command: dotnet test --configuration Release
+    build_command: dotnet build --configuration Release
+    coverage_threshold: 0
+  archive:
+    - Warn before merging changes to database schema or agenda processing logic
