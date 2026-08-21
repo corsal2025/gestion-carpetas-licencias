@@ -17,6 +17,17 @@
     --color-review-bg: #fbe4e8;
     --radius: 6px;
     --shadow-sm: 0 1px 2px rgba(15, 30, 45, 0.08);
+
+    /* Type scale: every font-size in this file (and every inline font-size removed from the
+       .cshtml pages) maps onto one of these steps instead of a raw rem value, so the dashboard
+       reads as one consistent hierarchy instead of dozens of near-duplicate sizes. */
+    --font-xs: 0.65rem;
+    --font-sm: 0.7rem;
+    --font-base: 0.75rem;
+    --font-md: 0.8rem;
+    --font-lg: 0.9rem;
+    --font-xl: 1.1rem;
+    --font-2xl: 1.35rem;
 }
 
 * { box-sizing: border-box; }
@@ -56,7 +67,7 @@ header.app-header .brand {
     align-items: center;
     gap: 14px;
     font-weight: 600;
-    font-size: 1.35rem;
+    font-size: var(--font-2xl);
     letter-spacing: 0.2px;
 }
 
@@ -71,7 +82,7 @@ header.app-header .brand-logo {
 header.app-header .brand small {
     display: block;
     font-weight: 400;
-    font-size: 0.9rem;
+    font-size: var(--font-lg);
     opacity: 0.85;
     letter-spacing: 0.4px;
     text-transform: uppercase;
@@ -92,7 +103,7 @@ div.app-subnav {
 
 div.app-subnav span.app-subnav-label {
     color: rgba(255, 255, 255, 0.5);
-    font-size: 0.72rem;
+    font-size: var(--font-sm);
     text-transform: uppercase;
     letter-spacing: 0.6px;
     margin-right: 4px;
@@ -112,7 +123,7 @@ nav.app-nav a {
     text-decoration: none;
     padding: 4px 9px;
     border-radius: var(--radius);
-    font-size: 0.7rem;
+    font-size: var(--font-sm);
     text-transform: uppercase;
     letter-spacing: 0.2px;
     white-space: nowrap;
@@ -228,7 +239,7 @@ a.nav-pdf-oficina43 {
     text-decoration: none;
     text-transform: uppercase;
     letter-spacing: 0.3px;
-    font-size: 0.82rem;
+    font-size: var(--font-md);
     transition: background 0.15s ease;
 }
 
@@ -290,7 +301,7 @@ nav.app-nav form button {
     border: 1px solid rgba(255, 255, 255, 0.35);
     border-radius: var(--radius);
     padding: 4px 9px;
-    font-size: 0.7rem;
+    font-size: var(--font-sm);
     text-transform: uppercase;
     letter-spacing: 0.2px;
     white-space: nowrap;
@@ -334,7 +345,7 @@ nav.app-nav form button:hover { background: rgba(255, 255, 255, 0.22); }
 
 .nav-group-label {
     color: rgba(255, 255, 255, 0.55);
-    font-size: 0.62rem;
+    font-size: var(--font-xs);
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.8px;
@@ -357,7 +368,7 @@ nav.app-nav form button:hover { background: rgba(255, 255, 255, 0.22); }
     border: 1px solid rgba(255, 255, 255, 0.35);
     border-radius: var(--radius);
     padding: 4px 8px;
-    font-size: 0.7rem;
+    font-size: var(--font-sm);
     min-width: 140px;
 }
 
@@ -371,7 +382,7 @@ nav.app-nav form button:hover { background: rgba(255, 255, 255, 0.22); }
     border: 1px solid rgba(255, 255, 255, 0.35);
     border-radius: var(--radius);
     padding: 4px 9px;
-    font-size: 0.7rem;
+    font-size: var(--font-sm);
     text-transform: uppercase;
     letter-spacing: 0.2px;
     cursor: pointer;
@@ -379,7 +390,7 @@ nav.app-nav form button:hover { background: rgba(255, 255, 255, 0.22); }
 .nav-search button:hover { background: rgba(255, 255, 255, 0.22); }
 
 .nav-search-clear {
-    font-size: 0.68rem;
+    font-size: var(--font-xs);
     text-decoration: underline;
     white-space: nowrap;
 }
@@ -397,7 +408,7 @@ main {
     padding: 10px 14px;
     border-radius: var(--radius);
     margin-bottom: 16px;
-    font-size: 0.9rem;
+    font-size: var(--font-lg);
 }
 
 .card {
@@ -486,14 +497,14 @@ body.cases-page main {
 table.cases {
     width: 100%;
     border-collapse: collapse;
-    font-size: 0.88rem;
+    font-size: var(--font-lg);
 }
 
 table.cases th {
     background: #eef2f6;
     color: var(--color-text-muted);
     text-transform: uppercase;
-    font-size: 0.72rem;
+    font-size: var(--font-sm);
     letter-spacing: 0.4px;
     text-align: center;
     padding: 10px 14px;
@@ -514,7 +525,7 @@ table.cases tbody tr:hover { background: #f0f6fb; }
    names off mid-word. Columns size themselves; the card scrolls sideways when they don't fit. */
 table.cases-index {
     table-layout: auto;
-    font-size: 0.64rem;
+    font-size: var(--font-xs);
     width: max-content;
     min-width: 100%;
 }
@@ -532,7 +543,7 @@ table.cases-index tbody tr.row-alt {
 
 table.cases-index th {
     padding: 4px 5px;
-    font-size: 0.6rem;
+    font-size: var(--font-xs);
     line-height: 1.15;
 }
 
@@ -607,13 +618,13 @@ table.cases-f8.cases-index .name-input {
 
 table.cases-index .badge {
     padding: 2px 8px;
-    font-size: 0.7rem;
+    font-size: var(--font-sm);
     white-space: nowrap;
 }
 
 table.cases-index button.btn-primary {
     padding: 4px 10px;
-    font-size: 0.76rem;
+    font-size: var(--font-base);
     white-space: nowrap;
 }
 
@@ -646,7 +657,7 @@ table.cases-index tbody tr:has(input[name="folderNotFoundValue"]:checked) td .no
 
 table.cases-index .transfer-choice button.btn-primary {
     padding: 3px 8px;
-    font-size: 0.68rem;
+    font-size: var(--font-xs);
     width: 100%;
 }
 
@@ -669,7 +680,7 @@ table.cases-index td:last-child form {
 
 table.cases-index .input-inline {
     padding: 3px 4px;
-    font-size: 0.74rem;
+    font-size: var(--font-base);
 }
 
 /* Subida carpeta: solo la escribe el sistema (fillUploadDateIfMissing), nunca a mano — el gris
@@ -693,7 +704,7 @@ table.cases-index td.name-cell .name-input {
     width: 100%;
     min-width: 46ch;
     box-sizing: border-box;
-    font-size: 0.6rem;
+    font-size: var(--font-xs);
     padding-left: 3px;
     padding-right: 3px;
 }
@@ -808,7 +819,7 @@ table.cases-index tbody tr:has(input[name="folderNotFoundValue"]:checked) td.mar
     top: 50%;
     right: 2px;
     color: #ffd400;
-    font-size: 1.4rem;
+    font-size: var(--font-2xl);
     font-weight: 700;
     text-shadow: 0 0 3px #000;
     line-height: 1;
@@ -839,7 +850,7 @@ table.cases-index td.name-cell .name-with-alert {
     flex: none;
     color: var(--color-review);
     font-weight: 700;
-    font-size: 0.95rem;
+    font-size: var(--font-lg);
     cursor: help;
     animation: review-alert-blink 1.2s ease-in-out infinite;
 }
@@ -850,7 +861,7 @@ table.cases-index td.review-cell {
 
 .idoneidad-icon {
     flex: none;
-    font-size: 0.95rem;
+    font-size: var(--font-lg);
     margin-right: 2px;
     cursor: help;
 }
@@ -881,7 +892,7 @@ table.cases-index td.text-cell {
     display: inline-block;
     padding: 3px 10px;
     border-radius: 999px;
-    font-size: 0.76rem;
+    font-size: var(--font-base);
     font-weight: 600;
 }
 
@@ -897,18 +908,18 @@ table.cases-index td.text-cell {
     border: 1px solid var(--color-border);
     border-radius: 4px;
     padding: 4px 6px;
-    font-size: 0.85rem;
+    font-size: var(--font-md);
 }
 
 .review-hint {
     margin-top: 4px;
-    font-size: 0.72rem;
+    font-size: var(--font-sm);
     color: var(--color-text-muted);
 }
 
 .form-label {
     display: block;
-    font-size: 0.8rem;
+    font-size: var(--font-md);
     color: var(--color-text-muted);
     margin-bottom: 4px;
 }
@@ -916,7 +927,7 @@ table.cases-index td.text-cell {
 /* Scoped to the Casos filter bar only, so the rest of the app (Add-case form included) keeps its
    normal control size — this one just needs to give the table below more vertical room. */
 .filters-bar .form-label {
-    font-size: 0.62rem;
+    font-size: var(--font-xs);
     margin-bottom: 1px;
     line-height: 1.1;
 }
@@ -924,12 +935,12 @@ table.cases-index td.text-cell {
 .filters-bar select,
 .filters-bar input[type="text"] {
     padding: 2px 4px;
-    font-size: 0.72rem;
+    font-size: var(--font-sm);
     line-height: 1.2;
 }
 
 .filters-bar label[style*="display:flex"] {
-    font-size: 0.7rem !important;
+    font-size: var(--font-sm) !important;
 }
 
 .input-block {
@@ -940,14 +951,14 @@ table.cases-index td.text-cell {
     margin-bottom: 14px;
     border: 1px solid var(--color-border);
     border-radius: var(--radius);
-    font-size: 0.9rem;
+    font-size: var(--font-lg);
 }
 
 input[type="date"] {
     border: 1px solid var(--color-border);
     border-radius: 4px;
     padding: 4px 6px;
-    font-size: 0.85rem;
+    font-size: var(--font-md);
 }
 
 button.btn-primary {
@@ -956,7 +967,7 @@ button.btn-primary {
     border: none;
     border-radius: var(--radius);
     padding: 6px 14px;
-    font-size: 0.85rem;
+    font-size: var(--font-md);
     cursor: pointer;
 }
 button.btn-primary:hover { background: var(--color-primary); }
@@ -984,7 +995,7 @@ button.btn-outline-danger {
     border: 1px solid var(--color-review);
     border-radius: var(--radius);
     padding: 6px 14px;
-    font-size: 0.85rem;
+    font-size: var(--font-md);
     cursor: pointer;
 }
 button.btn-outline-danger:hover { background: var(--color-review-bg); }
@@ -1006,14 +1017,14 @@ button.btn-outline-danger:hover { background: var(--color-review-bg); }
 }
 
 .login-card h1 {
-    font-size: 1.1rem;
+    font-size: var(--font-xl);
     margin: 0 0 4px;
     color: var(--color-primary);
 }
 
 .login-card p.subtitle {
     margin: 0 0 20px;
-    font-size: 0.8rem;
+    font-size: var(--font-md);
     color: var(--color-text-muted);
 }
 
@@ -1024,7 +1035,7 @@ button.btn-outline-danger:hover { background: var(--color-review-bg); }
     margin-bottom: 12px;
     border: 1px solid var(--color-border);
     border-radius: var(--radius);
-    font-size: 0.9rem;
+    font-size: var(--font-lg);
 }
 
 .login-card .password-field {
@@ -1063,14 +1074,14 @@ button.btn-outline-danger:hover { background: var(--color-review-bg); }
     color: #fff;
     border: none;
     border-radius: var(--radius);
-    font-size: 0.9rem;
+    font-size: var(--font-lg);
     cursor: pointer;
 }
 .login-card button:hover { background: var(--color-primary-dark); }
 
 .login-card .error {
     color: var(--color-review);
-    font-size: 0.82rem;
+    font-size: var(--font-md);
     margin-top: 10px;
 }
 
@@ -1089,7 +1100,7 @@ button.btn-outline-danger:hover { background: var(--color-review-bg); }
     }
 
     header.app-header .brand {
-        font-size: 1.05rem;
+        font-size: var(--font-xl);
     }
 
     main {
@@ -1264,7 +1275,7 @@ table.cases.table-wide thead th:first-child {
    define el ancho de la columna, que pasa a mandarlo el número de abajo. */
 table.cases.table-wide th .th-sub {
     display: block;
-    font-size: 0.6rem;
+    font-size: var(--font-xs);
     font-weight: 400;
     opacity: 0.75;
     letter-spacing: 0;
@@ -1449,14 +1460,14 @@ table.cases-index tbody td select {
 }
 
 .documento-encabezado h1 {
-    font-size: 1.15rem;
+    font-size: var(--font-xl);
     margin: 0 0 4px;
     color: var(--color-primary);
 }
 
 .documento-organismo {
     margin: 0;
-    font-size: 0.82rem;
+    font-size: var(--font-md);
     line-height: 1.4;
 }
 
@@ -1465,13 +1476,13 @@ table.cases-index tbody td select {
     grid-template-columns: auto auto;
     gap: 2px 10px;
     margin: 0;
-    font-size: 0.8rem;
+    font-size: var(--font-md);
 }
 
 .documento-datos dt { font-weight: 700; }
 .documento-datos dd { margin: 0; }
 
-.documento-tabla { width: 100%; font-size: 0.78rem; }
+.documento-tabla { width: 100%; font-size: var(--font-base); }
 .documento-tabla th { background: #eef2f6; }
 .documento-tabla th, .documento-tabla td { border: 1px solid #c8d0d8; padding: 5px 7px; }
 
@@ -1483,7 +1494,7 @@ table.cases-index tbody td select {
     gap: 60px;
     justify-content: space-around;
     margin-top: 46px;
-    font-size: 0.8rem;
+    font-size: var(--font-md);
     text-align: center;
 }
 
@@ -1611,7 +1622,7 @@ table.cases-index tbody td select {
     display: flex;
     align-items: center;
     gap: 4px;
-    font-size: 0.7rem;
+    font-size: var(--font-sm);
     font-weight: 700;
     white-space: nowrap;
 }
@@ -1628,7 +1639,7 @@ table.cases-index tbody td select {
     align-items: center;
     justify-content: space-between;
     gap: 8px;
-    font-size: 0.72rem;
+    font-size: var(--font-sm);
     font-weight: 700;
     color: var(--color-text-muted);
     text-transform: uppercase;
@@ -1648,7 +1659,7 @@ table.cases-index tbody td select {
     border: none;
     background: none;
     cursor: pointer;
-    font-size: 1rem;
+    font-size: var(--font-xl);
     line-height: 1;
     color: var(--color-text-muted);
     padding: 0 2px;
@@ -1661,7 +1672,7 @@ table.cases-index tbody td select {
 .observaciones-panel textarea {
     width: 100%;
     height: 72px;
-    font-size: 0.8rem;
+    font-size: var(--font-md);
     font-family: inherit;
     resize: vertical;
     border: 1px solid var(--color-border);
@@ -1691,7 +1702,7 @@ table.cases-index tbody td select {
     color: var(--color-text-muted);
     border-radius: 4px;
     padding: 4px 10px;
-    font-size: 0.75rem;
+    font-size: var(--font-base);
     cursor: pointer;
 }
 
@@ -1701,7 +1712,7 @@ table.cases-index tbody td select {
 
 .observaciones-panel .observaciones-guardar {
     padding: 4px 12px;
-    font-size: 0.75rem;
+    font-size: var(--font-base);
 }
 
 /* El ícono cambia de 📝 a 🗒️ al tipear (ver Index.cshtml), pero eso no sobrevive un refresh de
@@ -1720,7 +1731,7 @@ table.cases-index tbody td select {
     align-items: center;
     gap: 10px;
     margin-bottom: 6px;
-    font-size: 0.8rem;
+    font-size: var(--font-md);
 }
 
 .grafico-etiqueta {
@@ -1782,3 +1793,14 @@ table.cases-index tbody tr.row-revisar td {
 body.idoneidad-flash table.cases-index tbody tr.row-revisar td {
     background: #ffe14d !important;
 }
+
+/* ── Utility font-size classes ───────────────────────────────────────────────────────────────
+   For .cshtml elements that previously used an inline style="font-size:...rem" and had no
+   existing class already providing the right size — applies a step from the :root type scale
+   instead of a raw value baked into the markup. */
+.text-xs { font-size: var(--font-xs); }
+.text-sm { font-size: var(--font-sm); }
+.text-base { font-size: var(--font-base); }
+.text-md { font-size: var(--font-md); }
+.text-lg { font-size: var(--font-lg); }
+.text-xl { font-size: var(--font-xl); }

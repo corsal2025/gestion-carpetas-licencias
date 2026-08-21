@@ -30,7 +30,7 @@
 
 @if (Model.ShowMonthlyPrintReminder)
 {
-    <div class="card" style="margin-bottom:12px; padding:10px 14px; background:#fff4d6; border-left:4px solid #b8860b; font-size:0.85rem;">
+    <div class="card text-md" style="margin-bottom:12px; padding:10px 14px; background:#fff4d6; border-left:4px solid #b8860b;">
         ⚠ Recuerda imprimir las penúltimas carpetas de @Model.PreviousMonthKey.
         <a href="/F8/ImpresionMensual?month=@Model.PreviousMonthKey">Ir a impresión mensual</a>
     </div>
@@ -38,21 +38,21 @@
 
 @if (!string.IsNullOrEmpty(Model.SyncMessage))
 {
-    <div class="card" style="margin-bottom:12px; padding:10px 14px; background:#eef6ec; border-left:4px solid #4a934a; font-size:0.85rem;">
+    <div class="card text-md" style="margin-bottom:12px; padding:10px 14px; background:#eef6ec; border-left:4px solid #4a934a;">
         @Model.SyncMessage
     </div>
 }
 
 @if (!string.IsNullOrEmpty(Model.CertificadoMessage))
 {
-    <div class="card" style="margin-bottom:12px; padding:10px 14px; background:#eef6ec; border-left:4px solid #4a934a; font-size:0.85rem;">
+    <div class="card text-md" style="margin-bottom:12px; padding:10px 14px; background:#eef6ec; border-left:4px solid #4a934a;">
         @Model.CertificadoMessage
     </div>
 }
 
 @if (Model.DuplicateRuts.Count > 0)
 {
-    <div class="card" style="margin-bottom:12px; padding:10px 14px; background:#fdecea; border-left:4px solid #c0392b; font-size:0.85rem;">
+    <div class="card text-md" style="margin-bottom:12px; padding:10px 14px; background:#fdecea; border-left:4px solid #c0392b;">
         ⚠ RUT duplicado(s), hay más de un caso con el mismo RUT: @string.Join(", ", Model.DuplicateRuts.Select(LicenciasCarpetas.F8.Domain.RutFormatter.WithDots))
     </div>
 }

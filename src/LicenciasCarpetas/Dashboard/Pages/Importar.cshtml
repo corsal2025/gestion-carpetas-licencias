@@ -5,13 +5,13 @@
 }
 
 <div class="card" style="padding:20px 24px; margin-bottom:16px;">
-    <h1 style="font-size:1.1rem; margin:0 0 8px;">Importar el Excel de carpetas</h1>
-    <p style="font-size:0.85rem; margin:0 0 14px;">
+    <h1 class="text-xl" style="margin:0 0 8px;">Importar el Excel de carpetas</h1>
+    <p class="text-md" style="margin:0 0 14px;">
         Lee las hojas mensuales de agenda (una por oficina), la hoja de escaneadas y subidas, y el
         directorio de correos de comunas. El archivo nunca se modifica: solo se lee. Reimportar el
         mismo archivo actualiza los casos existentes en vez de duplicarlos.
     </p>
-    <p style="font-size:0.8rem; margin:0 0 14px; opacity:0.8;">
+    <p class="text-md" style="margin:0 0 14px; opacity:0.8;">
         Carpeta de subida: <code>@Model.UploadDirectory</code>. Los archivos que suba quedan ahí, y
         también puede dejarlos en esa carpeta a mano (por ejemplo sincronizados desde Drive) y
         elegirlos abajo sin volver a subirlos.
@@ -49,7 +49,7 @@
 @if (Model.Summary is { } summary)
 {
     <div class="card" style="padding:20px 24px;">
-        <h2 style="font-size:1rem; margin:0 0 10px;">Resultado</h2>
+        <h2 class="text-xl" style="margin:0 0 10px;">Resultado</h2>
         <table class="cases">
             <tbody>
                 <tr><td class="text-cell">Hojas leídas</td><td class="text-cell">@summary.SheetsRead</td></tr>
@@ -64,8 +64,8 @@
 
         @if (summary.Warnings.Count > 0)
         {
-            <h3 style="font-size:0.9rem; margin:16px 0 6px;">Avisos</h3>
-            <ul style="font-size:0.8rem;">
+            <h3 class="text-lg" style="margin:16px 0 6px;">Avisos</h3>
+            <ul class="text-md">
                 @foreach (var warning in summary.Warnings)
                 {
                     <li>@warning</li>

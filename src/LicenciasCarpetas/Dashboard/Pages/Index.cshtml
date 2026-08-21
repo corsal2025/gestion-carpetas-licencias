@@ -76,21 +76,21 @@
             <label class="form-label" for="search">Buscar</label>
             <input type="text" name="search" id="search" value="@Model.Search" placeholder="RUT o nombre..." />
         </div>
-        <label style="display:flex; gap:6px; align-items:center; font-size:0.8rem;">
+        <label class="text-md" style="display:flex; gap:6px; align-items:center;">
             <input type="checkbox" name="needsReview" value="true" checked="@Model.NeedsReview" onchange="this.form.submit()" />
             Requiere revisión (@Model.NeedsReviewCount)
         </label>
-        <label style="display:flex; gap:6px; align-items:center; font-size:0.8rem;">
+        <label class="text-md" style="display:flex; gap:6px; align-items:center;">
             <input type="checkbox" name="otherComuna" value="true" checked="@Model.OtherComuna" onchange="this.form.submit()" />
             Carpeta en otra comuna
         </label>
-        <button type="submit" class="btn-primary" style="padding:3px 12px; font-size:0.75rem;">Filtrar</button>
-        <a asp-page="/Index" class="nav-pill" style="font-size:0.72rem;">Limpiar</a>
+        <button type="submit" class="btn-primary text-base" style="padding:3px 12px;">Filtrar</button>
+        <a asp-page="/Index" class="nav-pill text-sm">Limpiar</a>
     </form>
 </div>
 
 <details class="card" style="padding:8px 14px; margin-bottom:10px;">
-    <summary style="cursor:pointer; font-size:0.85rem; font-weight:600;">Agregar caso a la agenda</summary>
+    <summary class="text-md" style="cursor:pointer; font-weight:600;">Agregar caso a la agenda</summary>
     <form method="post" asp-page-handler="Add" style="display:flex; gap:10px; align-items:flex-end; flex-wrap:wrap; margin-top:12px;">
         <div>
             <label class="form-label">Nombre completo</label>
@@ -166,7 +166,7 @@
 @* Paginación arriba de la tabla, no debajo: la tabla llega hasta el borde inferior de la ventana
    y su barra de desplazamiento lateral queda ahí, siempre a la vista. Con los botones abajo, la
    barra subía y se comía la última fila. *@
-<div style="display:flex; gap:12px; align-items:center; margin:0 0 8px 4px; font-size:0.8rem;">
+<div class="text-md" style="display:flex; gap:12px; align-items:center; margin:0 0 8px 4px;">
     <span>@Model.TotalCount caso(s) — página @Model.PageNumber de @Model.TotalPages</span>
 
     @* Cuántas filas por página. Va como formulario GET con los filtros actuales en campos ocultos,
@@ -420,8 +420,8 @@
                 <td style="display:flex; gap:6px; align-items:center;">
                     @* Quién tocó el caso por última vez: con varias cuentas en la misma agenda,
                        "lo cambió alguien" no sirve para nada. *@
-                    <button type="submit" form="case-form-@item.Id" class="btn-primary"
-                            style="padding:4px 10px; font-size:0.72rem;"
+                    <button type="submit" form="case-form-@item.Id" class="btn-primary text-sm"
+                            style="padding:4px 10px;"
                             title="@(item.UpdatedBy is { } autor
                                      ? $"Última edición: {autor} — {item.UpdatedAt.LocalDateTime:dd-MM-yyyy HH:mm}"
                                      : "Sin ediciones desde el dashboard")">Guardar</button>

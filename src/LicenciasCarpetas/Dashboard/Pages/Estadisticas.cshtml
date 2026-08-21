@@ -35,15 +35,15 @@
 </div>
 
 <div class="card" style="padding:16px 20px; margin-bottom:16px;">
-    <h2 style="font-size:1rem; margin:0 0 10px;">Resumen de @SpanishDate.MonthName(stats.Month) @stats.Year</h2>
-    <p style="font-size:0.85rem; margin:0;">
+    <h2 class="text-xl" style="margin:0 0 10px;">Resumen de @SpanishDate.MonthName(stats.Month) @stats.Year</h2>
+    <p class="text-md" style="margin:0;">
         Escaneadas: <strong>@stats.ScannedTotal</strong> ·
         Subidas: <strong>@stats.UploadedTotal</strong> ·
         Agendadas: <strong>@stats.ScheduledTotal</strong> ·
         Atendidas: <strong>@stats.AttendedTotal</strong> ·
         Atención: <strong>@LicenciasCarpetas.Dashboard.Pages.EstadisticasModel.Percent(stats.AttendanceRate)</strong>
     </p>
-    <p style="font-size:0.8rem; margin:8px 0 0;">
+    <p class="text-md" style="margin:8px 0 0;">
         @foreach (var office in offices)
         {
             <span style="margin-right:14px;">
@@ -95,7 +95,7 @@
                     <td class="text-cell">@LicenciasCarpetas.Dashboard.Pages.EstadisticasModel.Percent(day.AttendanceRate(office))</td>
                 }
                 <td>
-                    <button type="submit" form="@formId" class="btn-primary" style="padding:4px 10px; font-size:0.72rem;">Guardar</button>
+                    <button type="submit" form="@formId" class="btn-primary text-sm" style="padding:4px 10px;">Guardar</button>
                 </td>
             </tr>
         }
@@ -107,7 +107,7 @@
    Barras en CSS puro: la comparación entre oficinas o entre estados se ve de un vistazo, y no
    hace falta traer ninguna librería de gráficos a un equipo municipal sin internet garantizado. *@
 <div class="card" style="padding:16px 20px; margin-bottom:16px;">
-    <h2 style="font-size:1rem; margin:0 0 12px;">Atención por oficina</h2>
+    <h2 class="text-xl" style="margin:0 0 12px;">Atención por oficina</h2>
     @foreach (var office in offices)
     {
         var agendadas = stats.ScheduledFor(office);
@@ -127,8 +127,8 @@
 {
     var maximo = stats.LicenceClasses.Max(entry => entry.Count);
     <div class="card" style="padding:16px 20px; margin-bottom:16px;">
-        <h2 style="font-size:1rem; margin:0 0 4px;">Licencias por clase</h2>
-        <p style="font-size:0.8rem; margin:0 0 12px;">
+        <h2 class="text-xl" style="margin:0 0 4px;">Licencias por clase</h2>
+        <p class="text-md" style="margin:0 0 12px;">
             @stats.LicencesTotal licencia(s) en total, @stats.ProfessionalLicences profesional(es).
             Una citación que cubre dos clases cuenta en las dos.
         </p>
@@ -150,7 +150,7 @@
 {
     var maximoEstado = stats.FolderStates.Max(entry => entry.Count);
     <div class="card" style="padding:16px 20px; margin-bottom:16px;">
-        <h2 style="font-size:1rem; margin:0 0 12px;">Estados de carpeta</h2>
+        <h2 class="text-xl" style="margin:0 0 12px;">Estados de carpeta</h2>
         @foreach (var (state, count) in stats.FolderStates)
         {
             <div class="grafico-fila">

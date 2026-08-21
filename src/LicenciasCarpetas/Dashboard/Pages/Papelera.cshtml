@@ -10,8 +10,8 @@
 }
 
 <div class="card" style="padding:16px 20px; margin-bottom:16px;">
-    <h1 style="font-size:1.1rem; margin:0 0 6px;">Papelera</h1>
-    <p style="margin:0; font-size:0.85rem;">
+    <h1 class="text-xl" style="margin:0 0 6px;">Papelera</h1>
+    <p class="text-md" style="margin:0;">
         Casos eliminados desde la pantalla Casos. No aparecen en listados, estadísticas ni
         exportaciones, y una reimportación del Excel tampoco los revive. Se pueden restaurar acá.
         @Model.Cases.Count caso(s).
@@ -44,7 +44,7 @@
                 <td style="display:flex; gap:6px; align-items:center;">
                     <form method="post" asp-page-handler="Restore">
                         <input type="hidden" name="id" value="@item.Id" />
-                        <button type="submit" class="btn-primary" style="padding:4px 10px; font-size:0.72rem;">Restaurar</button>
+                        <button type="submit" class="btn-primary text-sm" style="padding:4px 10px;">Restaurar</button>
                     </form>
                     <form method="post" asp-page-handler="DeletePermanently"
                           onsubmit="return confirm('Esto borra el caso para siempre, ya no se puede restaurar. ¿Confirmar?');">

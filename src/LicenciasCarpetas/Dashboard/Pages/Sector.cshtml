@@ -14,7 +14,7 @@
 }
 
 <div class="card" style="padding:16px 20px; margin-bottom:16px;" data-print-hide>
-    <p style="margin:0 0 10px; font-size:0.85rem;">
+    <p class="text-md" style="margin:0 0 10px;">
         Documento para solicitar carpetas físicas a <strong>@destino</strong>.
         @Model.Cases.Count carpeta(s) en esta lista.
         @if (Model.ReachedLimit)
@@ -167,7 +167,7 @@
 
     @if (Model.Cases.Count == 0)
     {
-        <p style="padding:16px; font-size:0.85rem;">
+        <p class="text-md" style="padding:16px;">
             No hay carpetas pendientes para este sector. Marque casos en la pantalla Casos, o use
             "Incluir las ya pedidas" para ver las que ya se solicitaron.
         </p>

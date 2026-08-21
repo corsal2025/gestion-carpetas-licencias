@@ -11,8 +11,8 @@
 }
 
 <div class="card" style="padding:20px 24px; margin-bottom:16px; max-width:820px;">
-    <h1 style="font-size:1.1rem; margin:0 0 4px;">Crear usuario</h1>
-    <p style="font-size:0.82rem; margin:0 0 14px;">
+    <h1 class="text-xl" style="margin:0 0 4px;">Crear usuario</h1>
+    <p class="text-md" style="margin:0 0 14px;">
         Mínimo @LicenciasCarpetas.Dashboard.Auth.UserProvisioning.MinimumPasswordLength caracteres.
         El nombre de usuario no distingue mayúsculas.
     </p>
@@ -40,10 +40,10 @@
         </div>
         <div class="modulos-administrativo">
             <label class="form-label">Módulos (solo Administrativo)</label>
-            <label style="display:flex; gap:4px; align-items:center; font-size:0.8rem;">
+            <label class="text-md" style="display:flex; gap:4px; align-items:center;">
                 <input type="checkbox" name="moduloCambioDomicilio" value="true" /> Cambio de Domicilio
             </label>
-            <label style="display:flex; gap:4px; align-items:center; font-size:0.8rem;">
+            <label class="text-md" style="display:flex; gap:4px; align-items:center;">
                 <input type="checkbox" name="moduloF8" value="true" /> F8 Urgentes
             </label>
         </div>
@@ -52,8 +52,8 @@
 </div>
 
 <div class="card" style="padding:20px 24px; margin-bottom:16px; max-width:640px;">
-    <h2 style="font-size:1rem; margin:0 0 4px;">Cambiar la contraseña de un usuario</h2>
-    <p style="font-size:0.82rem; margin:0 0 14px;">
+    <h2 class="text-xl" style="margin:0 0 4px;">Cambiar la contraseña de un usuario</h2>
+    <p class="text-md" style="margin:0 0 14px;">
         Para cuando alguien olvida la suya. Deja la cuenta desbloqueada de inmediato.
     </p>
     <form method="post" asp-page-handler="SetPassword" style="display:flex; gap:10px; align-items:flex-end; flex-wrap:wrap;">
@@ -78,7 +78,7 @@
     </form>
 </div>
 
-<label style="display:flex; gap:6px; align-items:center; font-size:0.8rem; margin:0 0 16px 4px;">
+<label class="text-md" style="display:flex; gap:6px; align-items:center; margin:0 0 16px 4px;">
     <input type="checkbox" id="reveal-passwords" /> Mostrar las contraseñas
 </label>
 
@@ -121,7 +121,7 @@
                 <td>
                     @if (!esUnoMismo)
                     {
-                        <button type="submit" form="@formId" class="btn-primary" style="padding:4px 10px; font-size:0.78rem;">Guardar</button>
+                        <button type="submit" form="@formId" class="btn-primary text-base" style="padding:4px 10px;">Guardar</button>
                     }
                     <form id="@formId" method="post" asp-page-handler="UpdateRole" style="display:none;">
                         <input type="hidden" name="usuario" value="@user.Username" />
