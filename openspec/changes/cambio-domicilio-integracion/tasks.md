@@ -44,9 +44,9 @@ para convertirse directamente en PRs encadenados si el usuario así lo decide.
 
 ## Phase 2 — Data (repositories against real SQLite, mirroring existing repo test pattern)
 
-- [ ] 2.1 Read `tests/LicenciasCarpetas.Tests/` for the existing SQLite-file-backed repo test pattern (e.g. `FolderCaseRepository` tests) to confirm setup/teardown convention before writing new tests
-- [ ] 2.2 Create `src/LicenciasCarpetas/CambioDomicilio/Data/ICambioDomicilioRequestRepository.cs` + `CambioDomicilioRequestRepository.cs` (port sibling `Persistence/PersonRequestRepository.cs`, renamed per design.md, `EnsureSchema()` creates `PersonRequest` + `DeletedSourceMessage` tables) + `tests/LicenciasCarpetas.Tests/CambioDomicilio/Data/CambioDomicilioRequestRepositoryTests.cs` (real temp SQLite file; assert coexistence with `FolderCase`/`UrgentRequest` tables per dashboard spec's Schema Coexistence requirement)
-- [ ] 2.3 Create `src/LicenciasCarpetas/CambioDomicilio/Data/IDiscardedEmailRepository.cs` + `DiscardedEmailRepository.cs` (port sibling `Persistence/DiscardedEmailRepository.cs`, `EnsureSchema()` creates `DiscardedEmail` table) + `tests/LicenciasCarpetas.Tests/CambioDomicilio/Data/DiscardedEmailRepositoryTests.cs` (real temp SQLite file)
+- [x] 2.1 Read `tests/LicenciasCarpetas.Tests/` for the existing SQLite-file-backed repo test pattern (e.g. `FolderCaseRepository` tests) to confirm setup/teardown convention before writing new tests
+- [x] 2.2 Create `src/LicenciasCarpetas/CambioDomicilio/Data/ICambioDomicilioRequestRepository.cs` + `CambioDomicilioRequestRepository.cs` (port sibling `Persistence/PersonRequestRepository.cs`, renamed per design.md, `EnsureSchema()` creates `PersonRequest` + `DeletedSourceMessage` tables) + `tests/LicenciasCarpetas.Tests/CambioDomicilio/Data/CambioDomicilioRequestRepositoryTests.cs` (real temp SQLite file; assert coexistence with `FolderCase`/`UrgentRequest` tables per dashboard spec's Schema Coexistence requirement)
+- [x] 2.3 Create `src/LicenciasCarpetas/CambioDomicilio/Data/IDiscardedEmailRepository.cs` + `DiscardedEmailRepository.cs` (port sibling `Persistence/DiscardedEmailRepository.cs`, `EnsureSchema()` creates `DiscardedEmail` table) + `tests/LicenciasCarpetas.Tests/CambioDomicilio/Data/DiscardedEmailRepositoryTests.cs` (real temp SQLite file)
 
 ## Phase 3 — Extraction, Directories, Routing
 

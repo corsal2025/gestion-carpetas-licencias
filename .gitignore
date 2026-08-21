@@ -13,8 +13,11 @@ obj/
 certs/
 
 # Runtime data: the SQLite database holds real names and RUTs, exports do too.
-**/data/*
-!**/data/README.md
+# Anchored to the one real runtime folder (not **/data/*, which on Windows' case-insensitive
+# git config also silently matched source folders like F8/Data/ and CambioDomicilio/Data/,
+# excluding real repository code from every commit without a warning).
+/src/LicenciasCarpetas/data/*
+!/src/LicenciasCarpetas/data/README.md
 *.db
 
 publish/
