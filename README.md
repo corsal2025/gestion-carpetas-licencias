@@ -224,6 +224,12 @@ src/LicenciasCarpetas/
   Persistence/     # Repositorios SQLite (sin ORM)
   Statistics/      # Reconstrucción de la hoja ESCANEADAS Y SUBIDAS
   Reporting/       # Exportación a .xlsx
-  Dashboard/       # Auth (PBKDF2) y páginas Razor
+  F8/              # Módulo F8 Urgentes: mismo login y misma carpetas.db (tabla UrgentRequest propia),
+                   # detrás de la política "F8Access" (claim mod:f8-urgentes)
+  CambioDomicilio/ # Módulo Cambio de Domicilio: mismo login y misma carpetas.db (tablas PersonRequest,
+                   # DeletedSourceMessage, DiscardedEmail propias), sincroniza contra EWS solo cuando
+                   # el operador aprieta "Sincronizar ahora" (sin polling automático), detrás de la
+                   # política "CambioDomicilioAccess" (claim mod:cambio-domicilio)
+  Dashboard/       # Auth (PBKDF2) y páginas Razor (incluye Dashboard/Pages/F8/ y Dashboard/Pages/CambioDomicilio/)
 tests/LicenciasCarpetas.Tests/
 ```

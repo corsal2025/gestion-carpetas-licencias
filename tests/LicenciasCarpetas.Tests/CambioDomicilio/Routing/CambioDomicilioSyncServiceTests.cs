@@ -104,15 +104,6 @@ public class CambioDomicilioSyncServiceTests
         Assert.Equal(0, reader.CallCount); // never got to reading mail: nowhere to route it to
     }
 
-    private sealed class BlockingEmailReader(Task gate) : IEmailReader
-    {
-        public async Task<IReadOnlyList<IncomingEmail>> GetMessagesInFolderAsync(string folderDisplayName, CancellationToken cancellationToken)
-        {
-            await gate;
-            return [];
-        }
-    }
-
     private sealed class EmptyEmailReader : IEmailReader
     {
         public Task<IReadOnlyList<IncomingEmail>> GetMessagesInFolderAsync(string folderDisplayName, CancellationToken cancellationToken)
@@ -128,39 +119,5 @@ public class CambioDomicilioSyncServiceTests
             CallCount++;
             return Task.FromResult<IReadOnlyList<IncomingEmail>>([]);
         }
-    }
-
-    private sealed class NoopMailSender : IMailSender
-    {
-        public Task SendAsync(string toAddress, string subject, string body, CancellationToken cancellationToken) => Task.CompletedTask;
-    }
-
-    private sealed class NoopEmailMover : IEmailMover
-    {
-        public Task<bool> MoveAndMarkUnreadAsync(string messageId, string sourceFolderDisplayName, string destinationFolderDisplayName, CancellationToken cancellationToken)
-            => Task.FromResult(true);
-    }
-
-    private sealed class NoopCsvReportWriter : ICsvReportWriter
-    {
-        public void Write(IReadOnlyList<PersonRequest> requests, string outputPath) { }
-    }
-
-    private sealed class NoopUserRepository : IUserRepository
-    {
-        public void EnsureSchema() { }
-        public DashboardUser? FindByUsername(string username) => null;
-        public DashboardUser? FindById(long id) => null;
-        public void Insert(DashboardUser user) { }
-        public void UpdatePassword(long id, string hash, string salt, int iterations) { }
-        public void ResetPassword(long id, string hash, string salt, int iterations) { }
-        public IReadOnlyList<string> AllUsernames() => [];
-        public IReadOnlyList<DashboardUser> AllUsers() => [];
-        public void Delete(string username) { }
-        public void RecordFailedLogin(long id, int attempts, DateTimeOffset? lockedUntil) { }
-        public void ResetFailedLogins(long id) { }
-        public int Count() => 0;
-        public void UpdateRole(long id, UserRole role, bool canAccessCambioDomicilio, bool canAccessF8Urgentes) { }
-        public void UpdateEmailFooter(long id, string? footer) { }
     }
 }

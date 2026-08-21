@@ -80,12 +80,12 @@ para convertirse directamente en PRs encadenados si el usuario así lo decide.
 
 ## Phase 6 — End-to-end smoke pass
 
-- [ ] 6.1 Add `tests/LicenciasCarpetas.Tests/CambioDomicilio/CambioDomicilioAccessTests.cs` using `WebApplicationFactory<Program>`: authorized user reaches `/CambioDomicilio/Index` (200), unauthorized user gets 403/redirect without unhandled exception (dashboard spec Access Control requirement)
-- [ ] 6.2 Add `tests/LicenciasCarpetas.Tests/CambioDomicilio/CambioDomicilioStartupTests.cs`: app starts normally with no `CambioDomicilio:` section configured, other modules unaffected (routing spec's Configuration Section requirement)
-- [ ] 6.3 Add `tests/LicenciasCarpetas.Tests/CambioDomicilio/OnPostSyncNowTests.cs`: `IndexModel.OnPostSyncNowAsync` end-to-end with a fake `IEmailReader`/`IEwsClient`, asserting create/discard/unresolved counts match (routing spec's Cycle Reporting scenario)
-- [ ] 6.4 Update `README.md` module list/structure section to mention `CambioDomicilio`
+- [x] 6.1 Add `tests/LicenciasCarpetas.Tests/CambioDomicilio/CambioDomicilioAccessTests.cs` using `WebApplicationFactory<Program>`: authorized user reaches `/CambioDomicilio/Index` (200), unauthorized user gets 403/redirect without unhandled exception (dashboard spec Access Control requirement)
+- [x] 6.2 Add `tests/LicenciasCarpetas.Tests/CambioDomicilio/CambioDomicilioStartupTests.cs`: app starts normally with no `CambioDomicilio:` section configured, other modules unaffected (routing spec's Configuration Section requirement)
+- [x] 6.3 Add `tests/LicenciasCarpetas.Tests/CambioDomicilio/OnPostSyncNowTests.cs`: `IndexModel.OnPostSyncNowAsync` end-to-end with a fake `IEmailReader`/`IEwsClient`, asserting create/discard/unresolved counts match (routing spec's Cycle Reporting scenario)
+- [x] 6.4 Update `README.md` module list/structure section to mention `CambioDomicilio`
 
 ## Definition of Done
 
-- [ ] `dotnet build -c Release` passes with zero errors/warnings introduced by this change
-- [ ] `dotnet test -c Release` passes, including all new `CambioDomicilio` test files
+- [x] `dotnet build -c Release` passes with zero errors/warnings introduced by this change
+- [x] `dotnet test -c Release` passes, including all new `CambioDomicilio` test files

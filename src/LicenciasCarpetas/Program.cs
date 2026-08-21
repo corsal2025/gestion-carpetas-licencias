@@ -251,22 +251,27 @@ if (args.Contains("--import"))
     return;
 }
 
-_ = Task.Run(async () =>
+// Nunca bajo "Testing" (WebApplicationFactory en los tests de integración) — de lo contrario
+// cada test que levanta el host real dispara una ventana de navegador real y huérfana.
+if (!app.Environment.IsEnvironment("Testing"))
 {
-    try
+    _ = Task.Run(async () =>
     {
-        // Small delay to let the server bind before opening the browser
-        await Task.Delay(2000);
-        var url = "https://localhost:5011";
-        Console.WriteLine($"Abriendo dashboard: {url}");
-        Process.Start(new ProcessStartInfo(url) { UseShellExecute = true });
-    }
-    catch (Exception ex)
-    {
-        Console.WriteLine($"No se pudo abrir el navegador automáticamente: {ex.Message}");
-        Console.WriteLine("Abre https://localhost:5011 manualmente en tu navegador.");
-    }
-});
+        try
+        {
+            // Small delay to let the server bind before opening the browser
+            await Task.Delay(2000);
+            var url = "https://localhost:5011";
+            Console.WriteLine($"Abriendo dashboard: {url}");
+            Process.Start(new ProcessStartInfo(url) { UseShellExecute = true });
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"No se pudo abrir el navegador automáticamente: {ex.Message}");
+            Console.WriteLine("Abre https://localhost:5011 manualmente en tu navegador.");
+        }
+    });
+}
 
 app.UseHttpsRedirection();
 app.UseStaticFiles();
