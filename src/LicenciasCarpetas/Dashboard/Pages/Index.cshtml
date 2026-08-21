@@ -326,9 +326,12 @@
                                     <span>Observación — @item.FullName</span>
                                     <button type="button" class="observaciones-cerrar" aria-label="Cerrar" title="Cerrar">×</button>
                                 </div>
-                                <textarea name="observaciones" form="case-form-@item.Id"
+                                <textarea name="observaciones" form="case-form-@item.Id" readonly
                                           placeholder="Observación sobre esta persona…">@item.Observations</textarea>
-                                <span class="observaciones-panel-hint">Se guarda con el botón Guardar de la fila.</span>
+                                <div class="observaciones-panel-acciones">
+                                    <button type="button" class="observaciones-editar">Editar</button>
+                                    <button type="submit" form="case-form-@item.Id" class="btn-primary observaciones-guardar" style="display:none;">Guardar</button>
+                                </div>
                             </div>
                         </details>
                     </span>
@@ -571,6 +574,20 @@
         .forEach(function (boton) {
             boton.addEventListener('click', function () {
                 boton.closest('.observaciones-celda').removeAttribute('open');
+            });
+        });
+
+    // Editar habilita la nota (estaba en solo lectura) y la deja lista para escribir; Guardar
+    // manda el mismo formulario de la fila que usa cualquier otro campo — no hay envío aparte.
+    document.querySelectorAll('.observaciones-editar')
+        .forEach(function (boton) {
+            boton.addEventListener('click', function () {
+                var panel = boton.closest('.observaciones-panel');
+                var textarea = panel.querySelector('textarea');
+                textarea.readOnly = false;
+                textarea.focus();
+                boton.style.display = 'none';
+                panel.querySelector('.observaciones-guardar').style.display = '';
             });
         });
 

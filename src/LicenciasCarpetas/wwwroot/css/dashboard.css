@@ -1670,10 +1670,38 @@ table.cases-index tbody td select {
     box-sizing: border-box;
 }
 
-.observaciones-panel-hint {
-    font-size: 0.68rem;
+/* Solo lectura hasta que se pulsa Editar: evita que un roce accidental sobre el texto ya guardado
+   se confunda con una edición a medias. Reemplaza al aviso de texto que había antes explicando
+   dónde guardar — ahora el botón Guardar vive en el propio panel. */
+.observaciones-panel textarea[readonly] {
+    background: var(--color-pending-bg);
     color: var(--color-text-muted);
-    font-style: italic;
+    cursor: default;
+}
+
+.observaciones-panel-acciones {
+    display: flex;
+    justify-content: flex-end;
+    gap: 6px;
+}
+
+.observaciones-editar {
+    border: 1px solid var(--color-border);
+    background: #fff;
+    color: var(--color-text-muted);
+    border-radius: 4px;
+    padding: 4px 10px;
+    font-size: 0.75rem;
+    cursor: pointer;
+}
+
+.observaciones-editar:hover {
+    background: var(--color-pending-bg);
+}
+
+.observaciones-panel .observaciones-guardar {
+    padding: 4px 12px;
+    font-size: 0.75rem;
 }
 
 /* El ícono cambia de 📝 a 🗒️ al tipear (ver Index.cshtml), pero eso no sobrevive un refresh de
