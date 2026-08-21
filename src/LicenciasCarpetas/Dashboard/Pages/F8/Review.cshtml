@@ -1,0 +1,42 @@
+@page
+@model LicenciasCarpetas.Dashboard.Pages.F8.ReviewModel
+@{
+    ViewData["Title"] = "Requiere revisión";
+}
+
+<div class="card table-card">
+    <table class="cases">
+        <thead>
+            <tr>
+                <th>Nombre</th>
+                <th>RUT</th>
+                <th>Hoja</th>
+                <th>Fila</th>
+                <th>Flags</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var row in Model.FlaggedRequests)
+            {
+                <tr class="row-needs-review">
+                    <td>@row.Request.NombreCompleto</td>
+                    <td>@row.Request.Rut</td>
+                    <td>@row.Request.SourceSheet</td>
+                    <td>@row.Request.SourceRowNumber</td>
+                    <td class="review-cell">
+                        @foreach (var flag in row.Flags)
+                        {
+                            <div><span class="badge badge-review">@flag.ReasonCode</span> @flag.ColumnName = "@flag.RawValue"</div>
+                        }
+                    </td>
+                    <td><a class="btn-primary" href="/F8/Edit?id=@row.Request.Id">Corregir</a></td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/f8-dashboard.css" asp-append-version="true" />
+}

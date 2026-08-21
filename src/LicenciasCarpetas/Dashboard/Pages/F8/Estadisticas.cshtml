@@ -1,0 +1,170 @@
+@page
+@model LicenciasCarpetas.Dashboard.Pages.F8.EstadisticasModel
+@{
+    ViewData["Title"] = "Estadísticas";
+}
+
+<div class="nav-group">
+    <a href="/F8/Index">Solicitudes</a>
+    <a href="/F8/SectorF8?sector=Archivo" class="pdf-chip pdf-chip-archivo">PDF Archivo</a>
+    <a href="/F8/SectorF8?sector=Oficina43" class="pdf-chip pdf-chip-oficina43">PDF Oficina 43</a>
+    <a href="/F8/Estadisticas" class="pdf-chip pdf-chip-stats active">Estadísticas</a>
+</div>
+
+<div class="stats-grid">
+    <div class="card stat-tile">
+        <div class="stat-value">@Model.Total</div>
+        <div class="stat-label">Total de casos</div>
+    </div>
+    <div class="card stat-tile">
+        <div class="stat-value">@Model.Subidas</div>
+        <div class="stat-label">Subidas a CONASET</div>
+    </div>
+    <div class="card stat-tile">
+        <div class="stat-value">@Model.Pendientes</div>
+        <div class="stat-label">Pendientes</div>
+    </div>
+    <div class="card stat-tile @(Model.NeedsReview > 0 ? "stat-tile-alert" : "")">
+        <div class="stat-value">@Model.NeedsReview</div>
+        <div class="stat-label">Requieren revisión</div>
+    </div>
+    <div class="card stat-tile">
+        <div class="stat-value">@Model.Marcados</div>
+        <div class="stat-label">Marcados (cola impresión)</div>
+    </div>
+    <div class="card stat-tile">
+        <div class="stat-value">@Model.PendienteCarpeta</div>
+        <div class="stat-label">Pendiente de carpeta</div>
+    </div>
+</div>
+
+@{
+    var subidasPct = Model.Total > 0 ? Model.Subidas * 100.0 / Model.Total : 0;
+}
+<div class="card donut-card">
+    <h3>Subidas vs. pendientes</h3>
+    <div class="donut-chart" style="background: conic-gradient(var(--color-confirmed) 0% @(subidasPct.ToString(System.Globalization.CultureInfo.InvariantCulture))%, var(--color-pending) @(subidasPct.ToString(System.Globalization.CultureInfo.InvariantCulture))% 100%);">
+        <div class="donut-hole">@(Model.Total > 0 ? subidasPct.ToString("0") : "0")%</div>
+    </div>
+    <div class="donut-legend">
+        <span><i style="background:var(--color-confirmed)"></i> Subidas (@Model.Subidas)</span>
+        <span><i style="background:var(--color-pending)"></i> Pendientes (@Model.Pendientes)</span>
+    </div>
+</div>
+
+@{
+    var ic = System.Globalization.CultureInfo.InvariantCulture;
+    var chartW = 620.0; var chartH = 170.0;
+    var padL = 34.0; var padR = 14.0; var padT = 10.0; var padB = 26.0;
+    var weeks = Model.IngresosPorSemana;
+    var maxY = weeks.Count > 0 ? Math.Max(1, weeks.Max(w => w.Count)) : 1;
+    var n = weeks.Count;
+    var linePoints = new System.Text.StringBuilder();
+    var xs = new double[Math.Max(n, 1)];
+    for (var i = 0; i < n; i++)
+    {
+        xs[i] = n > 1 ? padL + (chartW - padL - padR) * i / (n - 1) : (chartW / 2);
+        var y = padT + (chartH - padT - padB) * (1 - weeks[i].Count / (double)maxY);
+        linePoints.Append(xs[i].ToString(ic)).Append(',').Append(y.ToString(ic)).Append(' ');
+    }
+}
+<div class="card line-card">
+    <h3>Ingresos por semana (fecha de citación)</h3>
+    @if (n == 0)
+    {
+        <p class="empty-hint">Sin datos de fecha de citación todavía.</p>
+    }
+    else
+    {
+        <svg viewBox="0 0 @(chartW.ToString(ic)) @(chartH.ToString(ic))" class="line-chart" preserveAspectRatio="xMidYMid meet">
+            @for (var g = 0; g <= 4; g++)
+            {
+                var gy = padT + (chartH - padT - padB) * g / 4;
+                <line x1="@padL.ToString(ic)" x2="@((chartW - padR).ToString(ic))" y1="@gy.ToString(ic)" y2="@gy.ToString(ic)" class="chart-gridline" />
+            }
+            <polyline points="@linePoints.ToString()" class="line-path" />
+            @for (var i = 0; i < n; i++)
+            {
+                var y = padT + (chartH - padT - padB) * (1 - weeks[i].Count / (double)maxY);
+                <circle cx="@xs[i].ToString(ic)" cy="@y.ToString(ic)" r="3.5" class="line-dot">
+                    <title>Semana del @weeks[i].WeekLabel: @weeks[i].Count caso(s)</title>
+                </circle>
+                @if (n <= 12 || i % (n / 12 + 1) == 0)
+                {
+                    @Html.Raw($"<text x=\"{xs[i].ToString(ic)}\" y=\"{(chartH - 6).ToString(ic)}\" class=\"chart-axis-label\" text-anchor=\"middle\">{System.Net.WebUtility.HtmlEncode(weeks[i].WeekLabel)}</text>")
+                }
+            }
+        </svg>
+    }
+</div>
+
+@if (Model.TiempoPromedioConfirmacionDias is { } avgDias)
+{
+    <div class="card avg-days-card">
+        <h3>Tiempo promedio de confirmación</h3>
+        <div class="avg-days-value">@avgDias.ToString("0.#") días</div>
+        <div class="avg-days-hint">Desde fecha de citación hasta fecha de subida F8, sobre @Model.Subidas caso(s) subido(s)</div>
+    </div>
+}
+
+<div class="stats-breakdowns">
+    <div class="card breakdown-card">
+        <h3>Por estado</h3>
+        @foreach (var (label, count) in Model.PorEstado)
+        {
+            <div class="breakdown-row">
+                <span class="breakdown-label">@label</span>
+                <div class="breakdown-bar-track">
+                    <div class="breakdown-bar" style="width:@(Model.Total > 0 ? count * 100 / Model.Total : 0)%"></div>
+                </div>
+                <span class="breakdown-count">@count</span>
+            </div>
+        }
+    </div>
+
+    <div class="card breakdown-card">
+        <h3>Por estado actual</h3>
+        @foreach (var (label, count) in Model.PorEstadoActual)
+        {
+            <div class="breakdown-row">
+                <span class="breakdown-label">@label</span>
+                <div class="breakdown-bar-track">
+                    <div class="breakdown-bar" style="width:@(Model.Total > 0 ? count * 100 / Model.Total : 0)%"></div>
+                </div>
+                <span class="breakdown-count">@count</span>
+            </div>
+        }
+    </div>
+
+    <div class="card breakdown-card">
+        <h3>Por sector</h3>
+        @foreach (var (label, count) in Model.PorSector)
+        {
+            <div class="breakdown-row">
+                <span class="breakdown-label">@label</span>
+                <div class="breakdown-bar-track">
+                    <div class="breakdown-bar" style="width:@(Model.Total > 0 ? count * 100 / Model.Total : 0)%"></div>
+                </div>
+                <span class="breakdown-count">@count</span>
+            </div>
+        }
+    </div>
+
+    <div class="card breakdown-card">
+        <h3>Por origen</h3>
+        @foreach (var (label, count) in Model.PorOrigen)
+        {
+            <div class="breakdown-row">
+                <span class="breakdown-label">@label</span>
+                <div class="breakdown-bar-track">
+                    <div class="breakdown-bar" style="width:@(Model.Total > 0 ? count * 100 / Model.Total : 0)%"></div>
+                </div>
+                <span class="breakdown-count">@count</span>
+            </div>
+        }
+    </div>
+</div>
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/f8-dashboard.css" asp-append-version="true" />
+}

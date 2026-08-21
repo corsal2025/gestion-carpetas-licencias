@@ -1,0 +1,416 @@
+@page
+@model LicenciasCarpetas.Dashboard.Pages.F8.IndexModel
+@{
+    ViewData["Title"] = "Solicitudes";
+    var currentTab = Model.Tab ?? "Todos";
+}
+
+<div class="nav-group">
+    <a href="/F8/Index?tab=Todos" class="@(currentTab == "Todos" ? "active" : "")">Todos</a>
+    <a href="/F8/Index?tab=Pendientes" class="@(currentTab == "Pendientes" ? "active" : "")">Pendientes</a>
+    <a href="/F8/Index?tab=Subidas" class="@(currentTab == "Subidas" ? "active" : "")">Subidas</a>
+    <a href="/F8/Index?tab=Certificados" class="@(currentTab == "Certificados" ? "active" : "")">Solicitud de certificado</a>
+    <a href="/F8/Index?flagged=true" class="@(Model.Flagged == true ? "active" : "")">
+        Requiere revisión
+        @if (Model.FlaggedCount > 0)
+        {
+            <span class="badge badge-review">@Model.FlaggedCount</span>
+        }
+    </a>
+    <a href="/F8/SectorF8?sector=Archivo" class="pdf-chip pdf-chip-archivo">PDF Archivo</a>
+    <a href="/F8/SectorF8?sector=Oficina43" class="pdf-chip pdf-chip-oficina43">PDF Oficina 43</a>
+    <a href="/F8/Estadisticas" class="pdf-chip pdf-chip-stats">Estadísticas</a>
+    <a href="/F8/ImpresionMensual" class="pdf-chip pdf-chip-stats">Impresión mensual</a>
+    <form method="post" asp-page-handler="Sincronizar" style="display:inline-block; margin-left:8px;">
+        <button class="btn-outline btn-sync" type="submit" title="Trae casos 'NO HAY CARPETA' de la matriz y actualiza los ya subidos">
+            Sincronizar datos
+        </button>
+    </form>
+</div>
+
+@if (Model.ShowMonthlyPrintReminder)
+{
+    <div class="card" style="margin-bottom:12px; padding:10px 14px; background:#fff4d6; border-left:4px solid #b8860b; font-size:0.85rem;">
+        ⚠ Recuerda imprimir las penúltimas carpetas de @Model.PreviousMonthKey.
+        <a href="/F8/ImpresionMensual?month=@Model.PreviousMonthKey">Ir a impresión mensual</a>
+    </div>
+}
+
+@if (!string.IsNullOrEmpty(Model.SyncMessage))
+{
+    <div class="card" style="margin-bottom:12px; padding:10px 14px; background:#eef6ec; border-left:4px solid #4a934a; font-size:0.85rem;">
+        @Model.SyncMessage
+    </div>
+}
+
+@if (!string.IsNullOrEmpty(Model.CertificadoMessage))
+{
+    <div class="card" style="margin-bottom:12px; padding:10px 14px; background:#eef6ec; border-left:4px solid #4a934a; font-size:0.85rem;">
+        @Model.CertificadoMessage
+    </div>
+}
+
+@if (Model.DuplicateRuts.Count > 0)
+{
+    <div class="card" style="margin-bottom:12px; padding:10px 14px; background:#fdecea; border-left:4px solid #c0392b; font-size:0.85rem;">
+        ⚠ RUT duplicado(s), hay más de un caso con el mismo RUT: @string.Join(", ", Model.DuplicateRuts.Select(LicenciasCarpetas.F8.Domain.RutFormatter.WithDots))
+    </div>
+}
+
+<form class="nav-search" method="get" action="/F8/Index">
+    <input type="hidden" name="tab" value="@currentTab" />
+    <input type="text" name="search" value="@Model.Search" placeholder="Buscar por RUT o nombre" />
+    <button type="submit">Buscar</button>
+    @if (!string.IsNullOrEmpty(Model.Search))
+    {
+        <a class="nav-search-clear" href="/F8/Index?tab=@currentTab">Limpiar búsqueda</a>
+    }
+</form>
+
+<div class="card quick-add-card">
+    <form method="post" asp-page-handler="AddManualCases" id="quick-add-form">
+        <div id="quick-add-rows">
+            <div class="quick-add-row">
+                <label>Nombre completo<input class="input-block" name="nombreCompleto" placeholder="ej: Gustavo Peña Castro" /></label>
+                <label>RUT<input class="input-block" name="rut" placeholder="ej: 18.785.387-7" /></label>
+                <label>Estado<input class="input-block" name="estado" placeholder="ej: Pendiente" /></label>
+                <button type="button" class="btn-danger remove-row-btn" title="Quitar fila" hidden>×</button>
+            </div>
+        </div>
+        <div class="quick-add-actions">
+            <button type="button" id="add-row-btn" class="btn-outline">+ Agregar otro</button>
+            <button class="btn-primary" type="submit">Agregar caso(s)</button>
+        </div>
+    </form>
+</div>
+
+<script>
+    // Full page reloads (like quick-add, Sincronizar, Eliminar) reset the scroll to the top —
+    // jarring after actioning a case down the list. Stash the scroll position before any normal
+    // submit and restore it once the reloaded page settles.
+    (function () {
+        var scrollKey = 'f8-index-scroll';
+        var restore = sessionStorage.getItem(scrollKey);
+        if (restore !== null) {
+            sessionStorage.removeItem(scrollKey);
+            // Use setTimeout to ensure the table has fully rendered its height before restoring scroll
+            setTimeout(function () {
+                window.scrollTo(0, parseInt(restore, 10) || 0);
+            }, 60);
+        }
+        document.addEventListener('submit', function (event) {
+            // Only stash scroll if it's a normal form submission, not our fetch-based submitToggle
+            // which doesn't reload the page.
+            sessionStorage.setItem(scrollKey, String(window.scrollY));
+        });
+    })();
+
+    document.getElementById('quick-add-rows').addEventListener('click', function (event) {
+        if (event.target.classList.contains('remove-row-btn')) {
+            event.target.closest('.quick-add-row').remove();
+        }
+    });
+
+    document.getElementById('add-row-btn').addEventListener('click', function () {
+        var rows = document.getElementById('quick-add-rows');
+        var row = document.createElement('div');
+        row.className = 'quick-add-row';
+        row.innerHTML = '<label>Nombre completo<input class="input-block" name="nombreCompleto" placeholder="ej: Gustavo Peña Castro" /></label>' +
+            '<label>RUT<input class="input-block" name="rut" placeholder="ej: 18.785.387-7" /></label>' +
+            '<label>Estado<input class="input-block" name="estado" placeholder="ej: Pendiente" /></label>' +
+            '<button type="button" class="btn-danger remove-row-btn" title="Quitar fila">×</button>';
+        rows.appendChild(row);
+    });
+</script>
+
+<div class="card table-card">
+    <table class="cases cases-list">
+        <thead>
+            <tr>
+                <th>Marcar</th>
+                <th class="th-wrap">Pend.<br />carpeta</th>
+                <th class="th-wrap">Fecha de<br />citación</th>
+                <th>Nombre contribuyente</th>
+                <th>RUT</th>
+                <th>Sector oficina</th>
+                <th>Estado</th>
+                <th>Estado actual</th>
+                <th>Código F8</th>
+                <th class="th-wrap">Fecha<br />penúltima<br />carpeta</th>
+                <th class="th-wrap">Sector<br />carpeta</th>
+                <th>Fecha subida F8</th>
+                <th>Acción</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var request in Model.Requests)
+            {
+                <tr class="@(request.NeedsReview ? "row-needs-review" : "") @LicenciasCarpetas.Dashboard.Pages.F8.IndexModel.EstadoRowClass(request.Estado) @(request.EstadoActual == "SUBIDA A CONASET" ? "row-confirmed" : "")">
+                    <td class="text-cell">
+                        <form class="toggle-form" method="post" asp-page-handler="ToggleMarked">
+                            <input type="hidden" name="id" value="@request.Id" />
+                            <input type="checkbox" class="marked-checkbox" name="markedValue" value="on" checked="@request.Marked" title="Incluir en próxima impresión de sector" />
+                        </form>
+                    </td>
+                    <td class="text-cell">
+                        <form class="toggle-form" method="post" asp-page-handler="TogglePendienteCarpeta">
+                            <input type="hidden" name="id" value="@request.Id" />
+                            <input type="checkbox" class="pendiente-checkbox" name="pendienteCarpetaValue" value="on" checked="@request.PendienteCarpeta" title="Pendiente de carpeta" />
+                        </form>
+                    </td>
+                    <td class="text-cell">@request.FechaPeticion</td>
+                    <td class="name-cell">
+                        <input class="input-inline autosave" form="person-@request.Id" name="nombreCompleto" value="@request.NombreCompleto" style="width:@(LicenciasCarpetas.Dashboard.Pages.F8.IndexModel.InputWidthCh(request.NombreCompleto, "Nombre completo", 10, 70))ch" />
+                    </td>
+                    <td class="rut-cell">
+                        @{ var rutDisplay = LicenciasCarpetas.F8.Domain.RutFormatter.WithDots(request.Rut); }
+                        <input class="input-inline autosave rut-input" form="person-@request.Id" name="rut" value="@rutDisplay" style="width:13ch" />
+                        <form id="person-@request.Id" method="post" asp-page-handler="SetPersonData">
+                            <input type="hidden" name="id" value="@request.Id" />
+                        </form>
+                    </td>
+                    <td class="text-cell">@(request.MatrizSector ?? "—")</td>
+                    <td class="text-cell">
+                        <select class="input-inline estado-select" form="estado-@request.Id" name="estado">
+                            <option value="" selected="@string.IsNullOrEmpty(request.Estado)"></option>
+                            @foreach (var option in LicenciasCarpetas.F8.Domain.EstadoCatalog.KnownEstados)
+                            {
+                                <option value="@option" selected="@(option == request.Estado)">@option</option>
+                            }
+                        </select>
+                        <form class="toggle-form" id="estado-@request.Id" method="post" asp-page-handler="SetEstado">
+                            <input type="hidden" name="id" value="@request.Id" />
+                        </form>
+                    </td>
+                    <td class="text-cell">
+                        @{
+                            // PENDIENTE (default) and SUBIDA A CONASET (set only via the Subir
+                            // button) are automatic states, not manual choices — CREAR
+                            // CERTIFICADO is the only thing an operator picks from this dropdown.
+                            var currentEstadoActual = string.IsNullOrEmpty(request.EstadoActual) ? "PENDIENTE" : request.EstadoActual;
+                            var isLocked = currentEstadoActual == "SUBIDA A CONASET";
+                        }
+                        <select class="input-inline estado-actual-select @LicenciasCarpetas.Dashboard.Pages.F8.IndexModel.EstadoActualBadgeClass(request.EstadoActual)" form="estadoactual-@request.Id" name="estadoActual" disabled="@isLocked">
+                            @if (currentEstadoActual != "CREAR CERTIFICADO")
+                            {
+                                <option value="@currentEstadoActual" selected>@currentEstadoActual</option>
+                            }
+                            <option value="CREAR CERTIFICADO" selected="@(currentEstadoActual == "CREAR CERTIFICADO")">CREAR CERTIFICADO</option>
+                        </select>
+                        <span class="pendiente-alert" title="Pendiente" style="@(string.IsNullOrEmpty(request.EstadoActual) || request.EstadoActual == "PENDIENTE" ? "" : "display:none")">⚠</span>
+                        <form class="toggle-form" id="estadoactual-@request.Id" method="post" asp-page-handler="SetEstadoActual">
+                            <input type="hidden" name="id" value="@request.Id" />
+                        </form>
+                    </td>
+                    <td class="text-cell">
+                        <input class="input-inline autosave" form="codigof8-@request.Id" name="codigoF8" value="@request.CodigoF8" style="width:@(LicenciasCarpetas.Dashboard.Pages.F8.IndexModel.InputWidthCh(request.CodigoF8, "Código F8", 8, 40))ch" />
+                        <form id="codigof8-@request.Id" method="post" asp-page-handler="SetCodigoF8">
+                            <input type="hidden" name="id" value="@request.Id" />
+                        </form>
+                    </td>
+                    <td class="text-cell">
+                        @{ var fechaPenultimaDisplay = request.FechaPenultimaCarpeta is { } fpc ? fpc.ToString("dd/MM/yyyy") : ""; }
+                        <input class="input-inline autosave fecha-penultima-input" form="fechapenultima-@request.Id" name="fecha" autocomplete="off" data-server-value="@fechaPenultimaDisplay" value="@fechaPenultimaDisplay" placeholder="ej: 15/03/2024 o S/C" style="width:@(LicenciasCarpetas.Dashboard.Pages.F8.IndexModel.InputWidthCh(fechaPenultimaDisplay, "ej: 15/03/2024 o S/C", 10, 48))ch" />
+                        <form class="toggle-form" id="fechapenultima-@request.Id" method="post" asp-page-handler="SetFechaPenultimaCarpeta">
+                            <input type="hidden" name="id" value="@request.Id" />
+                        </form>
+                    </td>
+                    <td class="text-cell">
+                        @(request.Sector switch
+                        {
+                            LicenciasCarpetas.F8.Domain.FolderSector.Archivo => "Archivo",
+                            LicenciasCarpetas.F8.Domain.FolderSector.Oficina43 => "Oficina 43",
+                            _ => "",
+                        })
+                    </td>
+                    <td class="text-cell">@(request.FechaDeSubida?.ToString("dd/MM/yyyy") ?? "—")</td>
+                    <td class="action-cell">
+                        @if (request.EstadoActual != "SUBIDA A CONASET")
+                        {
+                            <form method="post" asp-page-handler="MarkUploaded">
+                                <input type="hidden" name="id" value="@request.Id" />
+                                <button class="btn-primary" type="submit" title="Marcar subida">Subir</button>
+                            </form>
+                        }
+                        @if (request.EstadoActual == "CREAR CERTIFICADO")
+                        {
+                            <form method="post" asp-page-handler="EnviarCorreoCertificado">
+                                <input type="hidden" name="id" value="@request.Id" />
+                                <button class="btn-sync" type="submit" title="Enviar correo a Matías solicitando el certificado">✉</button>
+                            </form>
+                        }
+                        <form method="post" asp-page-handler="DeleteCase" onsubmit="return confirm('¿Eliminar esta solicitud?');">
+                            <input type="hidden" name="id" value="@request.Id" />
+                            <button class="btn-danger" type="submit" title="Eliminar">🗑</button>
+                        </form>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>
+
+<script>
+    // Chrome ignores autocomplete="off" on plain text inputs and will autofill these date
+    // boxes with whatever was typed there before the display format changed to dd/MM/yyyy —
+    // showing stale, unpadded values ("14/3/2019") mixed in with the correct ones. Autofill
+    // runs after the initial render (sometimes even after DOMContentLoaded), so force each
+    // box back to the value the server actually sent once the page has settled.
+    window.addEventListener('load', function () {
+        document.querySelectorAll('.fecha-penultima-input[data-server-value]').forEach(function (input) {
+            input.value = input.dataset.serverValue;
+        });
+    });
+
+    document.querySelectorAll('input.autosave').forEach(function (input) {
+        var initial = input.value;
+        input.addEventListener('blur', function () {
+            if (input.value !== initial && input.form) {
+                // Background save — a full requestSubmit() here reloads the whole page and
+                // resets scroll position, which is jarring while editing several rows in a row.
+                submitToggle(input.form);
+                initial = input.value;
+            }
+        });
+        // Prevent hitting 'Enter' from doing a full postback which causes page jump.
+        // Instead, just blur the input to trigger the background save above.
+        input.addEventListener('keydown', function (e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                input.blur();
+            }
+        });
+    });
+
+    function submitToggle(form) {
+        fetch(form.action || window.location.pathname + window.location.search, {
+            method: 'POST',
+            body: new FormData(form),
+            headers: { 'X-Requested-With': 'XMLHttpRequest' },
+        }).then(function (response) {
+            // A real full-page form.requestSubmit() fallback here used to kick the whole page
+            // back to /Login on any non-2xx response (stale antiforgery token, transient 4xx,
+            // etc.) — every single edit could end the session for the whole table, not just the
+            // one field that failed. Instead, only warn: the field keeps its edited value so the
+            // user can retry, and a real session expiry still surfaces normally on next navigation.
+            if (!response.ok) {
+                console.error('Guardado en segundo plano falló con estado', response.status);
+                alert('No se pudo guardar el cambio. Intenta nuevamente; si el problema persiste, recarga la página.');
+            }
+        }).catch(function () {
+            console.error('Guardado en segundo plano falló: error de red');
+            alert('No se pudo guardar el cambio por un problema de conexión. Intenta nuevamente.');
+        });
+    }
+
+    // Each wiring block runs independently (own try/catch) — a bad selector or a missing
+    // element in one block must not stop the others below it from ever registering.
+    try {
+        // Toggle forms (Marcar / Pendiente Carpeta) post in the background instead of doing a
+        // full-page navigation — a full RedirectToPage round trip on every checkbox click caused
+        // a visible white-page flash/flicker on every click.
+        document.querySelectorAll('form.toggle-form').forEach(function (form) {
+            var checkbox = form.querySelector('input[type="checkbox"]');
+            if (!checkbox) {
+                return;
+            }
+            checkbox.addEventListener('change', function () {
+                // Marcar and Pendiente Carpeta are mutually exclusive per row — checking one
+                // clears the other (client-side for instant feedback, server-side via its form).
+                if (checkbox.checked) {
+                    var row = form.closest('tr');
+                    var otherCheckbox = Array.from(row.querySelectorAll('form.toggle-form input[type="checkbox"]'))
+                        .find(function (cb) { return cb !== checkbox; });
+                    if (otherCheckbox && otherCheckbox.checked) {
+                        otherCheckbox.checked = false;
+                        submitToggle(otherCheckbox.closest('form'));
+                    }
+                }
+                submitToggle(form);
+            });
+        });
+    } catch (err) {
+        console.error('Marcar/Pendiente Carpeta wiring failed', err);
+    }
+
+    try {
+        // Estado dropdown: recolors the whole row instantly, then saves in the background.
+        var estadoRowClasses = {
+            'SUBIR CON F8': 'estado-row-f8',
+            'PRIMERA LICENCIA': 'estado-row-licencia',
+            'CAMBIO DE DOMICILIO': 'estado-row-domicilio',
+            'CREAR CERTIFICADO': 'estado-row-certificado',
+            'CARPETA SUBIDA': 'estado-row-subida',
+            'PENDIENTE': 'estado-row-pendiente',
+            'DENEGADA': 'estado-row-denegada',
+        };
+        document.querySelectorAll('select.estado-select').forEach(function (select) {
+            select.addEventListener('change', function () {
+                var row = select.closest('tr');
+                Object.values(estadoRowClasses).forEach(function (cls) { row.classList.remove(cls); });
+                var cls = estadoRowClasses[select.value];
+                if (cls) {
+                    row.classList.add(cls);
+                }
+                if (select.form) {
+                    submitToggle(select.form);
+                }
+            });
+        });
+    } catch (err) {
+        console.error('Estado dropdown wiring failed', err);
+    }
+
+    try {
+        // Estado actual dropdown: recolors its own badge pill and, when it becomes "SUBIDA A
+        // CONASET", turns the whole row blue (matching the original F8 project's finished-case
+        // color) since the deadline/marking workflow no longer applies once a case is uploaded.
+        var estadoActualBadgeClasses = {
+            'SUBIDA A CONASET': 'badge-confirmed',
+            'CREAR CERTIFICADO': 'badge-uploaded',
+            'PENDIENTE': 'badge-pending',
+            '': 'badge-pending',
+        };
+        document.querySelectorAll('select.estado-actual-select').forEach(function (select) {
+            select.addEventListener('change', function () {
+                Object.values(estadoActualBadgeClasses).forEach(function (cls) { select.classList.remove(cls); });
+                select.classList.add(estadoActualBadgeClasses[select.value] || 'badge-review');
+
+                var row = select.closest('tr');
+                row.classList.toggle('row-confirmed', select.value === 'SUBIDA A CONASET');
+
+                var alertIcon = select.parentElement.querySelector('.pendiente-alert');
+                if (alertIcon) {
+                    alertIcon.style.display = select.value === 'PENDIENTE' ? '' : 'none';
+                }
+
+                if (select.form) {
+                    submitToggle(select.form);
+                }
+            });
+        });
+    } catch (err) {
+        console.error('Estado actual dropdown wiring failed', err);
+    }
+
+    try {
+        // RUT is displayed with dots for readability, but copying should hand over the plain
+        // "12345678-9" form (no dots) that gets pasted elsewhere (other systems, search boxes).
+        document.querySelectorAll('input.rut-input').forEach(function (input) {
+            input.addEventListener('copy', function (event) {
+                var selected = input.value.substring(input.selectionStart, input.selectionEnd);
+                if (!selected) {
+                    return;
+                }
+                event.clipboardData.setData('text/plain', selected.replace(/\./g, ''));
+                event.preventDefault();
+            });
+        });
+    } catch (err) {
+        console.error('RUT copy wiring failed', err);
+    }
+</script>
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/f8-dashboard.css" asp-append-version="true" />
+}

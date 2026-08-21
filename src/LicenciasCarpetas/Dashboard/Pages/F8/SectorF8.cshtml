@@ -1,0 +1,74 @@
+@page
+@model LicenciasCarpetas.Dashboard.Pages.F8.SectorF8Model
+@{
+    ViewData["Title"] = "Cola de impresión F8";
+    var sectorTitle = Model.SelectedSector == LicenciasCarpetas.F8.Domain.FolderSector.Archivo ? "ARCHIVO" : "OFICINA 43";
+}
+
+<div class="nav-group no-print">
+    <a href="/F8/SectorF8?sector=Archivo" class="@(Model.SelectedSector == LicenciasCarpetas.F8.Domain.FolderSector.Archivo ? "active" : "")">Archivo</a>
+    <a href="/F8/SectorF8?sector=Oficina43" class="@(Model.SelectedSector == LicenciasCarpetas.F8.Domain.FolderSector.Oficina43 ? "active" : "")">Oficina 43</a>
+    @if (Model.Cases.Count > 0)
+    {
+        <button type="button" class="btn-outline" style="margin-left:auto;" onclick="window.print()">Imprimir informe (PDF)</button>
+    }
+</div>
+
+<div class="print-report">
+    <h2 class="print-title">INFORME @sectorTitle</h2>
+    <table class="cases print-table">
+        <thead>
+            <tr>
+                <th>Nombre</th>
+                <th>RUT</th>
+                <th>Fecha penúltima carpeta</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var request in Model.Cases)
+            {
+                <tr>
+                    <td class="name-cell">@request.NombreCompleto</td>
+                    <td class="text-cell">@request.Rut</td>
+                    <td class="text-cell">@LicenciasCarpetas.F8.Domain.SpanishDateFormatter.LongDate(request.FechaPenultimaCarpeta)</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>
+
+<div class="card table-card no-print">
+    <table class="cases">
+        <thead>
+            <tr>
+                <th>Nombre</th>
+                <th>RUT</th>
+                <th>Código F8</th>
+                <th>Fecha penúltima carpeta</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var request in Model.Cases)
+            {
+                <tr>
+                    <td class="name-cell">@request.NombreCompleto</td>
+                    <td class="text-cell">@request.Rut</td>
+                    <td class="text-cell">@request.CodigoF8</td>
+                    <td class="text-cell">@LicenciasCarpetas.F8.Domain.SpanishDateFormatter.LongDate(request.FechaPenultimaCarpeta)</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>
+
+@if (Model.Cases.Count > 0)
+{
+    <form method="post" asp-page-handler="ClearAll" style="margin-top: 14px;" class="no-print">
+        <input type="hidden" name="sector" value="@Model.SelectedSector" />
+        <button class="btn-primary" type="submit">Marcar todos como impresos</button>
+    </form>
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/f8-dashboard.css" asp-append-version="true" />
+}

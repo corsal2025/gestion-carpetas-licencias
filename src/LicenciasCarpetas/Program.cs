@@ -1,6 +1,9 @@
 using System.Diagnostics;
 using LicenciasCarpetas.Configuration;
 using LicenciasCarpetas.Dashboard.Auth;
+using LicenciasCarpetas.F8;
+using LicenciasCarpetas.F8.Data;
+using LicenciasCarpetas.F8.Services;
 using LicenciasCarpetas.Import;
 using LicenciasCarpetas.Persistence;
 using LicenciasCarpetas.Reporting;
@@ -48,6 +51,16 @@ builder.Services.AddSingleton<IExcelWorkbookImporter, ExcelWorkbookImporter>();
 builder.Services.AddSingleton<IExcelCaseExporter, ExcelCaseExporter>();
 builder.Services.AddSingleton<StatisticsService>();
 
+// Módulo F8 Urgentes: vive en la misma carpetas.db (tabla propia, UrgentRequest) y detrás del
+// mismo login — ya no es una app aparte. Solo trae sus propias rutas de Excel de config.
+var f8Options = builder.Configuration.GetSection(F8Options.SectionName).Get<F8Options>() ?? new F8Options();
+builder.Services.AddSingleton(f8Options);
+builder.Services.AddSingleton<IUrgentRequestRepository>(_ => new UrgentRequestRepository(connectionString));
+// Sin .ValidateOnStart(): las credenciales SMTP son opcionales — solo hacen falta si el
+// operador realmente manda un correo desde F8, no en cada arranque del servidor.
+builder.Services.AddOptions<SmtpOptions>().Bind(builder.Configuration.GetSection(SmtpOptions.SectionName));
+builder.Services.AddTransient<IEmailSender, SmtpEmailSender>();
+
 builder.Services
     .AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
     .AddCookie(cookieOptions =>
@@ -60,7 +73,16 @@ builder.Services
         cookieOptions.ExpireTimeSpan = TimeSpan.FromHours(8);
         cookieOptions.SlidingExpiration = true;
     });
-builder.Services.AddAuthorization();
+builder.Services.AddAuthorization(authorizationOptions =>
+{
+    // Mismos claims que Login.cshtml.cs calcula (incondicional salvo Administrativo, donde se
+    // decide por persona) — el nav ya los usa para ocultar los links, esto es lo que de verdad
+    // bloquea la pantalla si alguien entra por URL directa sin el módulo habilitado.
+    authorizationOptions.AddPolicy("CambioDomicilioAccess",
+        policy => policy.RequireClaim("mod:cambio-domicilio", "true"));
+    authorizationOptions.AddPolicy("F8Access",
+        policy => policy.RequireClaim("mod:f8-urgentes", "true"));
+});
 builder.Services.AddRazorPages(razorOptions => razorOptions.RootDirectory = "/Dashboard/Pages");
 
 var app = builder.Build();
@@ -239,6 +261,7 @@ static void EnsureSchemas(IServiceProvider services)
     services.GetRequiredService<IDailyCounterRepository>().EnsureSchema();
     services.GetRequiredService<IComunaContactRepository>().EnsureSchema();
     services.GetRequiredService<IUserRepository>().EnsureSchema();
+    services.GetRequiredService<IUrgentRequestRepository>().EnsureSchema();
 }
 
 static string ReadPasswordMasked()

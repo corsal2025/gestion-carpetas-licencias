@@ -6,6 +6,10 @@
     <title>@ViewData["Title"] — Gestión de Licencias</title>
     <link rel="icon" type="image/svg+xml" href="~/favicon.svg" />
     <link rel="stylesheet" href="~/css/dashboard.css" asp-append-version="true" />
+    @* Cada módulo trae su propio hoja de estilos, cargada solo en sus páginas — comparten
+       las mismas variables de color (mismo autor, misma paleta) así que no chocan si una
+       regla genérica (.card, body) queda definida en las dos. *@
+    @await RenderSectionAsync("Styles", required: false)
 </head>
 @* "viewport-locked" solo lo pide la pantalla de Casos, que fija su tabla al alto de la ventana.
    El resto se desplaza como una página normal. *@
@@ -60,20 +64,22 @@
                     <a asp-page="/Importar" class="nav-pill nav-sync">Importar Excel</a>
                 </div>
             }
-            @* Apps aparte (su propio login, su propia base de datos) — el link solo abre la
-               pestaña, no hay sesión compartida entre esta app y la de destino. *@
             @if (puedeCambioDomicilio || puedeF8)
             {
                 <div class="nav-group nav-group-labeled">
                     <span class="nav-group-label">Módulos</span>
                     <span class="nav-group-pills">
+                        @* F8 ya no es una app aparte: mismo proceso, mismo login, misma
+                           carpetas.db — el link es una ruta interna, filtrada por el mismo claim
+                           que gatea la página del lado del servidor. Cambio de Domicilio sigue
+                           siendo una app externa (su turno de integrarse todavía no llega). *@
                         @if (puedeCambioDomicilio)
                         {
                             <a href="https://localhost:5001" target="_blank" rel="noopener" class="nav-pill nav-module">Cambio de Domicilio</a>
                         }
                         @if (puedeF8)
                         {
-                            <a href="http://localhost:5209" target="_blank" rel="noopener" class="nav-pill nav-module">F8 Urgentes</a>
+                            <a asp-page="/F8/Index" class="nav-pill nav-module">F8 Urgentes</a>
                         }
                     </span>
                 </div>

@@ -1,0 +1,51 @@
+@page
+@model LicenciasCarpetas.Dashboard.Pages.F8.EditModel
+@{
+    ViewData["Title"] = "Editar solicitud";
+}
+
+<div class="card" style="padding: 20px; max-width: 640px;">
+    <form method="post">
+        <input type="hidden" asp-for="Input.Id" />
+
+        <label class="form-label">Nombre completo</label>
+        <input class="input-block" asp-for="Input.NombreCompleto" />
+
+        <label class="form-label">RUT</label>
+        <input class="input-block" asp-for="Input.Rut" />
+        <span asp-validation-for="Input.Rut" class="message-error"></span>
+
+        <label class="form-label">Fecha petición</label>
+        <input class="input-block" type="date" asp-for="Input.FechaPeticion" />
+
+        <label class="form-label">Estado</label>
+        <select class="input-block" asp-for="Input.Estado">
+            <option value="">-- seleccione --</option>
+            @foreach (var estado in LicenciasCarpetas.F8.Domain.EstadoCatalog.KnownEstados)
+            {
+                <option value="@estado">@estado</option>
+            }
+        </select>
+
+        <label class="form-label">Estado actual</label>
+        <select class="input-block" asp-for="Input.EstadoActual">
+            <option value="">-- seleccione --</option>
+            @foreach (var estadoActual in LicenciasCarpetas.F8.Domain.EstadoCatalog.KnownEstadosActuales)
+            {
+                <option value="@estadoActual">@estadoActual</option>
+            }
+        </select>
+
+        <label class="form-label">Fecha de subida</label>
+        <input class="input-block" type="date" asp-for="Input.FechaDeSubida" />
+
+        <label class="form-label">Código F8</label>
+        <input class="input-block" asp-for="Input.CodigoF8" />
+
+        <button class="btn-primary" type="submit">Guardar</button>
+    </form>
+</div>
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/f8-dashboard.css" asp-append-version="true" />
+}
