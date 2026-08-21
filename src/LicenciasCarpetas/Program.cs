@@ -266,6 +266,11 @@ static void EnsureSchemas(IServiceProvider services)
 
 static string ReadPasswordMasked()
 {
+    if (Console.IsInputRedirected)
+    {
+        return Console.ReadLine() ?? string.Empty;
+    }
+
     var password = new System.Text.StringBuilder();
     ConsoleKeyInfo key;
     while ((key = Console.ReadKey(intercept: true)).Key != ConsoleKey.Enter)
