@@ -42,6 +42,14 @@
             <div class="nav-group">
                 <a asp-page="/Importar" class="nav-pill nav-sync">Importar Excel</a>
             </div>
+            @* Apps aparte (su propio login, su propia base de datos) — el link solo abre la
+               pestaña, no hay sesión compartida entre esta app y la de destino. *@
+            <div class="nav-group nav-group-labeled">
+                <span class="nav-group-label">Módulos</span>
+                <span class="nav-group-pills">
+                    <a href="https://localhost:5001" target="_blank" rel="noopener" class="nav-pill nav-module">Cambio de Domicilio</a>
+                </span>
+            </div>
             <div class="nav-group nav-group-end">
                 <a asp-page="/Usuarios" class="nav-pill">Usuarios</a>
                 <a asp-page="/ChangePassword" class="nav-pill nav-account">Cambiar contraseña</a>

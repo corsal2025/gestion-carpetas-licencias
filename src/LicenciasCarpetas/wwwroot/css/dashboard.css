@@ -186,6 +186,15 @@ nav.app-nav a.nav-sync:hover {
     background: rgba(84, 199, 165, 0.3);
 }
 
+/* Módulos externos: violeta, para que se lea a simple vista "esto abre otra app" — ni el verde de
+   sync (misma app, acción positiva) ni el ámbar de reportes (documento de esta misma base). */
+nav.app-nav a.nav-module {
+    background: rgba(147, 51, 234, 0.18);
+    border-color: rgba(168, 85, 247, 0.6);
+    color: #d8b4fe;
+}
+nav.app-nav a.nav-module:hover { background: rgba(147, 51, 234, 0.3); }
+
 /* Account: neutral, same muted family as the reference-view pills. */
 nav.app-nav a.nav-account {
     background: rgba(148, 163, 184, 0.16);
