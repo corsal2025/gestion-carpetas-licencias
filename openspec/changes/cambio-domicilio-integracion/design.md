@@ -102,14 +102,23 @@ en el arranque.
 ```csharp
 public async Task<IActionResult> OnPostSyncNowAsync()
 {
-    var ran = await syncService.RunCycleAsync(HttpContext.RequestAborted);
-    Message = ran ? "Sincronización completada."
-                  : "Ya hay una sincronización en curso, intente en unos segundos.";
-    MessageIsError = !ran;
+    var outcome = await syncService.RunCycleAsync(HttpContext.RequestAborted);
+    (Message, MessageIsError) = outcome switch
+    {
+        CambioDomicilioSyncOutcome.Completed => ("Sincronización completada.", false),
+        CambioDomicilioSyncOutcome.SkippedBusy => ("Ya hay una sincronización en curso, intente en unos segundos.", true),
+        CambioDomicilioSyncOutcome.Failed => ("No se pudo completar la sincronización, revise el registro del servidor e intente nuevamente.", true),
+        _ => throw new ArgumentOutOfRangeException(nameof(outcome), outcome, null),
+    };
     Load();
     return Page();
 }
 ```
+
+Revisión post-Fase-6: el `bool` original (`ran`) confundía "ciclo completado" con "hubo un error pero
+`RunCycleAsync` igual devolvió `true`" — el catch de nivel superior tragaba la excepción (EWS caído,
+por ejemplo) y reportaba éxito al operador. `CambioDomicilioSyncOutcome` (`Completed`/`SkippedBusy`/
+`Failed`) distingue las tres situaciones reales.
 
 El `SemaphoreSlim cycleGuard = new(1,1)` vive como campo `private readonly` de
 `CambioDomicilioSyncService`, registrado **singleton**: es lo único que hace válido el guard —

@@ -304,11 +304,14 @@ public class IndexModel(
 
     public async Task<IActionResult> OnPostSyncNowAsync()
     {
-        var ran = await routerWorker.RunCycleAsync(HttpContext.RequestAborted);
-        Message = ran
-            ? "Sincronización completada."
-            : "Ya hay una sincronización en curso, intente en unos segundos.";
-        MessageIsError = !ran;
+        var outcome = await routerWorker.RunCycleAsync(HttpContext.RequestAborted);
+        (Message, MessageIsError) = outcome switch
+        {
+            CambioDomicilioSyncOutcome.Completed => ("Sincronización completada.", false),
+            CambioDomicilioSyncOutcome.SkippedBusy => ("Ya hay una sincronización en curso, intente en unos segundos.", true),
+            CambioDomicilioSyncOutcome.Failed => ("No se pudo completar la sincronización, revise el registro del servidor e intente nuevamente.", true),
+            _ => throw new ArgumentOutOfRangeException(nameof(outcome), outcome, null),
+        };
         Load();
         return Page();
     }

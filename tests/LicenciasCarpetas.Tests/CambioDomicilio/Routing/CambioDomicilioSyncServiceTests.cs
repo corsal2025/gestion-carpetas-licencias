@@ -59,11 +59,11 @@ public class CambioDomicilioSyncServiceTests
             var firstCycle = service.RunCycleAsync(CancellationToken.None);
             var secondCycle = await service.RunCycleAsync(CancellationToken.None); // must not block waiting for the first
 
-            Assert.False(secondCycle);
+            Assert.Equal(CambioDomicilioSyncOutcome.SkippedBusy, secondCycle);
 
             gate.SetResult();
             var firstResult = await firstCycle;
-            Assert.True(firstResult);
+            Assert.Equal(CambioDomicilioSyncOutcome.Completed, firstResult);
         }
         finally
         {
@@ -87,8 +87,8 @@ public class CambioDomicilioSyncServiceTests
         var first = await service.RunCycleAsync(CancellationToken.None);
         var second = await service.RunCycleAsync(CancellationToken.None);
 
-        Assert.True(first);
-        Assert.True(second); // the guard released after the first cycle, so this is a real run, not a skip
+        Assert.Equal(CambioDomicilioSyncOutcome.Completed, first);
+        Assert.Equal(CambioDomicilioSyncOutcome.Completed, second); // the guard released after the first cycle, so this is a real run, not a skip
     }
 
     [Fact]
@@ -98,10 +98,31 @@ public class CambioDomicilioSyncServiceTests
         var repository = new FakeCambioDomicilioRequestRepository();
         var service = BuildService(reader, repository, out _);
 
-        var ran = await service.RunCycleAsync(CancellationToken.None);
+        var outcome = await service.RunCycleAsync(CancellationToken.None);
 
-        Assert.True(ran); // "ran" means "did not skip due to overlap" — an empty directory is still a completed cycle
+        Assert.Equal(CambioDomicilioSyncOutcome.Completed, outcome); // an empty directory is still a completed cycle, not a failure
         Assert.Equal(0, reader.CallCount); // never got to reading mail: nowhere to route it to
+    }
+
+    /// <summary>The false-success bug this test guards against: a reader failure (e.g. EWS outage)
+    /// must surface as Failed, not be swallowed into a misleading Completed.</summary>
+    [Fact]
+    public async Task RunCycleAsync_WhenEmailReaderThrows_ReturnsFailed()
+    {
+        var csvPath = WriteComunaCsv();
+        try
+        {
+            var repository = new FakeCambioDomicilioRequestRepository();
+            var service = BuildService(new ThrowingEmailReader(), repository, out _, csvPath);
+
+            var outcome = await service.RunCycleAsync(CancellationToken.None);
+
+            Assert.Equal(CambioDomicilioSyncOutcome.Failed, outcome);
+        }
+        finally
+        {
+            File.Delete(csvPath);
+        }
     }
 
     private sealed class EmptyEmailReader : IEmailReader
@@ -119,5 +140,11 @@ public class CambioDomicilioSyncServiceTests
             CallCount++;
             return Task.FromResult<IReadOnlyList<IncomingEmail>>([]);
         }
+    }
+
+    private sealed class ThrowingEmailReader : IEmailReader
+    {
+        public Task<IReadOnlyList<IncomingEmail>> GetMessagesInFolderAsync(string folderDisplayName, CancellationToken cancellationToken)
+            => throw new InvalidOperationException("EWS no disponible (simulado)");
     }
 }

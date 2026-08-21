@@ -7,6 +7,16 @@ using LicenciasCarpetas.CambioDomicilio.Reporting;
 
 namespace LicenciasCarpetas.CambioDomicilio.Routing;
 
+/// <summary>What one poll cycle actually did — distinguishes "nothing ran because a previous cycle
+/// was still in flight" from "the cycle ran but blew up partway through", so the operator's
+/// "Sincronizar ahora" button can report a real failure instead of a false "completada".</summary>
+public enum CambioDomicilioSyncOutcome
+{
+    Completed,
+    SkippedBusy,
+    Failed,
+}
+
 public sealed class CambioDomicilioSyncService(
     AddressChangeRoutingService routingService,
     IEmailReader emailReader,
@@ -26,14 +36,14 @@ public sealed class CambioDomicilioSyncService(
         return Task.CompletedTask;
     }
 
-    /// <summary>Runs one poll cycle. Returns false only when a cycle was already running and this call was skipped
-    /// (used by the dashboard's manual "sync now" action to report accurate feedback).</summary>
-    internal async Task<bool> RunCycleAsync(CancellationToken cancellationToken)
+    /// <summary>Runs one poll cycle (used by the dashboard's manual "sync now" action to report
+    /// accurate feedback — see <see cref="CambioDomicilioSyncOutcome"/>).</summary>
+    internal async Task<CambioDomicilioSyncOutcome> RunCycleAsync(CancellationToken cancellationToken)
     {
         if (!await cycleGuard.WaitAsync(TimeSpan.Zero, cancellationToken))
         {
             logger.LogWarning("Ciclo anterior aún en ejecución, se omite este tick");
-            return false;
+            return CambioDomicilioSyncOutcome.SkippedBusy;
         }
 
         try
@@ -44,7 +54,7 @@ public sealed class CambioDomicilioSyncService(
                 logger.LogCritical(
                     "El directorio de comunas ({CsvPath}) está vacío o no se pudo leer. Se omite este ciclo completo para no perder correos silenciosamente",
                     options.ComunaDirectoryCsvPath);
-                return true;
+                return CambioDomicilioSyncOutcome.Completed;
             }
 
             var incoming = await emailReader.GetMessagesInFolderAsync(options.SourceFolderName, cancellationToken);
@@ -80,12 +90,12 @@ public sealed class CambioDomicilioSyncService(
             logger.LogInformation(
                 "Ciclo completado: {IncomingCount} en '{SourceFolder}', {ConfirmationCount} en '{ConfirmationFolder}'",
                 incoming.Count, options.SourceFolderName, confirmations.Count, options.ConfirmationFolderName);
-            return true;
+            return CambioDomicilioSyncOutcome.Completed;
         }
         catch (Exception ex)
         {
             logger.LogError(ex, "Fallo el ciclo de sondeo, se reintentará en el próximo tick");
-            return true;
+            return CambioDomicilioSyncOutcome.Failed;
         }
         finally
         {
