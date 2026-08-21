@@ -55,6 +55,10 @@ public interface IFolderCaseRepository
     /// <summary>Los campos que el libro no trae: código F8, penúltima carpeta y clases de licencia.</summary>
     void UpdateCaseDetails(long id, string? codigoF8, DateOnly? penultimateFolderDate, string? licenceClasses = null);
 
+    /// <summary>Nota libre sobre la persona, agregada aparte de guardar la fila — se abre bajo
+    /// demanda desde el RUT, no ocupa una columna fija.</summary>
+    void UpdateObservations(long id, string? observations);
+
     /// <summary>Cuántos casos hay por clase de licencia en el período. Un caso con varias clases
     /// suma en cada una: la pregunta es cuántas licencias se tramitan, no cuántas personas.</summary>
     IReadOnlyList<(LicenceClass Licence, int Count)> LicenceClassBreakdown(int year, int? month, Office? office);
@@ -123,6 +127,7 @@ public sealed class FolderCaseRepository(string connectionString) : IFolderCaseR
         AddColumnIfMissing(connection, "LicenceClasses");
         AddColumnIfMissing(connection, "Email");
         AddColumnIfMissing(connection, "CellPhone");
+        AddColumnIfMissing(connection, "Observations");
         BackfillFullNameSort(connection);
     }
 
@@ -775,6 +780,22 @@ public sealed class FolderCaseRepository(string connectionString) : IFolderCaseR
         command.ExecuteNonQuery();
     }
 
+    public void UpdateObservations(long id, string? observations)
+    {
+        using var connection = Open();
+        using var command = connection.CreateCommand();
+        command.CommandText = """
+            UPDATE FolderCase
+            SET Observations = $observations, UpdatedAt = $updatedAt
+            WHERE Id = $id
+            """;
+        command.Parameters.AddWithValue("$observations",
+            Nullable(string.IsNullOrWhiteSpace(observations) ? null : observations.Trim()));
+        command.Parameters.AddWithValue("$updatedAt", DateTimeOffset.UtcNow.ToString("O"));
+        command.Parameters.AddWithValue("$id", id);
+        command.ExecuteNonQuery();
+    }
+
     public void MarkSectorPrinted(IReadOnlyCollection<long> ids)
     {
         if (ids.Count == 0)
@@ -1014,7 +1035,8 @@ public sealed class FolderCaseRepository(string connectionString) : IFolderCaseR
         UpdatedBy = ReadText(reader, "UpdatedBy"),
         LicenceClasses = ReadText(reader, "LicenceClasses"),
         Email = ReadText(reader, "Email"),
-        CellPhone = ReadText(reader, "CellPhone")
+        CellPhone = ReadText(reader, "CellPhone"),
+        Observations = ReadText(reader, "Observations")
     };
 
     private static string? ReadText(SqliteDataReader reader, string column)

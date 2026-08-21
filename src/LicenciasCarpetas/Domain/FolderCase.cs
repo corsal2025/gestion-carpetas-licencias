@@ -57,6 +57,10 @@ public sealed class FolderCase
     /// ("B,C"). Selección múltiple: una misma citación puede cubrir varias clases.</summary>
     public string? LicenceClasses { get; set; }
 
+    /// <summary>Nota libre sobre la persona (RUT), para cuando el caso necesita una aclaración que
+    /// no cabe en ninguna otra columna. Típicamente vacía — no es parte del Excel.</summary>
+    public string? Observations { get; set; }
+
     public string? FirstName { get; set; }
     public string? LastName { get; set; }
 

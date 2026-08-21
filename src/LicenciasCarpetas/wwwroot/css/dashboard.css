@@ -174,13 +174,15 @@ nav.app-nav form button.nav-sync {
     background: transparent;
 }
 nav.app-nav .nav-search button.nav-pill,
-nav.app-nav form button.nav-sync {
+nav.app-nav form button.nav-sync,
+nav.app-nav a.nav-sync {
     background: rgba(84, 199, 165, 0.18);
     border-color: rgba(84, 199, 165, 0.6);
     color: #a7ecd8;
 }
 nav.app-nav .nav-search button.nav-pill:hover,
-nav.app-nav form button.nav-sync:hover {
+nav.app-nav form button.nav-sync:hover,
+nav.app-nav a.nav-sync:hover {
     background: rgba(84, 199, 165, 0.3);
 }
 
@@ -664,6 +666,12 @@ table.cases-index td.name-cell .name-input {
     font-size: 0.6rem;
     padding-left: 3px;
     padding-right: 3px;
+}
+
+table.cases-index td.rut-cell .rut-con-obs {
+    display: flex;
+    align-items: center;
+    gap: 4px;
 }
 
 table.cases-index td.rut-cell .rut-input {
@@ -1521,12 +1529,14 @@ table.cases-index tbody td select {
     text-align: left;
 }
 
-/* Selección múltiple de clases dentro de la celda: resumen cerrado, casillas al abrir. */
-.licencias-celda {
+/* Selección múltiple de clases (LICENCIAS) y nota libre por persona (OBSERVACIONES): mismo patrón
+   de <details>/<summary>, resumen cerrado y panel al abrir — comparten estilo base y el mecanismo
+   de posicionamiento fijo, cada uno con su propio contenido. */
+.popover-celda {
     position: relative;
 }
 
-.licencias-celda summary {
+.popover-celda summary {
     cursor: pointer;
     list-style: none;
     padding: 3px 6px;
@@ -1534,32 +1544,37 @@ table.cases-index tbody td select {
     border-radius: 4px;
     background: #fff;
     white-space: nowrap;
-    min-width: 74px;
     font-weight: 700;
 }
 
-.licencias-celda summary::-webkit-details-marker { display: none; }
+.licencias-celda summary { min-width: 74px; }
 
-/* Las opciones flotan sobre la tabla: dentro de la celda estirarían la fila al abrirse. Un ancho
-   angosto (2 columnas, no 5) las mantiene sobre su propia columna en vez de invadir la de al lado.
+.popover-celda summary::-webkit-details-marker { display: none; }
+
+/* Los paneles flotan sobre la tabla: dentro de la celda estirarían la fila al abrirse.
    position:absolute es solo el estado inicial/sin-JS: en cuanto se abre, el script de Index.cshtml
    lo cambia a position:fixed con coordenadas calculadas — sin eso, los bordes de las filas de abajo
    se pintan encima del panel pese al z-index, porque una tabla pinta el fondo/borde de cada fila
    como su propia capa, y eso no lo puede ganar un descendiente absoluto de una fila anterior. */
-.licencias-celda[open] .licencias-opciones {
+.popover-celda[open] .popover-panel {
     position: absolute;
     top: calc(100% + 4px);
     left: 0;
     z-index: 20;
-    display: grid;
-    grid-template-columns: repeat(2, auto);
-    gap: 3px 10px;
     padding: 8px 10px;
-    width: max-content;
     background: #fff;
     border: 1px solid var(--color-border);
     border-radius: 6px;
     box-shadow: var(--shadow-sm);
+}
+
+/* Un ancho angosto (2 columnas, no 5) mantiene las opciones de licencia sobre su propia columna en
+   vez de invadir la de al lado. */
+.popover-celda[open] .licencias-opciones {
+    display: grid;
+    grid-template-columns: repeat(2, auto);
+    gap: 3px 10px;
+    width: max-content;
 }
 
 .licencias-celda .licencias-opciones label {
@@ -1569,6 +1584,24 @@ table.cases-index tbody td select {
     font-size: 0.7rem;
     font-weight: 700;
     white-space: nowrap;
+}
+
+.observaciones-panel textarea {
+    width: 220px;
+    height: 72px;
+    font-size: 0.78rem;
+    font-family: inherit;
+    resize: vertical;
+    border: 1px solid var(--color-border);
+    border-radius: 4px;
+    padding: 6px;
+}
+
+/* El ícono cambia de 📝 a 🗒️ al tipear (ver Index.cshtml), pero eso no sobrevive un refresh de
+   página — esta regla marca la celda igual apenas se recarga con una nota ya guardada. */
+.observaciones-celda:has(textarea:not(:placeholder-shown)) summary {
+    background: var(--color-uploaded-bg);
+    border-color: var(--color-uploaded);
 }
 
 /* ── Gráficos de barras ──────────────────────────────────────────────────────────────────────

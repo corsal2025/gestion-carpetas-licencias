@@ -313,7 +313,20 @@
                            size="@nameSize" value="@item.FullName" placeholder="Nombre completo" />
                 </td>
                 <td class="text-cell rut-cell">
-                    <input type="text" name="rut" form="case-form-@item.Id" class="input-inline rut-input" size="14" value="@item.Rut" />
+                    <span class="rut-con-obs">
+                        <input type="text" name="rut" form="case-form-@item.Id" class="input-inline rut-input" size="14" value="@item.Rut" />
+                        @* Nota libre por persona, oculta hasta que hace falta: un ícono aparte del RUT
+                           en vez de una columna fija que quedaría vacía en casi todas las filas. Mismo
+                           panel flotante que LICENCIAS — sin position:fixed calculado por JS, los
+                           bordes de las filas de abajo se pintan encima pese al z-index. *@
+                        <details class="popover-celda observaciones-celda">
+                            <summary title="Observaciones">@(string.IsNullOrWhiteSpace(item.Observations) ? "📝" : "🗒️")</summary>
+                            <div class="popover-panel observaciones-panel">
+                                <textarea name="observaciones" form="case-form-@item.Id" class="input-inline"
+                                          placeholder="Observación sobre esta persona…">@item.Observations</textarea>
+                            </div>
+                        </details>
+                    </span>
                 </td>
                 <td class="text-cell">@OfficeCatalog.Display(item.Office)</td>
                 <td>
@@ -344,9 +357,9 @@
                        muestra casillas. En una tabla de 15 columnas, diez casillas sueltas por fila
                        no caben, y un <select multiple> obliga a Ctrl+clic para elegir dos clases. *@
                     @{ var licencias = LicenceClassCatalog.Parse(item.LicenceClasses); }
-                    <details class="licencias-celda">
+                    <details class="popover-celda licencias-celda">
                         <summary>@LicenceClassCatalog.DisplayList(item.LicenceClasses)</summary>
-                        <div class="licencias-opciones">
+                        <div class="popover-panel licencias-opciones">
                             @foreach (var licence in LicenceClassCatalog.All)
                             {
                                 <label>
@@ -538,11 +551,22 @@
             });
         });
 
-    // <details> se queda abierto hasta el próximo clic en su propio resumen — sin esto, el panel de
-    // casillas se queda tildado en pantalla aunque el operador ya haya seguido trabajando en otra
-    // celda. Un clic fuera de la celda lo cierra, como cualquier menú desplegable.
+    // La nota de observaciones cambia el ícono del resumen al tipear, igual que LICENCIAS cambia su
+    // resumen al tildar — sin esto, el ícono se queda en lo que trajo el servidor hasta guardar.
+    document.querySelectorAll('.observaciones-celda textarea')
+        .forEach(function (textarea) {
+            textarea.addEventListener('input', function () {
+                var summary = textarea.closest('.observaciones-celda').querySelector('summary');
+                summary.textContent = textarea.value.trim().length > 0 ? '🗒️' : '📝';
+                markUnsaved(textarea);
+            });
+        });
+
+    // <details> se queda abierto hasta el próximo clic en su propio resumen — sin esto, el panel
+    // (licencias u observaciones) se queda en pantalla aunque el operador ya haya seguido trabajando
+    // en otra celda. Un clic fuera de la celda lo cierra, como cualquier menú desplegable.
     document.addEventListener('click', function (event) {
-        document.querySelectorAll('.licencias-celda[open]').forEach(function (cell) {
+        document.querySelectorAll('.popover-celda[open]').forEach(function (cell) {
             if (!cell.contains(event.target)) {
                 cell.removeAttribute('open');
             }
@@ -553,22 +577,25 @@
     // fila anterior — z-index no alcanza para escapar de ese orden. `position: fixed`, calculado a
     // mano desde el resumen, saca el panel de la tabla por completo. Como queda anclado a coordenadas
     // de pantalla y no de fila, se cierra solo si la tabla se desplaza para no dejarlo flotando lejos
-    // de la celda que lo abrió.
-    document.querySelectorAll('.licencias-celda').forEach(function (cell) {
+    // de la celda que lo abrió. Genérico para LICENCIAS y OBSERVACIONES: mismo problema, mismo panel.
+    document.querySelectorAll('.popover-celda').forEach(function (cell) {
         cell.addEventListener('toggle', function () {
-            var panel = cell.querySelector('.licencias-opciones');
+            var panel = cell.querySelector('.popover-panel');
             if (!cell.open || !panel) return;
             var rect = cell.querySelector('summary').getBoundingClientRect();
             panel.style.position = 'fixed';
             panel.style.top = (rect.bottom + 4) + 'px';
             panel.style.left = rect.left + 'px';
+            if (panel.classList.contains('observaciones-panel')) {
+                panel.querySelector('textarea').focus();
+            }
         });
     });
 
     var tableCard = document.querySelector('.card.table-card');
     if (tableCard) {
         tableCard.addEventListener('scroll', function () {
-            document.querySelectorAll('.licencias-celda[open]').forEach(function (cell) {
+            document.querySelectorAll('.popover-celda[open]').forEach(function (cell) {
                 cell.removeAttribute('open');
             });
         });
