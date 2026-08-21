@@ -46,30 +46,12 @@ header.app-header {
     box-shadow: var(--shadow-sm);
 }
 
-header.app-header .brand {
-    display: flex;
-    align-items: center;
-    gap: 14px;
-    font-weight: 600;
-    font-size: 1.35rem;
-    letter-spacing: 0.2px;
-}
-
 header.app-header .brand-logo {
     height: 76px;
     width: auto;
     border-radius: 6px;
     background: #fff;
     padding: 3px;
-}
-
-header.app-header .brand small {
-    display: block;
-    font-weight: 400;
-    font-size: 0.9rem;
-    opacity: 0.85;
-    letter-spacing: 0.4px;
-    text-transform: uppercase;
 }
 
 nav.app-nav {
@@ -80,29 +62,6 @@ nav.app-nav {
     flex-wrap: wrap;
     flex: 1;
 }
-
-nav.app-nav a {
-    color: #eaf2fa;
-    text-decoration: none;
-    padding: 6px 12px;
-    border-radius: var(--radius);
-    font-size: 0.88rem;
-    transition: background 0.15s ease;
-}
-
-nav.app-nav a:hover { background: rgba(255, 255, 255, 0.15); }
-nav.app-nav a.active { background: rgba(255, 255, 255, 0.22); font-weight: 600; }
-
-nav.app-nav form button {
-    background: rgba(255, 255, 255, 0.12);
-    color: #fff;
-    border: 1px solid rgba(255, 255, 255, 0.35);
-    border-radius: var(--radius);
-    padding: 6px 12px;
-    font-size: 0.85rem;
-    cursor: pointer;
-}
-nav.app-nav form button:hover { background: rgba(255, 255, 255, 0.22); }
 
 /* Three logical groups (view filters | reference tools | search+actions) instead of one long
    run of links — each group wraps as a unit and gets a divider, so on a narrow window the nav
@@ -131,39 +90,9 @@ nav.app-nav form button:hover { background: rgba(255, 255, 255, 0.22); }
     border-left: none;
 }
 
-.nav-search {
-    display: flex;
-    gap: 6px;
-    align-items: center;
-}
-
-.nav-search input[type="text"] {
-    background: rgba(255, 255, 255, 0.15);
-    color: #fff;
-    border: 1px solid rgba(255, 255, 255, 0.35);
-    border-radius: var(--radius);
-    padding: 6px 10px;
-    font-size: 0.85rem;
-    min-width: 180px;
-}
-
-.nav-search input[type="text"]::placeholder {
-    color: rgba(255, 255, 255, 0.65);
-}
-
-.nav-search button {
-    background: rgba(255, 255, 255, 0.12);
-    color: #fff;
-    border: 1px solid rgba(255, 255, 255, 0.35);
-    border-radius: var(--radius);
-    padding: 6px 12px;
-    font-size: 0.85rem;
-    cursor: pointer;
-}
-.nav-search button:hover { background: rgba(255, 255, 255, 0.22); }
-
 .nav-search-clear {
-    font-size: 0.8rem;
+    /* Mismo tamaño que dashboard.css (--font-xs). */
+    font-size: 0.65rem;
     text-decoration: underline;
     white-space: nowrap;
 }
@@ -214,24 +143,6 @@ main > .nav-group a .badge {
 .nav-search {
     margin-bottom: 18px;
 }
-
-.nav-search input[type="text"] {
-    background: var(--color-surface);
-    color: var(--color-text);
-    border: 1px solid var(--color-border);
-    min-width: 260px;
-}
-
-.nav-search input[type="text"]::placeholder {
-    color: var(--color-text-muted);
-}
-
-.nav-search button {
-    background: var(--color-accent);
-    color: #fff;
-    border: 1px solid var(--color-accent);
-}
-.nav-search button:hover { background: var(--color-primary); border-color: var(--color-primary); }
 
 .message-banner {
     background: var(--color-confirmed-bg);
@@ -310,14 +221,16 @@ body.cases-page main {
 table.cases {
     width: 100%;
     border-collapse: collapse;
-    font-size: 0.88rem;
+    /* Mismo tamaño que dashboard.css (--font-lg). */
+    font-size: 0.9rem;
 }
 
 table.cases th {
     background: #eef2f6;
     color: var(--color-text-muted);
     text-transform: uppercase;
-    font-size: 0.72rem;
+    /* Mismo tamaño que dashboard.css (--font-sm). */
+    font-size: 0.7rem;
     letter-spacing: 0.4px;
     text-align: center;
     padding: 10px 14px;
@@ -357,7 +270,8 @@ table.cases-index tbody tr.row-alt {
 
 table.cases-index th {
     padding: 6px 6px;
-    font-size: 0.6rem;
+    /* Mismo tamaño que dashboard.css (--font-xs). */
+    font-size: 0.65rem;
     line-height: 1.2;
 }
 
@@ -393,7 +307,8 @@ table.cases-index .badge {
 
 table.cases-index button.btn-primary {
     padding: 4px 10px;
-    font-size: 0.76rem;
+    /* Mismo tamaño que dashboard.css (--font-base). */
+    font-size: 0.75rem;
     white-space: nowrap;
 }
 
@@ -416,7 +331,8 @@ table.cases-index td:last-child form {
 
 table.cases-index .input-inline {
     padding: 3px 4px;
-    font-size: 0.74rem;
+    /* Mismo tamaño que dashboard.css (--font-base). */
+    font-size: 0.75rem;
 }
 
 table.cases-index td.name-cell {
@@ -431,7 +347,8 @@ table.cases-index td.name-cell {
 table.cases-index td.name-cell .name-input {
     width: 100%;
     box-sizing: border-box;
-    font-size: 0.66rem;
+    /* Mismo tamaño que dashboard.css (--font-xs). */
+    font-size: 0.65rem;
     padding-left: 3px;
     padding-right: 3px;
 }
@@ -558,7 +475,8 @@ table.cases-index td.name-cell .name-with-alert {
     flex: none;
     color: var(--color-review);
     font-weight: 700;
-    font-size: 0.95rem;
+    /* Mismo tamaño que dashboard.css (--font-lg). */
+    font-size: 0.9rem;
     cursor: help;
     animation: review-alert-blink 1.2s ease-in-out infinite;
 }
@@ -589,7 +507,8 @@ table.cases-index td.text-cell {
     display: inline-block;
     padding: 3px 10px;
     border-radius: 999px;
-    font-size: 0.76rem;
+    /* Mismo tamaño que dashboard.css (--font-base). */
+    font-size: 0.75rem;
     font-weight: 600;
 }
 
@@ -774,7 +693,8 @@ table.cases-list td.action-cell form {
     border: 1px solid var(--color-border);
     border-radius: 4px;
     padding: 4px 6px;
-    font-size: 0.78rem;
+    /* Mismo tamaño que dashboard.css (--font-md). */
+    font-size: 0.8rem;
     font-weight: 600;
     color: var(--color-text);
     text-align: center;
@@ -869,7 +789,8 @@ select.estado-actual-select.badge-review { background: var(--color-review-bg); c
 
 .review-hint {
     margin-top: 4px;
-    font-size: 0.72rem;
+    /* Mismo tamaño que dashboard.css (--font-sm). */
+    font-size: 0.7rem;
     color: var(--color-text-muted);
 }
 
@@ -908,7 +829,8 @@ input[type="date"] {
     border: 1px solid var(--color-border);
     border-radius: 4px;
     padding: 4px 6px;
-    font-size: 0.85rem;
+    /* Mismo tamaño que dashboard.css (--font-md). */
+    font-size: 0.8rem;
 }
 
 /* ==========================================================================
@@ -948,7 +870,8 @@ button.btn-outline-danger {
     border: 1px solid var(--color-review);
     border-radius: var(--radius);
     padding: 6px 14px;
-    font-size: 0.85rem;
+    /* Mismo tamaño que dashboard.css (--font-md). */
+    font-size: 0.8rem;
     cursor: pointer;
 }
 button.btn-outline-danger:hover { background: var(--color-review-bg); }

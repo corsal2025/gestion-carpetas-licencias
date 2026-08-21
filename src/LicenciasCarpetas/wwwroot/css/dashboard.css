@@ -418,24 +418,27 @@ nav.app-nav form button:hover { background: rgba(255, 255, 255, 0.22); }
     align-items: center;
 }
 
+/* .nav-search sits inside each module's own light-background filter bar (Casos, F8, Cambio de
+   Domicilio all put it in <main>, never in the dark header), so it's styled for a light
+   background here — the light colors both F8 and Cambio de Domicilio actually need. */
 .nav-search input[type="text"] {
-    background: rgba(255, 255, 255, 0.15);
-    color: #fff;
-    border: 1px solid rgba(255, 255, 255, 0.35);
+    background: var(--color-surface);
+    color: var(--color-text);
+    border: 1px solid var(--color-border);
     border-radius: var(--radius);
     padding: 4px 8px;
     font-size: var(--font-sm);
-    min-width: 140px;
+    min-width: 260px;
 }
 
 .nav-search input[type="text"]::placeholder {
-    color: rgba(255, 255, 255, 0.65);
+    color: var(--color-text-muted);
 }
 
 .nav-search button {
-    background: rgba(255, 255, 255, 0.12);
+    background: var(--color-accent);
     color: #fff;
-    border: 1px solid rgba(255, 255, 255, 0.35);
+    border: 1px solid var(--color-accent);
     border-radius: var(--radius);
     padding: 4px 9px;
     font-size: var(--font-sm);
@@ -443,7 +446,7 @@ nav.app-nav form button:hover { background: rgba(255, 255, 255, 0.22); }
     letter-spacing: 0.2px;
     cursor: pointer;
 }
-.nav-search button:hover { background: rgba(255, 255, 255, 0.22); }
+.nav-search button:hover { background: var(--color-primary); border-color: var(--color-primary); }
 
 .nav-search-clear {
     font-size: var(--font-xs);
