@@ -90,7 +90,12 @@ header.app-header .brand small {
 
 nav.app-nav {
     display: flex;
-    align-items: center;
+    /* flex-end, no center: los grupos con etiqueta (.nav-group-labeled, "Reportes") apilan label +
+       píldoras en dos filas internas, volviendo esa columna más alta que el resto — con
+       align-items:center el resto de las píldoras (Módulos, Estadísticas, Usuarios...) quedaba
+       centrado más abajo, pareciendo una segunda fila aunque es la misma. Alineando abajo, todas
+       las píldoras comparten la misma línea de base y el rótulo queda arriba, sin afectar nada más. */
+    align-items: flex-end;
     justify-content: center;
     gap: 4px;
     flex-wrap: wrap;

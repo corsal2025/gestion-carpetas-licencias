@@ -54,42 +54,6 @@ header.app-header .brand-logo {
     padding: 3px;
 }
 
-nav.app-nav {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 4px;
-    flex-wrap: wrap;
-    flex: 1;
-}
-
-/* Three logical groups (view filters | reference tools | search+actions) instead of one long
-   run of links — each group wraps as a unit and gets a divider, so on a narrow window the nav
-   breaks between groups rather than mid-group. nav-group-end pins right on wide screens via
-   margin-left:auto and drops that once the row wraps (flex-wrap puts it on its own line). */
-.nav-group {
-    display: flex;
-    align-items: center;
-    gap: 4px;
-    flex-wrap: wrap;
-    padding: 4px 14px;
-    border-left: 1px solid rgba(255, 255, 255, 0.2);
-}
-
-.nav-group:first-child {
-    padding-left: 0;
-    border-left: none;
-}
-
-/* Own row, full width — centers its own contents so it lines up under the row above (which
-   nav.app-nav centers as a whole line), instead of hugging left or right. */
-.nav-group-end {
-    flex-basis: 100%;
-    justify-content: center;
-    padding-left: 0;
-    border-left: none;
-}
-
 .nav-search-clear {
     /* Mismo tamaño que dashboard.css (--font-xs). */
     font-size: 0.65rem;
