@@ -105,6 +105,14 @@
                 var puedeVerEstadisticasDelModuloActivo = enCambioDomicilio || enF8 || puedeVerReportesYReferencia;
             }
             <div class="nav-group">
+                @* Volver directo a Gestión de Licencias sin pasar por el desplegable — Administrador/
+                   Jefatura/Coordinador son los roles que de verdad saltan entre módulos seguido, un
+                   Administrativo normalmente vive en uno solo. Solo aparece estando en otro módulo:
+                   en Gestión de Licencias ya estás ahí, no hace falta el botón. *@
+                @if (!enGestionLicencias && (User.IsInRole("Administrador") || User.IsInRole("Jefatura") || User.IsInRole("Coordinador")))
+                {
+                    <a asp-page="/Index" class="nav-pill nav-module">← Volver a inicio</a>
+                }
                 @* Casos (Gestión de Licencias) es un módulo más de la lista, igual que los otros dos —
                    ninguno es una app aparte ya: mismo proceso, mismo login, misma carpetas.db — los
                    links son rutas internas, filtradas por el mismo claim que gatea cada página del
