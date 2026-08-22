@@ -81,23 +81,37 @@
     }
 </div>
 
-<div class="card" style="padding:16px 20px; margin-bottom:16px;">
-    <h2 class="text-xl" style="margin:0 0 10px;">Resumen de @SpanishDate.MonthName(stats.Month) @stats.Year</h2>
-    <p class="text-md" style="margin:0;">
-        Escaneadas: <strong>@stats.ScannedTotal</strong> ·
-        Subidas: <strong>@stats.UploadedTotal</strong> ·
-        Agendadas: <strong>@stats.ScheduledTotal</strong> ·
-        Atendidas: <strong>@stats.AttendedTotal</strong> ·
-        Atención: <strong>@LicenciasCarpetas.Dashboard.Pages.EstadisticasModel.Percent(stats.AttendanceRate)</strong>
-    </p>
-    <p class="text-md" style="margin:8px 0 0;">
-        @foreach (var office in offices)
-        {
-            <span style="margin-right:14px;">
-                @OfficeCatalog.Display(office): @stats.AttendedFor(office) / @stats.ScheduledFor(office)
-            </span>
-        }
-    </p>
+@* Mismas tarjetas KPI que F8 y Cambio de Domicilio (dashboard.css, .stats-grid/.stat-tile) — antes
+   esto era una línea de texto densa, la única de los tres módulos sin este formato. *@
+<h2 class="text-xl" style="margin:0 0 10px;">Resumen de @SpanishDate.MonthName(stats.Month) @stats.Year</h2>
+<div class="stats-grid">
+    <div class="card stat-tile">
+        <div class="stat-value">@stats.ScannedTotal</div>
+        <div class="stat-label">Escaneadas</div>
+    </div>
+    <div class="card stat-tile">
+        <div class="stat-value">@stats.UploadedTotal</div>
+        <div class="stat-label">Subidas</div>
+    </div>
+    <div class="card stat-tile">
+        <div class="stat-value">@stats.ScheduledTotal</div>
+        <div class="stat-label">Agendadas</div>
+    </div>
+    <div class="card stat-tile">
+        <div class="stat-value">@stats.AttendedTotal</div>
+        <div class="stat-label">Atendidas</div>
+    </div>
+    <div class="card stat-tile">
+        <div class="stat-value">@LicenciasCarpetas.Dashboard.Pages.EstadisticasModel.Percent(stats.AttendanceRate)</div>
+        <div class="stat-label">Atención</div>
+    </div>
+    @foreach (var office in offices)
+    {
+        <div class="card stat-tile">
+            <div class="stat-value">@stats.AttendedFor(office) / @stats.ScheduledFor(office)</div>
+            <div class="stat-label">@OfficeCatalog.Display(office)</div>
+        </div>
+    }
 </div>
 
 <div class="card table-card" style="margin-bottom:16px; max-height:70vh;">
