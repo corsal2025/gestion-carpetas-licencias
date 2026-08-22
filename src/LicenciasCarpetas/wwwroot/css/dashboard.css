@@ -148,6 +148,17 @@ body {
     margin-bottom: 2px;
 }
 
+/* Título de un módulo (Gestión de Licencias, Enviar/Solicitar Cambio de Domicilio, F8 Urgentes),
+   anidado adentro de "Módulos" — su estado activo no debe verse como un botón/pastilla llena
+   (eso lo deja leer como algo principal, compitiendo con Panel de Control/Módulos), solo una
+   barra de acento a la izquierda, igual de sutil que sus propios links hijos. */
+.sidebar-link-submodule.active {
+    background: none;
+    color: var(--color-primary);
+    border-left: 3px solid var(--color-primary);
+    padding-left: 7px;
+}
+
 .sidebar-link {
     display: block;
     color: var(--color-sidebar-text);

@@ -55,7 +55,7 @@
                     <summary class="sidebar-link sidebar-link-home">📂 Módulos</summary>
 
                     <details class="sidebar-section-collapsible" open="@enGestionLicencias">
-                        <summary class="sidebar-link sidebar-section-label @(enGestionLicencias ? "active" : "")">🪪 Gestión de Licencias</summary>
+                        <summary class="sidebar-link sidebar-section-label sidebar-link-submodule @(enGestionLicencias ? "active" : "")">🪪 Gestión de Licencias</summary>
                         @* Un <summary> solo abre/cierra, nunca navega — sin este link se perdía la
                            forma de llegar a la tabla de Casos con un clic. *@
                         <a asp-page="/Index" class="sidebar-link sidebar-link-reference">🗂️ Ver Casos</a>
@@ -70,14 +70,14 @@
                     @if (puedeCambioDomicilio)
                     {
                         <details class="sidebar-section-collapsible" open="@enCambioDomicilio">
-                            <summary class="sidebar-link sidebar-section-label @(enCambioDomicilio ? "active" : "")">📥 Enviar Cambio de Domicilio</summary>
+                            <summary class="sidebar-link sidebar-section-label sidebar-link-submodule @(enCambioDomicilio ? "active" : "")">📥 Enviar Cambio de Domicilio</summary>
                             <a asp-page="/CambioDomicilio/Index" class="sidebar-link sidebar-link-reference">🗂️ Solicitudes recibidas</a>
                             <a asp-page="/CambioDomicilio/Certificado" class="sidebar-link sidebar-link-reference">📜 Certificado</a>
                             <a asp-page="/CambioDomicilio/Comunas" class="sidebar-link sidebar-link-reference">🏘️ Comunas</a>
                             <a asp-page="/CambioDomicilio/Discarded" class="sidebar-link sidebar-link-reference">🗑️ Descartados</a>
                         </details>
                         <details class="sidebar-section-collapsible" open="@enCambioDomicilio">
-                            <summary class="sidebar-link sidebar-section-label">📤 Solicitar Cambios de Domicilio</summary>
+                            <summary class="sidebar-link sidebar-section-label sidebar-link-submodule">📤 Solicitar Cambios de Domicilio</summary>
                             <a asp-page="/CambioDomicilio/Solicitar/Index" class="sidebar-link sidebar-link-reference">📋 Solicitudes</a>
                             <a asp-page="/CambioDomicilio/Solicitar/Nueva" class="sidebar-link sidebar-link-reference">➕ Nueva Solicitud</a>
                         </details>
@@ -86,7 +86,7 @@
                     @if (puedeF8)
                     {
                         <details class="sidebar-section-collapsible" open="@enF8">
-                            <summary class="sidebar-link sidebar-section-label @(enF8 ? "active" : "")">🚨 F8 Urgentes</summary>
+                            <summary class="sidebar-link sidebar-section-label sidebar-link-submodule @(enF8 ? "active" : "")">🚨 F8 Urgentes</summary>
                             <a asp-page="/F8/Index" class="sidebar-link sidebar-link-reference">🗂️ Ver Casos F8</a>
                             <a asp-page="/F8/ImpresionMensual" class="sidebar-link sidebar-link-reference">🖨️ Impresión mensual</a>
                         </details>
