@@ -69,10 +69,11 @@
                 </div>
             }
             @{
-                // Estadísticas de cuál: cada módulo tiene la suya propia (Estadisticas.cshtml en
-                // Casos, CambioDomicilio y F8, cada una con sus propios números) — estadisticasPage
-                // (BrandNavigation) sigue al módulo activo en vez de forzar siempre el de Casos.
-                var puedeVerEstadisticasDelModuloActivo = enCambioDomicilio || enF8 || puedeVerReportesYReferencia;
+                // Estadísticas solo acá cuando estás en Gestión de Licencias — F8 y Cambio de
+                // Domicilio ya traen la suya propia dentro del grupo "Reportes" de su propia franja
+                // (_F8Nav.cshtml/_CambioDomicilioNav.cshtml); repetirla acá arriba era el mismo link
+                // dos veces en pantalla al mismo tiempo.
+                var puedeVerEstadisticasDelModuloActivo = enGestionLicencias && puedeVerReportesYReferencia;
             }
             <div class="nav-group">
                 @* Casos (Gestión de Licencias) es un módulo más de la lista, igual que los otros dos —
