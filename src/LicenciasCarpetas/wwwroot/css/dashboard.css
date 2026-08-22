@@ -179,6 +179,21 @@ body {
 .sidebar-section-collapsible > summary::-webkit-details-marker {
     display: none;
 }
+.sidebar-section-collapsible > summary::before {
+    content: "▸";
+    display: inline-block;
+    margin-right: 4px;
+    transition: transform 0.15s ease;
+}
+.sidebar-section-collapsible[open] > summary::before {
+    transform: rotate(90deg);
+}
+/* Todo lo que cuelga de un desplegable abierto se corre un poco a la derecha — sin esto quedaba
+   pegado al borde izquierdo, a la misma altura que el título que lo abre. */
+.sidebar-section-collapsible > a,
+.sidebar-section-collapsible > .sidebar-section {
+    margin-left: 10px;
+}
 /* "Módulos" es un desplegable que contiene un desplegable por módulo — este indent es lo único
    que distingue "un módulo adentro de Módulos" de "una sección suelta", sin duplicar CSS. */
 .sidebar-section-collapsible .sidebar-section-collapsible {
