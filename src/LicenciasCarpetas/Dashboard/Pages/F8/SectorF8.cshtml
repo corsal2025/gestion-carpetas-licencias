@@ -6,14 +6,12 @@
 }
 
 
-<div class="card cd-filter-bar no-print" style="padding:8px 14px; margin-bottom:10px; display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
-    <a href="/F8/SectorF8?sector=Archivo" class="@(Model.SelectedSector == LicenciasCarpetas.F8.Domain.FolderSector.Archivo ? "active" : "")">Archivo</a>
-    <a href="/F8/SectorF8?sector=Oficina43" class="@(Model.SelectedSector == LicenciasCarpetas.F8.Domain.FolderSector.Oficina43 ? "active" : "")">Oficina 43</a>
-    @if (Model.Cases.Count > 0)
-    {
-        <button type="button" class="btn-outline" style="margin-left:auto;" onclick="window.print()">Imprimir informe (PDF)</button>
-    }
-</div>
+@if (Model.Cases.Count > 0)
+{
+    <div class="card no-print" style="padding:8px 14px; margin-bottom:10px; display:flex; justify-content:flex-end;">
+        <button type="button" class="btn-outline" onclick="window.print()">Imprimir informe (PDF)</button>
+    </div>
+}
 
 <div class="print-report">
     <h2 class="print-title">INFORME @sectorTitle</h2>
