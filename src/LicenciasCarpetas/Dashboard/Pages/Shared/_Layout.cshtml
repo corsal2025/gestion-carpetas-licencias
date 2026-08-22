@@ -44,54 +44,41 @@
                 var puedeF8 = User.HasClaim("mod:f8-urgentes", "true");
             }
             <nav class="sidebar-nav">
-                <a asp-page="/Inicio" class="sidebar-link sidebar-link-home">🏠 Panel de Control</a>
+                <a asp-page="/Inicio" class="sidebar-link sidebar-link-home">Panel de Control</a>
 
-                @* "Módulos" es el desplegable maestro: al abrirlo aparecen los 4 módulos, cada uno
-                   con su propio título-desplegable (en vez del link plano de antes) — el título hace
-                   el toggle, no un botón aparte, y cada uno trae sus propias Reportes/Comunas/
-                   Estadísticas adentro en vez de sueltas más abajo. Se abre solo el módulo activo por
-                   defecto (open="@enX"), los demás quedan colapsados hasta que el operador los toque. *@
-                <details open class="sidebar-section-collapsible">
-                    <summary class="sidebar-link sidebar-link-home">📂 Módulos</summary>
-
-                    <details class="sidebar-section-collapsible" open="@enGestionLicencias">
-                        <summary class="sidebar-link sidebar-section-label @(enGestionLicencias ? "active" : "")">🪪 Gestión de Licencias</summary>
-                        @* Un <summary> solo abre/cierra, nunca navega — sin este link se perdía la
-                           forma de llegar a la tabla de Casos con un clic. *@
-                        <a asp-page="/Index" class="sidebar-link sidebar-link-reference">🗂️ Ver Casos</a>
-                        @if (puedeImportar)
-                        {
-                            <a asp-page="/Importar" class="sidebar-link sidebar-link-sync">📥 Importar Excel</a>
-                        }
-                    </details>
-
-                    @* Cambio de Domicilio tiene dos flujos (recibir pedidos de otras comunas / pedirle
-                       a otras comunas) — cada uno es su propio desplegable, no un solo módulo genérico. *@
+                <div class="sidebar-section">
+                    <span class="sidebar-section-label">Módulos</span>
+                    <a asp-page="/Index" class="sidebar-link @(enGestionLicencias ? "active" : "")">Gestión de Licencias</a>
+                    @if (puedeImportar)
+                    {
+                        <a asp-page="/Importar" class="sidebar-link sidebar-link-sync">Importar Excel</a>
+                    }
+                    @* Cambio de Domicilio no es un link plano — tiene dos flujos (recibir pedidos
+                       de otras comunas / pedirle a otras comunas), así que el switcher de módulos
+                       muestra directamente sus dos entradas en vez de un solo link genérico. *@
                     @if (puedeCambioDomicilio)
                     {
-                        <details class="sidebar-section-collapsible" open="@enCambioDomicilio">
-                            <summary class="sidebar-link sidebar-section-label @(enCambioDomicilio ? "active" : "")">📥 Enviar Cambio de Domicilio</summary>
-                            <a asp-page="/CambioDomicilio/Index" class="sidebar-link sidebar-link-reference">🗂️ Solicitudes recibidas</a>
-                            <a asp-page="/CambioDomicilio/Certificado" class="sidebar-link sidebar-link-reference">📜 Certificado</a>
-                            <a asp-page="/CambioDomicilio/Comunas" class="sidebar-link sidebar-link-reference">🏘️ Comunas</a>
-                            <a asp-page="/CambioDomicilio/Discarded" class="sidebar-link sidebar-link-reference">🗑️ Descartados</a>
+                        <details open class="sidebar-section-collapsible">
+                            <summary class="sidebar-link sidebar-section-label @(enCambioDomicilio ? "active" : "")">Enviar Cambio de Domicilio</summary>
+                            <a asp-page="/CambioDomicilio/Index" class="sidebar-link sidebar-link-reference">Solicitudes recibidas</a>
+                            @if (enCambioDomicilio)
+                            {
+                                <a asp-page="/CambioDomicilio/Certificado" class="sidebar-link sidebar-link-reference">Certificado</a>
+                                <a asp-page="/CambioDomicilio/Comunas" class="sidebar-link sidebar-link-reference">Comunas</a>
+                                <a asp-page="/CambioDomicilio/Discarded" class="sidebar-link sidebar-link-reference">Descartados</a>
+                            }
                         </details>
-                        <details class="sidebar-section-collapsible" open="@enCambioDomicilio">
-                            <summary class="sidebar-link sidebar-section-label">📤 Solicitar Cambios de Domicilio</summary>
-                            <a asp-page="/CambioDomicilio/Solicitar/Index" class="sidebar-link sidebar-link-reference">📋 Solicitudes</a>
-                            <a asp-page="/CambioDomicilio/Solicitar/Nueva" class="sidebar-link sidebar-link-reference">➕ Nueva Solicitud</a>
+                        <details open class="sidebar-section-collapsible">
+                            <summary class="sidebar-link sidebar-section-label">Solicitar Cambios de Domicilio</summary>
+                            <a asp-page="/CambioDomicilio/Solicitar/Index" class="sidebar-link sidebar-link-reference">Solicitudes</a>
+                            <a asp-page="/CambioDomicilio/Solicitar/Nueva" class="sidebar-link sidebar-link-reference">Nueva Solicitud</a>
                         </details>
                     }
-
                     @if (puedeF8)
                     {
-                        <details class="sidebar-section-collapsible" open="@enF8">
-                            <summary class="sidebar-link sidebar-section-label @(enF8 ? "active" : "")">🚨 F8 Urgentes</summary>
-                            <a asp-page="/F8/Index" class="sidebar-link sidebar-link-reference">🗂️ Ver Casos F8</a>
-                            <a asp-page="/F8/ImpresionMensual" class="sidebar-link sidebar-link-reference">🖨️ Impresión mensual</a>
-                        </details>
+                        <a asp-page="/F8/Index" class="sidebar-link @(enF8 ? "active" : "")">F8 Urgentes</a>
                     }
-                </details>
+                </div>
 
                 @* Estadísticas y la libreta de Comunas (Gestión de Licencias) quedan afuera de
                    "Módulos" — Estadísticas sigue al módulo activo (una sola entrada, no una por
@@ -101,24 +88,24 @@
                 }
                 @if (puedeVerEstadisticasDelModuloActivo)
                 {
-                    <a asp-page="@estadisticasPage" class="sidebar-link sidebar-link-home">📈 Estadísticas</a>
+                    <a asp-page="@estadisticasPage" class="sidebar-link sidebar-link-module">Estadísticas</a>
                 }
                 @if (puedeVerReportesYReferencia)
                 {
-                    <a asp-page="/Comunas" class="sidebar-link sidebar-link-home">🏘️ Comunas</a>
+                    <a asp-page="/Comunas" class="sidebar-link sidebar-link-reference">Comunas</a>
                 }
             </nav>
             <div class="sidebar-footer">
                 @if (User.IsInRole("Administrador"))
                 {
-                    <a asp-page="/Usuarios" class="sidebar-link">👥 Usuarios</a>
+                    <a asp-page="/Usuarios" class="sidebar-link">Usuarios</a>
                 }
                 @if (enGestionLicencias && puedeVerReportesYReferencia)
                 {
-                    <a asp-page="/Papelera" class="sidebar-link sidebar-link-reference">🗑️ Papelera</a>
+                    <a asp-page="/Papelera" class="sidebar-link sidebar-link-reference">Papelera</a>
                 }
-                <a asp-page="/ChangePassword" class="sidebar-link sidebar-link-account">🔑 Cambiar contraseña</a>
-                <form asp-page="/Logout" method="post"><button type="submit" class="sidebar-link sidebar-link-logout">🚪 Salir</button></form>
+                <a asp-page="/ChangePassword" class="sidebar-link sidebar-link-account">Cambiar contraseña</a>
+                <form asp-page="/Logout" method="post"><button type="submit" class="sidebar-link sidebar-link-logout">Salir</button></form>
             </div>
         </aside>
         <div class="app-content">
