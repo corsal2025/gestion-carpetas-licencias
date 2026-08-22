@@ -156,7 +156,11 @@ body {
     border-radius: var(--radius);
     font-size: var(--font-sm);
     font-weight: 600;
-    white-space: nowrap;
+    /* Sin nowrap: un título largo ("Solicitar Cambios de Domicilio") desbordaba el ancho fijo
+       del sidebar (248px) y quedaba tapado por .app-content en vez de cortarse visiblemente —
+       mejor que se parta en dos líneas a que se pierda texto. */
+    white-space: normal;
+    word-break: break-word;
     transition: background 0.15s ease, color 0.15s ease;
 }
 
@@ -270,6 +274,39 @@ body {
 .sidebar-footer form {
     margin: 0;
 }
+
+/* .nav-pill/.nav-doc/.nav-sync: usados sueltos (sin .app-nav como ancestro) en Casos
+   (paginación, Exportar), Sector, Comunas, Importar y el botón de sincronizar de F8 — nunca
+   tuvieron una regla propia fuera del header ya retirado, así que quedaban sin estilo alguno.
+   Restaurados acá con la paleta clara del resto del dashboard, no la oscura original del header. */
+.nav-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 12px;
+    border-radius: 999px;
+    border: 1px solid var(--color-border);
+    background: var(--color-surface);
+    color: var(--color-text);
+    font-weight: 600;
+    text-decoration: none;
+    cursor: pointer;
+}
+.nav-pill:hover { background: var(--color-bg); }
+
+.nav-doc {
+    background: var(--color-uploaded-bg);
+    border-color: #ffc400;
+    color: #926100;
+}
+.nav-doc:hover { background: #ffe9a8; }
+
+.nav-sync {
+    background: var(--color-confirmed-bg);
+    border-color: var(--color-confirmed);
+    color: var(--color-confirmed);
+}
+.nav-sync:hover { background: #c9ecd3; }
 
 .app-content {
     flex: 1 1 auto;

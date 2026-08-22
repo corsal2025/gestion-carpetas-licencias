@@ -58,8 +58,8 @@
                         <summary class="sidebar-link sidebar-section-label @(enGestionLicencias ? "active" : "")">🪪 Gestión de Licencias</summary>
                         @if (puedeVerReportesYReferencia)
                         {
-                            <a asp-page="/Sector" asp-route-sector="Archivo" class="sidebar-link sidebar-link-doc">📄 Archivo</a>
-                            <a asp-page="/Sector" asp-route-sector="Oficina43" class="sidebar-link sidebar-link-doc">📄 Oficina 43</a>
+                            <a asp-page="/Sector" asp-route-sector="Archivo" class="sidebar-link sidebar-link-doc">📄 Informe Archivo</a>
+                            <a asp-page="/Sector" asp-route-sector="Oficina43" class="sidebar-link sidebar-link-doc">📄 Informe Oficina 43</a>
                             <a asp-page="/Comunas" class="sidebar-link sidebar-link-reference">🏘️ Comunas</a>
                         }
                         @if (puedeImportar)
@@ -79,8 +79,8 @@
                         <details class="sidebar-section-collapsible" open="@enCambioDomicilio">
                             <summary class="sidebar-link sidebar-section-label @(enCambioDomicilio ? "active" : "")">📥 Enviar Cambio de Domicilio</summary>
                             <a asp-page="/CambioDomicilio/Index" class="sidebar-link sidebar-link-reference">🗂️ Solicitudes recibidas</a>
-                            <a asp-page="/CambioDomicilio/Sector" asp-route-sector="Archivo" class="sidebar-link sidebar-link-doc">📄 Archivo</a>
-                            <a asp-page="/CambioDomicilio/Sector" asp-route-sector="Oficina43" class="sidebar-link sidebar-link-doc">📄 Oficina 43</a>
+                            <a asp-page="/CambioDomicilio/Sector" asp-route-sector="Archivo" class="sidebar-link sidebar-link-doc">📄 Informe Archivo</a>
+                            <a asp-page="/CambioDomicilio/Sector" asp-route-sector="Oficina43" class="sidebar-link sidebar-link-doc">📄 Informe Oficina 43</a>
                             <a asp-page="/CambioDomicilio/Certificado" class="sidebar-link sidebar-link-reference">📜 Certificado</a>
                             <a asp-page="/CambioDomicilio/Comunas" class="sidebar-link sidebar-link-reference">🏘️ Comunas</a>
                             <a asp-page="/CambioDomicilio/Discarded" class="sidebar-link sidebar-link-reference">🗑️ Descartados</a>
@@ -97,8 +97,8 @@
                     {
                         <details class="sidebar-section-collapsible" open="@enF8">
                             <summary class="sidebar-link sidebar-section-label @(enF8 ? "active" : "")">🚨 F8 Urgentes</summary>
-                            <a asp-page="/F8/SectorF8" asp-route-sector="Archivo" class="sidebar-link sidebar-link-doc">📄 Archivo</a>
-                            <a asp-page="/F8/SectorF8" asp-route-sector="Oficina43" class="sidebar-link sidebar-link-doc">📄 Oficina 43</a>
+                            <a asp-page="/F8/SectorF8" asp-route-sector="Archivo" class="sidebar-link sidebar-link-doc">📄 Informe Archivo</a>
+                            <a asp-page="/F8/SectorF8" asp-route-sector="Oficina43" class="sidebar-link sidebar-link-doc">📄 Informe Oficina 43</a>
                             <a asp-page="/F8/ImpresionMensual" class="sidebar-link sidebar-link-reference">🖨️ Impresión mensual</a>
                             <a asp-page="/F8/Estadisticas" class="sidebar-link sidebar-link-module">📈 Estadísticas</a>
                         </details>

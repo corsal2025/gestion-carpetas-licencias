@@ -76,16 +76,31 @@
             <label class="form-label" for="search">Buscar</label>
             <input type="text" name="search" id="search" value="@Model.Search" placeholder="RUT o nombre..." />
         </div>
-        <label class="text-md" style="display:flex; gap:6px; align-items:center;">
-            <input type="checkbox" name="needsReview" value="true" checked="@Model.NeedsReview" onchange="this.form.submit()" />
-            Requiere revisión (@Model.NeedsReviewCount)
-        </label>
-        <label class="text-md" style="display:flex; gap:6px; align-items:center;">
-            <input type="checkbox" name="otherComuna" value="true" checked="@Model.OtherComuna" onchange="this.form.submit()" />
-            Carpeta en otra comuna
-        </label>
-        <button type="submit" class="btn-primary text-base" style="padding:3px 12px;">Filtrar</button>
-        <a asp-page="/Index" class="nav-pill text-sm">Limpiar</a>
+        @* Checkboxes + Filtrar + Limpiar en su propia fila, separados de los selects — así no se
+           cortan entre sí al envolver cuando la ventana es angosta (6 selects + buscador ya llenan
+           la fila de arriba por su cuenta). *@
+        <div style="flex-basis:100%; display:flex; gap:3px 8px; align-items:center; flex-wrap:wrap;">
+            <label class="text-md" style="display:flex; gap:6px; align-items:center;">
+                <input type="checkbox" name="needsReview" value="true" checked="@Model.NeedsReview" onchange="this.form.submit()" />
+                Requiere revisión (@Model.NeedsReviewCount)
+            </label>
+            <label class="text-md" style="display:flex; gap:6px; align-items:center;">
+                <input type="checkbox" name="otherComuna" value="true" checked="@Model.OtherComuna" onchange="this.form.submit()" />
+                Carpeta en otra comuna
+            </label>
+            <button type="submit" class="btn-primary text-base" style="padding:3px 12px;">Filtrar</button>
+            <a asp-page="/Index" class="nav-pill text-sm">Limpiar</a>
+            @if (User.IsInRole("Administrador") || User.IsInRole("Jefatura") || User.IsInRole("Coordinador"))
+            {
+                @* Reportes imprimibles, en el espacio que deja libre esta fila más angosta que la de
+                   los selects — mismo destino que el grupo "Reportes" del sidebar, un atajo directo
+                   sin tener que salir de la tabla para imprimirlos. *@
+                <span style="margin-left:auto; display:flex; gap:8px; align-items:center;">
+                    <a asp-page="/Sector" asp-route-sector="Archivo" class="nav-pill nav-doc text-sm">Informe Archivo</a>
+                    <a asp-page="/Sector" asp-route-sector="Oficina43" class="nav-pill nav-doc text-sm">Informe Oficina 43</a>
+                </span>
+            }
+        </div>
     </form>
 </div>
 
