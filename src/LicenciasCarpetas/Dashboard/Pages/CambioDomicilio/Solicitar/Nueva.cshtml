@@ -1,0 +1,136 @@
+@page
+@model LicenciasCarpetas.Dashboard.Pages.CambioDomicilio.Solicitar.NuevaModel
+@{
+    ViewData["Title"] = Model.ReadOnly ? "Ver Solicitud" : (Model.RequestId is null ? "Nueva Solicitud" : "Editar Solicitud");
+}
+
+@if (Model.Message is not null)
+{
+    <p class="message-banner @(Model.MessageIsError ? "message-error" : "")">@Model.Message</p>
+}
+
+<form method="post" asp-page-handler="GuardarBorrador" asp-route-id="@Model.RequestId" id="solicitud-form">
+    <div style="display:flex; gap:16px; align-items:flex-start; flex-wrap:wrap;">
+        <div style="flex:1 1 60%; min-width:320px; display:flex; flex-direction:column; gap:16px;">
+            <div class="card" style="padding:20px 24px;">
+                <h3 style="margin-top:0;">Datos del Contribuyente</h3>
+                <div style="display:flex; flex-direction:column; gap:10px;">
+                    <div>
+                        <label class="form-label" for="input-fullname">Nombre Completo / Razón Social</label>
+                        <input type="text" id="input-fullname" asp-for="Input.FullName" required disabled="@Model.ReadOnly"
+                               style="width:100%; border:1px solid var(--color-border); border-radius:4px; padding:8px;" />
+                    </div>
+                    <div>
+                        <label class="form-label" for="input-rut">RUT</label>
+                        <input type="text" id="input-rut" asp-for="Input.Rut" required disabled="@Model.ReadOnly" placeholder="ej: 18.785.387-7"
+                               style="width:100%; border:1px solid var(--color-border); border-radius:4px; padding:8px;" />
+                    </div>
+                    <div>
+                        <label class="form-label" for="input-phone">Teléfono</label>
+                        <input type="text" id="input-phone" asp-for="Input.Phone" disabled="@Model.ReadOnly"
+                               style="width:100%; border:1px solid var(--color-border); border-radius:4px; padding:8px;" />
+                    </div>
+                </div>
+            </div>
+
+            <div class="card" style="padding:20px 24px;">
+                <h3 style="margin-top:0;">Nuevo Domicilio</h3>
+                <div style="display:flex; flex-direction:column; gap:10px;">
+                    <div>
+                        <label class="form-label" for="input-street">Calle / Avenida</label>
+                        <input type="text" id="input-street" asp-for="Input.Street" required disabled="@Model.ReadOnly"
+                               style="width:100%; border:1px solid var(--color-border); border-radius:4px; padding:8px;" />
+                    </div>
+                    <div>
+                        <label class="form-label" for="input-number">Número</label>
+                        <input type="text" id="input-number" asp-for="Input.Number" required disabled="@Model.ReadOnly"
+                               style="width:100%; border:1px solid var(--color-border); border-radius:4px; padding:8px;" />
+                    </div>
+                    <div>
+                        <label class="form-label" for="input-comuna">Comuna</label>
+                        <select id="input-comuna" asp-for="Input.DestinationComuna" required disabled="@Model.ReadOnly"
+                                style="width:100%; border:1px solid var(--color-border); border-radius:4px; padding:8px;">
+                            <option value="">Seleccione...</option>
+                            @foreach (var contact in Model.ComunaOptions)
+                            {
+                                <option value="@contact.Comuna">@contact.Comuna</option>
+                            }
+                        </select>
+                    </div>
+                    <div>
+                        <label class="form-label" for="input-unit">Oficina / Depto (opcional)</label>
+                        <input type="text" id="input-unit" asp-for="Input.Unit" disabled="@Model.ReadOnly"
+                               style="width:100%; border:1px solid var(--color-border); border-radius:4px; padding:8px;" />
+                    </div>
+                </div>
+            </div>
+
+            @if (!Model.ReadOnly)
+            {
+                <div style="display:flex; gap:8px;">
+                    <button type="submit" class="btn-primary" style="padding:8px 16px;">Guardar Borrador</button>
+                    @if (Model.RequestId.HasValue)
+                    {
+                        <button type="submit" form="enviar-form" class="btn-primary" style="padding:8px 16px;"
+                                onclick="return confirm('Esto enviará la solicitud a la comuna de destino. ¿Confirmar?');">Enviar Petición</button>
+                    }
+                    <a asp-page="/CambioDomicilio/Solicitar/Index" style="padding:8px 16px;">Cancelar</a>
+                </div>
+            }
+            else
+            {
+                <div>
+                    <a asp-page="/CambioDomicilio/Solicitar/Index" style="padding:8px 16px;">Volver</a>
+                </div>
+            }
+        </div>
+
+        <div style="flex:1 1 30%; min-width:260px;">
+            <div class="card" style="padding:20px 24px;">
+                <h3 style="margin-top:0;">Documentación</h3>
+
+                @if (Model.Attachments.Count > 0)
+                {
+                    <ul style="list-style:none; padding:0; margin:0 0 12px 0; display:flex; flex-direction:column; gap:6px;">
+                        @foreach (var attachment in Model.Attachments)
+                        {
+                            <li style="display:flex; justify-content:space-between; align-items:center; gap:8px; border:1px solid var(--color-border); border-radius:4px; padding:6px 10px;">
+                                <span>@attachment.FileName</span>
+                                @if (!Model.ReadOnly)
+                                {
+                                    <form method="post" asp-page-handler="EliminarArchivo" style="margin:0;"
+                                          onsubmit="return confirm('¿Eliminar este documento adjunto?');">
+                                        <input type="hidden" name="id" value="@Model.RequestId" />
+                                        <input type="hidden" name="attachmentId" value="@attachment.Id" />
+                                        <button type="submit" class="btn-danger" title="Eliminar" aria-label="Eliminar" style="padding:2px 8px;">&times;</button>
+                                    </form>
+                                }
+                            </li>
+                        }
+                    </ul>
+                }
+                else
+                {
+                    <p style="color:var(--color-muted, #888); font-size:0.85rem;">Sin documentos adjuntos.</p>
+                }
+
+                @if (!Model.ReadOnly)
+                {
+                    <form method="post" asp-page-handler="SubirArchivo" enctype="multipart/form-data">
+                        <input type="hidden" name="id" value="@Model.RequestId" />
+                        <label style="display:block; border:1px dashed var(--color-border); border-radius:4px; padding:16px; text-align:center; cursor:pointer;">
+                            Seleccionar archivo (.pdf, .jpg, .jpeg)
+                            <input type="file" name="NewAttachment" accept=".pdf,.jpg,.jpeg" style="display:block; margin-top:8px;" />
+                        </label>
+                        <button type="submit" class="btn-primary" style="margin-top:8px; padding:6px 12px;">Adjuntar</button>
+                    </form>
+                }
+            </div>
+        </div>
+    </div>
+</form>
+
+@if (!Model.ReadOnly && Model.RequestId.HasValue)
+{
+    <form method="post" asp-page-handler="Enviar" asp-route-id="@Model.RequestId" id="enviar-form" style="display:none;"></form>
+}

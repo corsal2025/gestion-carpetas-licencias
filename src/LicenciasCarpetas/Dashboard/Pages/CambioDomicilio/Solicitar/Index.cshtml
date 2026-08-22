@@ -1,0 +1,62 @@
+@page
+@model LicenciasCarpetas.Dashboard.Pages.CambioDomicilio.Solicitar.IndexModel
+@using LicenciasCarpetas.CambioDomicilio.Domain
+@{
+    ViewData["Title"] = "Solicitar Cambios de Domicilio";
+}
+
+<div class="card cd-filter-bar" style="padding:8px 14px; margin-bottom:10px; display:flex; gap:8px; align-items:center;">
+    <a asp-page="/CambioDomicilio/Solicitar/Nueva" class="btn-primary" style="padding:8px 16px;">+ Nueva Solicitud</a>
+</div>
+
+@if (Model.Message is not null)
+{
+    <p class="message-banner">@Model.Message</p>
+}
+
+<div class="card table-card">
+    <table class="cases">
+        <thead>
+            <tr>
+                <th>Contribuyente</th>
+                <th>RUT</th>
+                <th>Comuna destino</th>
+                <th>Estado</th>
+                <th>Fecha</th>
+                <th>Acción</th>
+            </tr>
+        </thead>
+        <tbody>
+        @foreach (var item in Model.Requests)
+        {
+            <tr>
+                <td>@item.FullName</td>
+                <td>@item.Rut</td>
+                <td>@item.DestinationComuna</td>
+                <td>
+                    @{
+                        var (badgeClass, badgeText) = item.Status switch
+                        {
+                            OutboundRequestStatus.Borrador => ("badge-pending", "Borrador"),
+                            OutboundRequestStatus.Enviada => ("badge-confirmed", "Enviada"),
+                            _ => ("badge-pending", item.Status.ToString())
+                        };
+                    }
+                    <span class="badge @badgeClass">@badgeText</span>
+                </td>
+                <td>@(item.Status == OutboundRequestStatus.Enviada && item.SentAt is { } sentAt ? sentAt.LocalDateTime.ToString("dd-MM-yyyy") : item.CreatedAt.LocalDateTime.ToString("dd-MM-yyyy"))</td>
+                <td>
+                    @if (item.Status == OutboundRequestStatus.Borrador)
+                    {
+                        <a asp-page="/CambioDomicilio/Solicitar/Nueva" asp-route-id="@item.Id" class="btn-primary" style="padding:4px 10px; font-size:0.72rem;">Editar</a>
+                    }
+                    else
+                    {
+                        <a asp-page="/CambioDomicilio/Solicitar/Nueva" asp-route-id="@item.Id" style="padding:4px 10px; font-size:0.72rem;">Ver</a>
+                    }
+                </td>
+            </tr>
+        }
+        </tbody>
+    </table>
+</div>

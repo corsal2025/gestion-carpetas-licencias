@@ -1,0 +1,232 @@
+using Microsoft.Data.Sqlite;
+using LicenciasCarpetas.CambioDomicilio.Domain;
+
+namespace LicenciasCarpetas.CambioDomicilio.Data;
+
+public interface IOutboundAddressChangeRequestRepository
+{
+    void EnsureSchema();
+    long Insert(OutboundAddressChangeRequest request);
+    void Update(OutboundAddressChangeRequest request);
+    OutboundAddressChangeRequest? FindById(long id);
+    IReadOnlyList<OutboundAddressChangeRequest> GetAll();
+    bool MarkSent(long id, DateTimeOffset sentAt, long sentByUserId);
+    void Delete(long id);
+
+    long AddAttachment(OutboundAddressChangeAttachment attachment);
+    IReadOnlyList<OutboundAddressChangeAttachment> GetAttachments(long requestId);
+    void DeleteAttachment(long attachmentId);
+}
+
+public sealed class OutboundAddressChangeRequestRepository(string connectionString) : IOutboundAddressChangeRequestRepository
+{
+    public void EnsureSchema()
+    {
+        using var connection = Open();
+        using var command = connection.CreateCommand();
+        command.CommandText = """
+            CREATE TABLE IF NOT EXISTS OutboundAddressChangeRequest (
+                Id INTEGER PRIMARY KEY AUTOINCREMENT,
+                FullName TEXT NOT NULL,
+                Rut TEXT NOT NULL,
+                Phone TEXT NULL,
+                Street TEXT NOT NULL,
+                Number TEXT NOT NULL,
+                Unit TEXT NULL,
+                DestinationComuna TEXT NOT NULL,
+                Status TEXT NOT NULL,
+                CreatedAt TEXT NOT NULL,
+                SentAt TEXT NULL,
+                SentByUserId INTEGER NULL,
+                CreatedByUserId INTEGER NOT NULL
+            );
+            CREATE INDEX IF NOT EXISTS IX_OutboundAddressChangeRequest_Status ON OutboundAddressChangeRequest (Status);
+
+            CREATE TABLE IF NOT EXISTS OutboundAddressChangeAttachment (
+                Id INTEGER PRIMARY KEY AUTOINCREMENT,
+                RequestId INTEGER NOT NULL REFERENCES OutboundAddressChangeRequest(Id),
+                FileName TEXT NOT NULL,
+                StoredPath TEXT NOT NULL,
+                ContentType TEXT NOT NULL,
+                UploadedAt TEXT NOT NULL
+            );
+            CREATE INDEX IF NOT EXISTS IX_OutboundAddressChangeAttachment_RequestId ON OutboundAddressChangeAttachment (RequestId);
+            """;
+        command.ExecuteNonQuery();
+    }
+
+    public long Insert(OutboundAddressChangeRequest request)
+    {
+        using var connection = Open();
+        using var command = connection.CreateCommand();
+        command.CommandText = """
+            INSERT INTO OutboundAddressChangeRequest
+                (FullName, Rut, Phone, Street, Number, Unit, DestinationComuna, Status, CreatedAt, SentAt, SentByUserId, CreatedByUserId)
+            VALUES
+                ($fullName, $rut, $phone, $street, $number, $unit, $destinationComuna, $status, $createdAt, $sentAt, $sentByUserId, $createdByUserId);
+            SELECT last_insert_rowid();
+            """;
+        command.Parameters.AddWithValue("$fullName", request.FullName);
+        command.Parameters.AddWithValue("$rut", request.Rut);
+        command.Parameters.AddWithValue("$phone", (object?)request.Phone ?? DBNull.Value);
+        command.Parameters.AddWithValue("$street", request.Street);
+        command.Parameters.AddWithValue("$number", request.Number);
+        command.Parameters.AddWithValue("$unit", (object?)request.Unit ?? DBNull.Value);
+        command.Parameters.AddWithValue("$destinationComuna", request.DestinationComuna);
+        // Always inserted as Borrador regardless of what the caller set — creation is always a draft.
+        command.Parameters.AddWithValue("$status", OutboundRequestStatus.Borrador.ToString());
+        command.Parameters.AddWithValue("$createdAt", request.CreatedAt.ToString("O"));
+        command.Parameters.AddWithValue("$sentAt", (object?)request.SentAt?.ToString("O") ?? DBNull.Value);
+        command.Parameters.AddWithValue("$sentByUserId", (object?)request.SentByUserId ?? DBNull.Value);
+        command.Parameters.AddWithValue("$createdByUserId", request.CreatedByUserId);
+
+        return (long)command.ExecuteScalar()!;
+    }
+
+    public void Update(OutboundAddressChangeRequest request)
+    {
+        using var connection = Open();
+        using var command = connection.CreateCommand();
+        command.CommandText = """
+            UPDATE OutboundAddressChangeRequest
+            SET FullName = $fullName, Rut = $rut, Phone = $phone, Street = $street, Number = $number,
+                Unit = $unit, DestinationComuna = $destinationComuna
+            WHERE Id = $id
+            """;
+        command.Parameters.AddWithValue("$fullName", request.FullName);
+        command.Parameters.AddWithValue("$rut", request.Rut);
+        command.Parameters.AddWithValue("$phone", (object?)request.Phone ?? DBNull.Value);
+        command.Parameters.AddWithValue("$street", request.Street);
+        command.Parameters.AddWithValue("$number", request.Number);
+        command.Parameters.AddWithValue("$unit", (object?)request.Unit ?? DBNull.Value);
+        command.Parameters.AddWithValue("$destinationComuna", request.DestinationComuna);
+        command.Parameters.AddWithValue("$id", request.Id);
+        command.ExecuteNonQuery();
+    }
+
+    public OutboundAddressChangeRequest? FindById(long id)
+    {
+        using var connection = Open();
+        using var command = connection.CreateCommand();
+        command.CommandText = "SELECT * FROM OutboundAddressChangeRequest WHERE Id = $id LIMIT 1";
+        command.Parameters.AddWithValue("$id", id);
+        using var reader = command.ExecuteReader();
+        return reader.Read() ? Map(reader) : null;
+    }
+
+    public IReadOnlyList<OutboundAddressChangeRequest> GetAll()
+    {
+        using var connection = Open();
+        using var command = connection.CreateCommand();
+        command.CommandText = "SELECT * FROM OutboundAddressChangeRequest ORDER BY Id DESC";
+        using var reader = command.ExecuteReader();
+        var results = new List<OutboundAddressChangeRequest>();
+        while (reader.Read())
+        {
+            results.Add(Map(reader));
+        }
+        return results;
+    }
+
+    public bool MarkSent(long id, DateTimeOffset sentAt, long sentByUserId)
+    {
+        using var connection = Open();
+        using var command = connection.CreateCommand();
+        command.CommandText = """
+            UPDATE OutboundAddressChangeRequest
+            SET Status = 'Enviada', SentAt = $sentAt, SentByUserId = $sentByUserId
+            WHERE Id = $id AND Status = 'Borrador'
+            """;
+        command.Parameters.AddWithValue("$sentAt", sentAt.ToString("O"));
+        command.Parameters.AddWithValue("$sentByUserId", sentByUserId);
+        command.Parameters.AddWithValue("$id", id);
+        return command.ExecuteNonQuery() > 0;
+    }
+
+    public void Delete(long id)
+    {
+        using var connection = Open();
+        using var command = connection.CreateCommand();
+        command.CommandText = "DELETE FROM OutboundAddressChangeRequest WHERE Id = $id";
+        command.Parameters.AddWithValue("$id", id);
+        command.ExecuteNonQuery();
+    }
+
+    public long AddAttachment(OutboundAddressChangeAttachment attachment)
+    {
+        using var connection = Open();
+        using var command = connection.CreateCommand();
+        command.CommandText = """
+            INSERT INTO OutboundAddressChangeAttachment
+                (RequestId, FileName, StoredPath, ContentType, UploadedAt)
+            VALUES
+                ($requestId, $fileName, $storedPath, $contentType, $uploadedAt);
+            SELECT last_insert_rowid();
+            """;
+        command.Parameters.AddWithValue("$requestId", attachment.RequestId);
+        command.Parameters.AddWithValue("$fileName", attachment.FileName);
+        command.Parameters.AddWithValue("$storedPath", attachment.StoredPath);
+        command.Parameters.AddWithValue("$contentType", attachment.ContentType);
+        command.Parameters.AddWithValue("$uploadedAt", attachment.UploadedAt.ToString("O"));
+
+        return (long)command.ExecuteScalar()!;
+    }
+
+    public IReadOnlyList<OutboundAddressChangeAttachment> GetAttachments(long requestId)
+    {
+        using var connection = Open();
+        using var command = connection.CreateCommand();
+        command.CommandText = "SELECT * FROM OutboundAddressChangeAttachment WHERE RequestId = $requestId ORDER BY Id";
+        command.Parameters.AddWithValue("$requestId", requestId);
+        using var reader = command.ExecuteReader();
+        var results = new List<OutboundAddressChangeAttachment>();
+        while (reader.Read())
+        {
+            results.Add(MapAttachment(reader));
+        }
+        return results;
+    }
+
+    public void DeleteAttachment(long attachmentId)
+    {
+        using var connection = Open();
+        using var command = connection.CreateCommand();
+        command.CommandText = "DELETE FROM OutboundAddressChangeAttachment WHERE Id = $attachmentId";
+        command.Parameters.AddWithValue("$attachmentId", attachmentId);
+        command.ExecuteNonQuery();
+    }
+
+    private SqliteConnection Open()
+    {
+        var connection = new SqliteConnection(connectionString);
+        connection.Open();
+        return connection;
+    }
+
+    private static OutboundAddressChangeRequest Map(SqliteDataReader reader) => new()
+    {
+        Id = reader.GetInt64(reader.GetOrdinal("Id")),
+        FullName = reader.GetString(reader.GetOrdinal("FullName")),
+        Rut = reader.GetString(reader.GetOrdinal("Rut")),
+        Phone = reader.IsDBNull(reader.GetOrdinal("Phone")) ? null : reader.GetString(reader.GetOrdinal("Phone")),
+        Street = reader.GetString(reader.GetOrdinal("Street")),
+        Number = reader.GetString(reader.GetOrdinal("Number")),
+        Unit = reader.IsDBNull(reader.GetOrdinal("Unit")) ? null : reader.GetString(reader.GetOrdinal("Unit")),
+        DestinationComuna = reader.GetString(reader.GetOrdinal("DestinationComuna")),
+        Status = Enum.Parse<OutboundRequestStatus>(reader.GetString(reader.GetOrdinal("Status"))),
+        CreatedAt = DateTimeOffset.Parse(reader.GetString(reader.GetOrdinal("CreatedAt"))),
+        SentAt = reader.IsDBNull(reader.GetOrdinal("SentAt")) ? null : DateTimeOffset.Parse(reader.GetString(reader.GetOrdinal("SentAt"))),
+        SentByUserId = reader.IsDBNull(reader.GetOrdinal("SentByUserId")) ? null : reader.GetInt64(reader.GetOrdinal("SentByUserId")),
+        CreatedByUserId = reader.GetInt64(reader.GetOrdinal("CreatedByUserId"))
+    };
+
+    private static OutboundAddressChangeAttachment MapAttachment(SqliteDataReader reader) => new()
+    {
+        Id = reader.GetInt64(reader.GetOrdinal("Id")),
+        RequestId = reader.GetInt64(reader.GetOrdinal("RequestId")),
+        FileName = reader.GetString(reader.GetOrdinal("FileName")),
+        StoredPath = reader.GetString(reader.GetOrdinal("StoredPath")),
+        ContentType = reader.GetString(reader.GetOrdinal("ContentType")),
+        UploadedAt = DateTimeOffset.Parse(reader.GetString(reader.GetOrdinal("UploadedAt")))
+    };
+}

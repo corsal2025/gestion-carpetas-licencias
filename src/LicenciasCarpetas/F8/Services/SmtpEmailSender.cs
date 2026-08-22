@@ -6,7 +6,9 @@ namespace LicenciasCarpetas.F8.Services;
 
 public sealed class SmtpEmailSender(IOptions<SmtpOptions> options) : IEmailSender
 {
-    public async Task SendAsync(string to, string subject, string body, CancellationToken cancellationToken = default)
+    public async Task SendAsync(string to, string subject, string body,
+        IReadOnlyList<EmailAttachment>? attachments = null,
+        CancellationToken cancellationToken = default)
     {
         var smtp = options.Value;
 
@@ -23,6 +25,14 @@ public sealed class SmtpEmailSender(IOptions<SmtpOptions> options) : IEmailSende
             Body = body,
         };
         message.To.Add(to);
+
+        if (attachments is not null)
+        {
+            foreach (var attachment in attachments)
+            {
+                message.Attachments.Add(new Attachment(attachment.FilePath, attachment.ContentType));
+            }
+        }
 
         await client.SendMailAsync(message, cancellationToken);
     }

@@ -14,7 +14,6 @@
     --color-sidebar-active-bg: #eaf2fa;
     --color-sidebar-active-text: var(--color-primary);
     --color-sidebar-hover-bg: #f4f6f8;
-    --color-topbar-bg: #ffffff;
     --sidebar-width: 248px;
     --color-pending: #6b7280;
     --color-pending-bg: #eceff1;
@@ -163,6 +162,29 @@ body {
 
 .sidebar-link:hover { background: var(--color-sidebar-hover-bg); }
 
+/* Cada grupo del módulo Cambio de Domicilio (Enviar / Solicitar) es ahora un <details> nativo en
+   vez de un bloque siempre abierto — sin JS, misma tipografía que .sidebar-section-label para que
+   el "summary" no se note como un elemento distinto. */
+.sidebar-section-collapsible {
+    margin: 6px 0;
+}
+.sidebar-section-collapsible > summary {
+    cursor: pointer;
+    list-style: none;
+}
+.sidebar-section-collapsible > summary::-webkit-details-marker {
+    display: none;
+}
+.sidebar-section-collapsible > summary::before {
+    content: "▸";
+    display: inline-block;
+    margin-right: 4px;
+    transition: transform 0.15s ease;
+}
+.sidebar-section-collapsible[open] > summary::before {
+    transform: rotate(90deg);
+}
+
 .sidebar-link.active {
     background: var(--color-sidebar-active-bg);
     color: var(--color-sidebar-active-text);
@@ -241,20 +263,6 @@ body {
     display: flex;
     flex-direction: column;
 }
-
-.app-topbar {
-    background: var(--color-topbar-bg);
-    border-bottom: 1px solid var(--color-border);
-    padding: 12px 24px;
-    box-shadow: var(--shadow-sm);
-}
-
-.topbar-title {
-    font-weight: 600;
-    font-size: var(--font-xl);
-    color: var(--color-text);
-}
-
 
 /* Barra de filtros de Casos (Cambio de Domicilio): vive en una tarjeta clara dentro de la página,
    no en el sidebar oscuro, así que no puede reusar las reglas .sidebar-link — mismo dibujo,
@@ -1669,7 +1677,6 @@ table.cases-index tbody td select {
    filas no se parten por la mitad, que es lo que arruina un listado de dos páginas. */
 @media print {
     .app-sidebar,
-    .app-topbar,
     [data-print-hide] {
         display: none !important;
     }

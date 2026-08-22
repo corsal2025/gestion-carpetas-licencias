@@ -82,6 +82,7 @@ var cambioDomicilioOptions = builder.Configuration.GetSection(CambioDomicilioOpt
     .Get<CambioDomicilioOptions>() ?? new CambioDomicilioOptions();
 builder.Services.AddSingleton(cambioDomicilioOptions);
 builder.Services.AddSingleton<ICambioDomicilioRequestRepository>(_ => new CambioDomicilioRequestRepository(connectionString));
+builder.Services.AddSingleton<IOutboundAddressChangeRequestRepository>(_ => new OutboundAddressChangeRequestRepository(connectionString));
 builder.Services.AddSingleton<LicenciasCarpetas.CambioDomicilio.Data.IDiscardedEmailRepository>(
     _ => new LicenciasCarpetas.CambioDomicilio.Data.DiscardedEmailRepository(connectionString));
 builder.Services.AddSingleton<IComunaDirectory, ComunaDirectory>();
@@ -301,6 +302,7 @@ static void EnsureSchemas(IServiceProvider services)
     services.GetRequiredService<IUserRepository>().EnsureSchema();
     services.GetRequiredService<IUrgentRequestRepository>().EnsureSchema();
     services.GetRequiredService<ICambioDomicilioRequestRepository>().EnsureSchema();
+    services.GetRequiredService<IOutboundAddressChangeRequestRepository>().EnsureSchema();
     services.GetRequiredService<LicenciasCarpetas.CambioDomicilio.Data.IDiscardedEmailRepository>().EnsureSchema();
 }
 
