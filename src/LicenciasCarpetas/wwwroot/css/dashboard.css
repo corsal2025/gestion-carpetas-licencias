@@ -288,7 +288,7 @@ a.nav-certificado,
 a.nav-estadisticas,
 a.nav-pdf-archivo,
 a.nav-pdf-oficina43,
-a.nav-cd-tool {
+a.nav-module-tool {
     background: rgba(148, 163, 184, 0.16);
     border: 1px solid rgba(148, 163, 184, 0.5);
     color: #cbd5e1;
@@ -307,7 +307,7 @@ a.nav-certificado:hover,
 a.nav-estadisticas:hover,
 a.nav-pdf-archivo:hover,
 a.nav-pdf-oficina43:hover,
-a.nav-cd-tool:hover {
+a.nav-module-tool:hover {
     background: rgba(148, 163, 184, 0.3);
 }
 
@@ -316,7 +316,7 @@ a.nav-certificado.active,
 a.nav-estadisticas.active,
 a.nav-pdf-archivo.active,
 a.nav-pdf-oficina43.active,
-a.nav-cd-tool.active {
+a.nav-module-tool.active {
     background: var(--color-accent);
     border-color: var(--color-accent);
     color: #fff;
@@ -389,6 +389,13 @@ nav.app-nav form button:hover { background: rgba(255, 255, 255, 0.22); }
 }
 
 .nav-group:first-child {
+    padding-left: 0;
+    border-left: none;
+}
+
+/* En .app-subnav el primer hijo real es span.app-subnav-label, no un .nav-group — sin esto el
+   primer grupo (Casos) heredaba la línea divisoria pegada justo después de la etiqueta del módulo. */
+div.app-subnav .nav-group:first-of-type {
     padding-left: 0;
     border-left: none;
 }
