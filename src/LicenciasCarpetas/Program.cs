@@ -49,6 +49,12 @@ var databasePath = Path.IsPathRooted(options.SqliteDbPath)
     ? options.SqliteDbPath
     : Path.Combine(AppContext.BaseDirectory, options.SqliteDbPath);
 var connectionString = $"Data Source={databasePath}";
+// Mismo mecanismo que el respaldo automático de arranque (más abajo) — expuesto como servicio para
+// que la pantalla de Usuarios pueda pedir un respaldo bajo demanda antes de vaciar Casos.
+builder.Services.AddSingleton(new DatabaseBackup(
+    databasePath,
+    Path.Combine(Path.GetDirectoryName(databasePath)!, "backups"),
+    options.BackupsToKeep));
 builder.Services.AddSingleton<IFolderCaseRepository>(_ => new FolderCaseRepository(connectionString));
 builder.Services.AddSingleton<IDailyCounterRepository>(_ => new DailyCounterRepository(connectionString));
 builder.Services.AddSingleton<IComunaContactRepository>(_ => new ComunaContactRepository(connectionString));
@@ -120,10 +126,7 @@ var app = builder.Build();
 EnsureDataDirectory(databasePath);
 
 // Copy before the schema migrations touch anything, so the copy is the last known-good state.
-var backupPath = new DatabaseBackup(
-    databasePath,
-    Path.Combine(Path.GetDirectoryName(databasePath)!, "backups"),
-    options.BackupsToKeep).Run(DateTimeOffset.Now);
+var backupPath = app.Services.GetRequiredService<DatabaseBackup>().Run(DateTimeOffset.Now);
 if (backupPath is not null)
 {
     Console.WriteLine($"Respaldo: {backupPath}");

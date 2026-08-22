@@ -39,6 +39,11 @@ public interface IFolderCaseRepository
 
     /// <summary>Puts a case back on the pending list ("volver a pedir").</summary>
     void ClearSectorPrinted(long id);
+
+    /// <summary>Wipes every row — reiniciar el proceso desde cero. Solo la tabla, no la base ni el
+    /// esquema: los demás módulos (F8, Cambio de Domicilio) y las cuentas de usuario no se tocan.
+    /// El único resguardo real es el respaldo que el llamador debe hacer antes de llamar esto.</summary>
+    int DeleteAllPermanently();
     IReadOnlyList<(DateOnly Date, Office Office, int Scheduled, int Attended)> DailyAttendance(int year, int month);
     IReadOnlyList<(FolderState? State, int Count)> FolderStateBreakdown(int year, int? month, Office? office);
     IReadOnlyList<(FinalDecision? Decision, int Count)> FinalDecisionBreakdown(int year, int? month, Office? office);
@@ -878,6 +883,14 @@ public sealed class FolderCaseRepository(string connectionString) : IFolderCaseR
         command.CommandText = "DELETE FROM FolderCase WHERE Id = $id";
         command.Parameters.AddWithValue("$id", id);
         command.ExecuteNonQuery();
+    }
+
+    public int DeleteAllPermanently()
+    {
+        using var connection = Open();
+        using var command = connection.CreateCommand();
+        command.CommandText = "DELETE FROM FolderCase";
+        return command.ExecuteNonQuery();
     }
 
     /// <summary>

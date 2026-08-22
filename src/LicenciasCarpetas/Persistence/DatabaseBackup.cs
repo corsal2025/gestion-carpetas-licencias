@@ -1,3 +1,5 @@
+using Microsoft.Data.Sqlite;
+
 namespace LicenciasCarpetas.Persistence;
 
 /// <summary>
@@ -31,12 +33,37 @@ public sealed class DatabaseBackup(string databasePath, string backupDirectory, 
                 File.Copy(databasePath, destination);
             }
 
+            // A plain file copy can land mid-write and look fine while being torn — a corrupt
+            // backup must never green-light a caller that is about to delete the original data.
+            if (!IsValidDatabase(destination))
+            {
+                File.Delete(destination);
+                return null;
+            }
+
             RemoveOldCopies();
             return destination;
         }
         catch (Exception)
         {
             return null;
+        }
+    }
+
+    private static bool IsValidDatabase(string path)
+    {
+        try
+        {
+            using var connection = new SqliteConnection($"Data Source={path};Mode=ReadOnly;Pooling=False");
+            connection.Open();
+            using var command = connection.CreateCommand();
+            command.CommandText = "PRAGMA integrity_check";
+            var result = command.ExecuteScalar() as string;
+            return string.Equals(result, "ok", StringComparison.OrdinalIgnoreCase);
+        }
+        catch (Exception)
+        {
+            return false;
         }
     }
 

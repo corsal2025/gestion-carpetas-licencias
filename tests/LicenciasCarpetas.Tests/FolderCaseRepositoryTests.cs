@@ -216,4 +216,19 @@ public class FolderCaseRepositoryTests
         Assert.Empty(firstPage.Select(c => c.Id).Intersect(secondPage.Select(c => c.Id)));
         Assert.Equal(25, db.Cases.Count(new CaseFilter()));
     }
+
+    [Fact]
+    public void DeleteAllPermanently_WipesEveryRow_AndReturnsHowMany()
+    {
+        using var db = new SqliteTestDatabase();
+        db.Cases.Upsert(Case(rut: "13.025.150-1", row: 3));
+        db.Cases.Upsert(Case(rut: "16.487.222-K", row: 4));
+        db.Cases.Upsert(Case(rut: "5.667.048-3", row: 5));
+
+        var deleted = db.Cases.DeleteAllPermanently();
+
+        Assert.Equal(3, deleted);
+        Assert.Equal(0, db.Cases.Count(new CaseFilter()));
+        Assert.Empty(db.Cases.Query(new CaseFilter(), 0, 100));
+    }
 }

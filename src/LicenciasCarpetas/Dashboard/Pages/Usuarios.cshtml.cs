@@ -1,4 +1,5 @@
 using LicenciasCarpetas.Dashboard.Auth;
+using LicenciasCarpetas.Persistence;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
@@ -12,8 +13,12 @@ namespace LicenciasCarpetas.Dashboard.Pages;
 /// anyone who can reach this port.
 /// </summary>
 [Authorize(Roles = "Administrador")]
-public class UsuariosModel(IUserRepository users, UserProvisioning provisioning) : PageModel
+public class UsuariosModel(IUserRepository users, UserProvisioning provisioning,
+    IFolderCaseRepository cases, DatabaseBackup backup) : PageModel
 {
+    /// <summary>La palabra exacta que hay que escribir para confirmar el vaciado de Casos — un
+    /// simple sí/no de navegador se acepta sin pensar, esto obliga a leer lo que se está por hacer.</summary>
+    public const string ClearCasesConfirmationWord = "ELIMINAR";
     public IReadOnlyList<DashboardUser> Users { get; private set; } = [];
 
     public IReadOnlyList<string> Usernames { get; private set; } = [];
@@ -82,6 +87,35 @@ public class UsuariosModel(IUserRepository users, UserProvisioning provisioning)
 
         users.Delete(usuario);
         return Finish(ProvisioningResult.Created, $"Usuario '{usuario}' eliminado.");
+    }
+
+    /// <summary>Vacía la tabla de Casos para reiniciar el proceso desde cero — no toca F8, Cambio de
+    /// Domicilio ni las cuentas de usuario, y no borra la estructura de la tabla, solo sus filas.
+    /// Sin la palabra exacta no pasa nada; con ella, primero se respalda (mismo mecanismo que el
+    /// respaldo automático de arranque) y recién ahí se borra — si el respaldo falla, se corta antes
+    /// de tocar los datos.</summary>
+    public IActionResult OnPostClearCasesData(string? confirmWord)
+    {
+        if (!string.Equals(confirmWord, ClearCasesConfirmationWord, StringComparison.Ordinal))
+        {
+            TempData["Message"] = $"Escribiste algo distinto de \"{ClearCasesConfirmationWord}\" — no se borró nada.";
+            TempData["MessageIsError"] = true;
+            return RedirectToPage();
+        }
+
+        var backupPath = backup.Run(DateTimeOffset.Now);
+        if (backupPath is null)
+        {
+            TempData["Message"] = "No se pudo generar el respaldo — no se borró nada. Intente de nuevo.";
+            TempData["MessageIsError"] = true;
+            return RedirectToPage();
+        }
+
+        var count = cases.DeleteAllPermanently();
+        Console.WriteLine($"[{DateTimeOffset.Now:yyyy-MM-dd HH:mm:ss}] '{User?.Identity?.Name}' vació Casos: {count} caso(s) eliminado(s), respaldo en {backupPath}.");
+        TempData["Message"] = $"{count} caso(s) eliminado(s). Respaldo guardado en {backupPath}.";
+        TempData["MessageIsError"] = false;
+        return RedirectToPage();
     }
 
     private IActionResult Finish(ProvisioningResult result, string message)

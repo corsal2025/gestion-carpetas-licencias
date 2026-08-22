@@ -161,6 +161,30 @@
     </table>
 </div>
 
+@* Solo Casos (Gestión de Licencias) — F8 y Cambio de Domicilio tienen su propia base y no se tocan
+   acá. Se guarda un respaldo automático antes de borrar (mismo mecanismo que el de arranque); si el
+   respaldo falla, no se borra nada. *@
+<div class="card" style="padding:20px 24px; margin-bottom:16px; max-width:820px; border-color:var(--color-review); border-width:2px;">
+    <h1 class="text-xl" style="margin:0 0 4px; color:var(--color-review);">Zona de peligro</h1>
+    <p class="text-md" style="margin:0 0 14px;">
+        Borra permanentemente todos los casos de Gestión de Licencias, para reiniciar el proceso
+        desde cero. No toca F8, Cambio de Domicilio ni las cuentas de usuario. Antes de borrar se
+        guarda un respaldo de la base completa.
+    </p>
+    <form method="post" asp-page-handler="ClearCasesData" class="clear-cases-form"
+          style="display:flex; gap:10px; align-items:flex-end; flex-wrap:wrap;"
+          onsubmit="return confirm('Esto borra TODOS los casos de Gestión de Licencias de forma permanente. ¿Confirmar?');">
+        <div>
+            <label class="form-label" for="confirmWord">
+                Escriba <strong>@LicenciasCarpetas.Dashboard.Pages.UsuariosModel.ClearCasesConfirmationWord</strong> para confirmar
+            </label>
+            <input type="text" name="confirmWord" id="confirmWord" required autocomplete="off"
+                   placeholder="@LicenciasCarpetas.Dashboard.Pages.UsuariosModel.ClearCasesConfirmationWord" />
+        </div>
+        <button type="submit" class="btn-outline-danger">Borrar todos los casos</button>
+    </form>
+</div>
+
 @section Scripts {
 <script>
     document.getElementById('reveal-passwords').addEventListener('change', function () {

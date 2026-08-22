@@ -1,4 +1,5 @@
 using LicenciasCarpetas.Persistence;
+using Microsoft.Data.Sqlite;
 
 namespace LicenciasCarpetas.Tests;
 
@@ -20,11 +21,27 @@ public class DatabaseBackupTests : IDisposable
         }
     }
 
-    private string WriteDatabase(string content = "datos-de-prueba")
+    // Backups are validated with PRAGMA integrity_check, so the source file has to be a real
+    // SQLite database — a plain text stand-in would now be (correctly) rejected as corrupt.
+    private string WriteDatabase(string marker = "datos-de-prueba")
     {
         var path = Path.Combine(_root, "carpetas.db");
-        File.WriteAllText(path, content);
+        using var connection = new SqliteConnection($"Data Source={path};Pooling=False");
+        connection.Open();
+        using var command = connection.CreateCommand();
+        command.CommandText = "CREATE TABLE Marker (Value TEXT); INSERT INTO Marker VALUES ($value)";
+        command.Parameters.AddWithValue("$value", marker);
+        command.ExecuteNonQuery();
         return path;
+    }
+
+    private static string ReadMarker(string path)
+    {
+        using var connection = new SqliteConnection($"Data Source={path};Mode=ReadOnly;Pooling=False");
+        connection.Open();
+        using var command = connection.CreateCommand();
+        command.CommandText = "SELECT Value FROM Marker";
+        return (string)command.ExecuteScalar()!;
     }
 
     private string BackupDirectory => Path.Combine(_root, "backups");
@@ -43,7 +60,7 @@ public class DatabaseBackupTests : IDisposable
 
         Assert.NotNull(created);
         Assert.True(File.Exists(created));
-        Assert.Equal("datos-de-prueba", File.ReadAllText(created));
+        Assert.Equal("datos-de-prueba", ReadMarker(created));
         Assert.Contains("20260814-0930", Path.GetFileName(created));
     }
 
@@ -99,5 +116,22 @@ public class DatabaseBackupTests : IDisposable
         var backup = new DatabaseBackup(databasePath, BackupDirectory, keep: 5);
 
         Assert.Null(backup.Run(DateTimeOffset.UtcNow));
+    }
+
+    /// <summary>A file-copy can succeed while landing mid-write and leaving a torn, unreadable
+    /// database — that must be reported as no backup, never as a green light to delete the original.</summary>
+    [Fact]
+    public void A_torn_copy_is_reported_as_no_backup_and_is_not_left_behind()
+    {
+        WriteDatabase();
+        var databasePath = Path.Combine(_root, "carpetas.db");
+        // Simulate a copy that landed mid-write: valid SQLite header, garbage after it.
+        File.WriteAllBytes(databasePath, [.. "SQLite format 3\0"u8.ToArray(), .. new byte[64]]);
+        var backup = new DatabaseBackup(databasePath, BackupDirectory, keep: 5);
+
+        var result = backup.Run(new DateTimeOffset(2026, 8, 14, 9, 30, 0, TimeSpan.Zero));
+
+        Assert.Null(result);
+        Assert.Empty(Backups());
     }
 }
