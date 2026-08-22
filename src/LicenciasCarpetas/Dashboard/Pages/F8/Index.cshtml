@@ -20,11 +20,15 @@
             }
         </a>
     </div>
-    <form method="post" asp-page-handler="Sincronizar" style="margin-left:auto;">
-        <button type="submit" class="nav-sync" title="Trae casos 'NO HAY CARPETA' de la matriz y actualiza los ya subidos">
-            Sincronizar datos
-        </button>
-    </form>
+    <span style="margin-left:auto; display:flex; gap:8px; align-items:center;">
+        <a asp-page="/F8/SectorF8" asp-route-sector="Archivo" class="nav-pill nav-doc text-sm">Informe Archivo</a>
+        <a asp-page="/F8/SectorF8" asp-route-sector="Oficina43" class="nav-pill nav-doc text-sm">Informe Oficina 43</a>
+        <form method="post" asp-page-handler="Sincronizar">
+            <button type="submit" class="nav-sync" title="Trae casos 'NO HAY CARPETA' de la matriz y actualiza los ya subidos">
+                Sincronizar datos
+            </button>
+        </form>
+    </span>
 </div>
 
 @if (Model.ShowMonthlyPrintReminder)

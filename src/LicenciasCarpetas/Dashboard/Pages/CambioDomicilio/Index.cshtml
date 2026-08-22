@@ -36,7 +36,11 @@
             <a asp-page="/CambioDomicilio/Index" asp-route-status="@Model.StatusFilter" asp-route-needsReview="@Model.OnlyNeedsReview" class="nav-search-clear">Limpiar</a>
         }
     </form>
-    <form method="post" asp-page-handler="SyncNow"><button type="submit" class="nav-sync">Sincronizar ahora</button></form>
+    <span style="display:flex; gap:8px; align-items:center;">
+        <a asp-page="/CambioDomicilio/Sector" asp-route-sector="Archivo" class="nav-pill nav-doc text-sm">Informe Archivo</a>
+        <a asp-page="/CambioDomicilio/Sector" asp-route-sector="Oficina43" class="nav-pill nav-doc text-sm">Informe Oficina 43</a>
+        <form method="post" asp-page-handler="SyncNow"><button type="submit" class="nav-sync">Sincronizar ahora</button></form>
+    </span>
 </div>
 
 @if (Model.Message is not null)
