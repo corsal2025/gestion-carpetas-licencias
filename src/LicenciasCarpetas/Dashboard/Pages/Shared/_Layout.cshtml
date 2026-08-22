@@ -49,10 +49,6 @@
                 <div class="sidebar-section">
                     <span class="sidebar-section-label">Módulos</span>
                     <a asp-page="/Index" class="sidebar-link @(enGestionLicencias ? "active" : "")">🪪 Gestión de Licencias</a>
-                    @if (puedeImportar)
-                    {
-                        <a asp-page="/Importar" class="sidebar-link sidebar-link-sync">📥 Importar Excel</a>
-                    }
                     @* Cambio de Domicilio no es un link plano — tiene dos flujos (recibir pedidos
                        de otras comunas / pedirle a otras comunas), así que el switcher de módulos
                        muestra directamente sus dos entradas en vez de un solo link genérico. *@
@@ -93,6 +89,10 @@
                 @if (puedeVerReportesYReferencia)
                 {
                     <a asp-page="/Comunas" class="sidebar-link sidebar-link-reference">🏘️ Comunas</a>
+                }
+                @if (puedeImportar)
+                {
+                    <a asp-page="/Importar" class="sidebar-link sidebar-link-sync">📥 Importar Excel</a>
                 }
             </nav>
             <div class="sidebar-footer">
