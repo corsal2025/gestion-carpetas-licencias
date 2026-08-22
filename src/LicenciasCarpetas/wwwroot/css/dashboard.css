@@ -344,6 +344,12 @@ body {
     color: var(--color-confirmed);
 }
 .cd-filter-bar button.nav-sync:hover { background: var(--color-confirmed-bg); }
+.cd-filter-bar a.nav-doc {
+    background: var(--color-uploaded-bg);
+    border-color: #ffc400;
+    color: #926100;
+}
+.cd-filter-bar a.nav-doc:hover { background: #ffe9a8; }
 .cd-filter-bar input[type="text"] {
     border: 1px solid var(--color-border);
     border-radius: 4px;
