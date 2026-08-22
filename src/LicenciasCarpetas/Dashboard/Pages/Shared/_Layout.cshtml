@@ -52,7 +52,7 @@
                    Estadísticas adentro en vez de sueltas más abajo. Se abre solo el módulo activo por
                    defecto (open="@enX"), los demás quedan colapsados hasta que el operador los toque. *@
                 <details open class="sidebar-section-collapsible">
-                    <summary class="sidebar-section-label">📂 Módulos</summary>
+                    <summary class="sidebar-link sidebar-link-home">📂 Módulos</summary>
 
                     <details class="sidebar-section-collapsible" open="@enGestionLicencias">
                         <summary class="sidebar-link sidebar-section-label @(enGestionLicencias ? "active" : "")">🪪 Gestión de Licencias</summary>
@@ -101,11 +101,11 @@
                 }
                 @if (puedeVerEstadisticasDelModuloActivo)
                 {
-                    <a asp-page="@estadisticasPage" class="sidebar-link sidebar-link-module">📈 Estadísticas</a>
+                    <a asp-page="@estadisticasPage" class="sidebar-link sidebar-link-home">📈 Estadísticas</a>
                 }
                 @if (puedeVerReportesYReferencia)
                 {
-                    <a asp-page="/Comunas" class="sidebar-link sidebar-link-reference">🏘️ Comunas</a>
+                    <a asp-page="/Comunas" class="sidebar-link sidebar-link-home">🏘️ Comunas</a>
                 }
             </nav>
             <div class="sidebar-footer">
