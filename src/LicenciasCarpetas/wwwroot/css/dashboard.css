@@ -185,6 +185,12 @@ body {
     transform: rotate(90deg);
 }
 
+/* "Módulos" es un desplegable que contiene un desplegable por módulo — este indent es lo único
+   que distingue "un módulo adentro de Módulos" de "una sección suelta", sin duplicar CSS. */
+.sidebar-section-collapsible .sidebar-section-collapsible {
+    margin-left: 8px;
+}
+
 .sidebar-link.active {
     background: var(--color-sidebar-active-bg);
     color: var(--color-sidebar-active-text);
