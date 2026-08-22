@@ -49,9 +49,31 @@
                 <div class="sidebar-section">
                     <span class="sidebar-section-label">Módulos</span>
                     <a asp-page="/Index" class="sidebar-link @(enGestionLicencias ? "active" : "")">Gestión de Licencias</a>
+                    @* Cambio de Domicilio ya no es un link plano — tiene dos flujos (recibir pedidos
+                       de otras comunas / pedirle a otras comunas), así que el switcher de módulos
+                       muestra directamente sus dos entradas en vez de un solo link genérico. *@
                     @if (puedeCambioDomicilio)
                     {
-                        <a asp-page="/CambioDomicilio/Index" class="sidebar-link @(enCambioDomicilio ? "active" : "")">Cambio de Domicilio</a>
+                        <details open class="sidebar-section-collapsible">
+                            <summary class="sidebar-link sidebar-section-label @(enCambioDomicilio ? "active" : "")">Enviar Cambio de Domicilio</summary>
+                            <a asp-page="/CambioDomicilio/Index" class="sidebar-link sidebar-link-reference">Solicitudes recibidas</a>
+                            @if (enCambioDomicilio)
+                            {
+                                <div class="sidebar-section">
+                                    <span class="sidebar-section-label">Reportes</span>
+                                    <a asp-page="/CambioDomicilio/Sector" asp-route-sector="Archivo" class="sidebar-link sidebar-link-doc">Archivo</a>
+                                    <a asp-page="/CambioDomicilio/Sector" asp-route-sector="Oficina43" class="sidebar-link sidebar-link-doc">Oficina 43</a>
+                                </div>
+                                <a asp-page="/CambioDomicilio/Certificado" class="sidebar-link sidebar-link-reference">Certificado</a>
+                                <a asp-page="/CambioDomicilio/Comunas" class="sidebar-link sidebar-link-reference">Comunas</a>
+                                <a asp-page="/CambioDomicilio/Discarded" class="sidebar-link sidebar-link-reference">Descartados</a>
+                            }
+                        </details>
+                        <details open class="sidebar-section-collapsible">
+                            <summary class="sidebar-link sidebar-section-label">Solicitar Cambios de Domicilio</summary>
+                            <a asp-page="/CambioDomicilio/Solicitar/Index" class="sidebar-link sidebar-link-reference">Solicitudes</a>
+                            <a asp-page="/CambioDomicilio/Solicitar/Nueva" class="sidebar-link sidebar-link-reference">Nueva Solicitud</a>
+                        </details>
                     }
                     @if (puedeF8)
                     {
@@ -83,25 +105,6 @@
                         <a asp-page="/F8/SectorF8" asp-route-sector="Oficina43" class="sidebar-link sidebar-link-doc">Oficina 43</a>
                     </div>
                     <a asp-page="/F8/ImpresionMensual" class="sidebar-link sidebar-link-reference">Impresión mensual</a>
-                }
-                @if (enCambioDomicilio)
-                {
-                    <details open class="sidebar-section-collapsible">
-                        <summary class="sidebar-section-label">Enviar Cambio de Domicilio</summary>
-                        <div class="sidebar-section">
-                            <span class="sidebar-section-label">Reportes</span>
-                            <a asp-page="/CambioDomicilio/Sector" asp-route-sector="Archivo" class="sidebar-link sidebar-link-doc">Archivo</a>
-                            <a asp-page="/CambioDomicilio/Sector" asp-route-sector="Oficina43" class="sidebar-link sidebar-link-doc">Oficina 43</a>
-                        </div>
-                        <a asp-page="/CambioDomicilio/Certificado" class="sidebar-link sidebar-link-reference">Certificado</a>
-                        <a asp-page="/CambioDomicilio/Comunas" class="sidebar-link sidebar-link-reference">Comunas</a>
-                        <a asp-page="/CambioDomicilio/Discarded" class="sidebar-link sidebar-link-reference">Descartados</a>
-                    </details>
-                    <details open class="sidebar-section-collapsible">
-                        <summary class="sidebar-section-label">Solicitar Cambios de Domicilio</summary>
-                        <a asp-page="/CambioDomicilio/Solicitar/Index" class="sidebar-link sidebar-link-reference">Solicitudes</a>
-                        <a asp-page="/CambioDomicilio/Solicitar/Nueva" class="sidebar-link sidebar-link-reference">Nueva Solicitud</a>
-                    </details>
                 }
                 @{
                     // Estadísticas de cuál: cada módulo tiene la suya propia (Estadisticas.cshtml en

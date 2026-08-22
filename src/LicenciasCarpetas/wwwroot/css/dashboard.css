@@ -202,30 +202,38 @@ body {
 /* Mismos colores por función que antes tenían las píldoras del header — documentos, referencia,
    sync, módulos externos, cuenta y salir — reutilizados acá como texto/borde en vez de fondo de
    píldora, que se lee mejor en una columna angosta y clara. */
+/* Las 4 variantes de acento por color comparten un borde izquierdo recto — sin esto, el
+   border-radius de 10px (var(--radius)) redondea también esa esquina y la barra de color
+   termina viéndose como un paréntesis curvo suelto en vez de una línea vertical pegada al borde. */
+.sidebar-link-doc,
+.sidebar-link-reference,
+.sidebar-link-sync,
+.sidebar-link-module {
+    border-top-left-radius: 0;
+    border-bottom-left-radius: 0;
+    padding-left: 7px;
+}
+
 .sidebar-link-doc {
     color: #926100;
     border-left: 3px solid #ffc400;
-    padding-left: 7px;
 }
 .sidebar-link-doc:hover { background: var(--color-uploaded-bg); }
 
 .sidebar-link-reference {
     color: var(--color-text-muted);
     border-left: 3px solid #94a3b8;
-    padding-left: 7px;
 }
 
 .sidebar-link-sync {
     color: #1e7a3d;
     border-left: 3px solid #54c7a5;
-    padding-left: 7px;
 }
 .sidebar-link-sync:hover { background: var(--color-confirmed-bg); }
 
 .sidebar-link-module {
     color: #7c3aed;
     border-left: 3px solid #a855f7;
-    padding-left: 7px;
 }
 .sidebar-link-module:hover { background: rgba(147, 51, 234, 0.1); }
 
