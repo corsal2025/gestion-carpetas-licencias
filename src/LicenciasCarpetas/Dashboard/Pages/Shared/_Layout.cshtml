@@ -48,7 +48,12 @@
                con una línea divisoria entre grupos (.nav-group ya la dibuja) y el color ya definido
                en el CSS para cada tipo de acción, reutilizado en vez de inventado. Cada grupo/link
                aparece solo si el rol de la sesión puede abrir esa pantalla. *@
-            @if (puedeVerReportesYReferencia)
+            @* Archivo/Oficina43/Comunas/Papelera/Importar Excel son herramientas propias de Casos —
+               F8 y Cambio de Domicilio ya traen su propio Reportes/Comunas equivalente en su propia
+               tira (_F8Nav.cshtml/_CambioDomicilioNav.cshtml), así que mostrar además las de Casos
+               acá arriba mientras se navega esos módulos era ruido duplicado, no una herramienta
+               real de esa pantalla. *@
+            @if (enGestionLicencias && puedeVerReportesYReferencia)
             {
                 <div class="nav-group nav-group-labeled">
                     <span class="nav-group-label">Reportes</span>
@@ -62,7 +67,7 @@
                     <a asp-page="/Papelera" class="nav-pill nav-reference">Papelera</a>
                 </div>
             }
-            @if (puedeImportar)
+            @if (enGestionLicencias && puedeImportar)
             {
                 <div class="nav-group">
                     <a asp-page="/Importar" class="nav-pill nav-sync">Importar Excel</a>
