@@ -103,41 +103,14 @@ main {
     margin: 0 auto;
 }
 
-/* Tabs row at top of the cases page (Todos/Pendientes/Subidas/Requiere revisión) — a bare
-   .nav-group living in <main>, distinct from the header's nav.app-nav a which is styled for a
-   dark background. Without its own rules this fell back to default blue underlined links. */
+/* Fila de controles no-navegación de página (selector de mes, botones de imprimir, etc en
+   ImpresionMensual) — las pestañas/links de navegación reales ahora viven en _F8Nav.cshtml
+   (dashboard.css) o en .cd-filter-bar (dashboard.css), ambas compartidas con Cambio de Domicilio. */
 main > .nav-group {
     border-left: none;
     padding: 4px 0 16px;
     gap: 8px;
     flex-wrap: wrap;
-}
-
-main > .nav-group a {
-    color: var(--color-text-muted);
-    text-decoration: none;
-    font-weight: 600;
-    font-size: 0.85rem;
-    padding: 8px 16px;
-    border-radius: 999px;
-    background: var(--color-surface);
-    border: 1px solid var(--color-border);
-    transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
-}
-
-main > .nav-group a:hover {
-    border-color: var(--color-accent);
-    color: var(--color-accent);
-}
-
-main > .nav-group a.active {
-    background: var(--color-accent);
-    border-color: var(--color-accent);
-    color: #fff;
-}
-
-main > .nav-group a .badge {
-    margin-left: 6px;
 }
 
 .nav-search {
@@ -1028,49 +1001,6 @@ button.btn-outline-danger:hover { background: var(--color-review-bg); }
 .login-card .login-links a.register {
     color: #ffffff;
     font-weight: 600;
-}
-
-.pdf-chip {
-    padding: 6px 16px;
-    border-radius: 999px;
-    font-size: 0.82rem;
-    font-weight: 700;
-    text-decoration: none;
-    color: #fff;
-}
-
-main > .nav-group a.pdf-chip-archivo {
-    background: #6a4fb3;
-    border-color: #6a4fb3;
-    color: #fff;
-}
-main > .nav-group a.pdf-chip-archivo:hover {
-    background: #5a3f9f;
-    border-color: #5a3f9f;
-    color: #fff;
-}
-
-main > .nav-group a.pdf-chip-oficina43 {
-    background: #c9782f;
-    border-color: #c9782f;
-    color: #fff;
-}
-main > .nav-group a.pdf-chip-oficina43:hover {
-    background: #b5661f;
-    border-color: #b5661f;
-    color: #fff;
-}
-
-main > .nav-group a.pdf-chip-stats,
-main > .nav-group a.pdf-chip-stats.active {
-    background: #1f8a7a;
-    border-color: #1f8a7a;
-    color: #fff;
-}
-main > .nav-group a.pdf-chip-stats:hover {
-    background: #187167;
-    border-color: #187167;
-    color: #fff;
 }
 
 .stats-grid {

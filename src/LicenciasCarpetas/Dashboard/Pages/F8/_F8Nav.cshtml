@@ -1,0 +1,17 @@
+@using LicenciasCarpetas.Dashboard.Pages.Shared
+@* Tira propia del módulo, debajo del header compartido — mismo patrón que
+   CambioDomicilio/_CambioDomicilioNav.cshtml (div.app-subnav + las píldoras nav-casos/
+   nav-estadisticas/nav-pdf-archivo/nav-pdf-oficina43/nav-cd-tool, compartidas entre los dos
+   módulos). Un solo color neutro para todas, la activa se resalta con el acento (dashboard.css). *@
+@{
+    var path = Context.Request.Path;
+    var sector = Context.Request.Query["sector"].ToString();
+}
+<div class="app-subnav">
+    <span class="app-subnav-label">F8 Urgentes</span>
+    <a asp-page="/F8/Index" class="nav-casos @(ModuleSubnav.IsActive(path, "/F8/Index") ? "active" : "")">Casos</a>
+    <a asp-page="/F8/Estadisticas" class="nav-estadisticas @(ModuleSubnav.IsActive(path, "/F8/Estadisticas") ? "active" : "")">Estadísticas</a>
+    <a asp-page="/F8/ImpresionMensual" class="nav-cd-tool @(ModuleSubnav.IsActive(path, "/F8/ImpresionMensual") ? "active" : "")">Impresión mensual</a>
+    <a asp-page="/F8/SectorF8" asp-route-sector="Archivo" class="nav-pdf-archivo @(ModuleSubnav.IsSectorActive(path, "/F8/SectorF8", sector, "Archivo") ? "active" : "")">PDF Archivo</a>
+    <a asp-page="/F8/SectorF8" asp-route-sector="Oficina43" class="nav-pdf-oficina43 @(ModuleSubnav.IsSectorActive(path, "/F8/SectorF8", sector, "Oficina43") ? "active" : "")">PDF Oficina 43</a>
+</div>

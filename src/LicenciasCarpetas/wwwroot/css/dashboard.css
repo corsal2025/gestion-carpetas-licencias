@@ -278,84 +278,19 @@ nav.app-nav form button.nav-logout {
 }
 nav.app-nav form button.nav-logout:hover { background: rgba(161, 29, 51, 0.4); }
 
-/* Casos (Cambio de Domicilio), F8 and Certificado are the three separate tracks (their own
-   screens, own data, own emails) — a distinct pill per track marks each as "a different system".
-   Not scoped to nav.app-nav since they now live in their own div.app-subnav strip, always shown
-   together (including on each track's own page) so switching between them is one click from
-   anywhere. */
+/* Casos (Cambio de Domicilio), F8, Certificado, Comunas, etc — todas las páginas de un módulo,
+   listadas juntas en su propia tira div.app-subnav para que cambiar de pantalla sea un clic desde
+   cualquier lado. Un solo color neutro para todas; la única que se distingue es la página en la
+   que estás parado (.active) — antes cada una tenía su propio color sin relación con las demás
+   (ni con si era la actual), puro ruido visual sin significado real. */
 a.nav-casos,
-a.nav-f8,
 a.nav-certificado,
 a.nav-estadisticas,
 a.nav-pdf-archivo,
-a.nav-pdf-oficina43 {
-    font-weight: 600;
-    border-radius: 999px;
-    padding: 6px 14px;
-    text-decoration: none;
-    text-transform: uppercase;
-    letter-spacing: 0.3px;
-    font-size: var(--font-md);
-    transition: background 0.15s ease;
-}
-
-/* Sky blue — distinct from F8's amber and Certificado's teal. */
-a.nav-casos {
-    background: rgba(56, 189, 248, 0.18);
-    border: 1px solid rgba(56, 189, 248, 0.6);
-    color: #a8e2fb;
-}
-a.nav-casos:hover { background: rgba(56, 189, 248, 0.3); }
-a.nav-casos.active { background: rgba(56, 189, 248, 0.4); }
-
-a.nav-f8 {
-    background: rgba(255, 196, 0, 0.18);
-    border: 1px solid rgba(255, 196, 0, 0.6);
-    color: #ffe28a;
-}
-a.nav-f8:hover { background: rgba(255, 196, 0, 0.3); }
-a.nav-f8.active { background: rgba(255, 196, 0, 0.4); }
-
-a.nav-certificado {
-    background: rgba(84, 199, 165, 0.18);
-    border: 1px solid rgba(84, 199, 165, 0.6);
-    color: #a7ecd8;
-}
-a.nav-certificado:hover { background: rgba(84, 199, 165, 0.3); }
-a.nav-certificado.active { background: rgba(84, 199, 165, 0.4); }
-
-/* Violet — statistics is a read-only reporting layer over the other three tracks, not a fourth
-   workflow, so it gets its own distinct color rather than reusing one of theirs. */
-a.nav-estadisticas {
-    background: rgba(167, 139, 250, 0.18);
-    border: 1px solid rgba(167, 139, 250, 0.6);
-    color: #d6c9fc;
-}
-a.nav-estadisticas:hover { background: rgba(167, 139, 250, 0.3); }
-a.nav-estadisticas.active { background: rgba(167, 139, 250, 0.4); }
-
-/* Archivo vs Oficina 43 get their own distinct colors (not both the same pill) so they read as
-   two different documents at a glance, matching the Archivo/Oficina43 sector split shown on the
-   case rows themselves. */
-a.nav-pdf-archivo {
-    background: rgba(148, 163, 184, 0.2);
-    border: 1px solid rgba(148, 163, 184, 0.7);
-    color: #dde3ea;
-}
-a.nav-pdf-archivo:hover { background: rgba(148, 163, 184, 0.32); }
-
-a.nav-pdf-oficina43 {
-    background: rgba(255, 196, 0, 0.18);
-    border: 1px solid rgba(255, 196, 0, 0.6);
-    color: #ffe28a;
-}
-a.nav-pdf-oficina43:hover { background: rgba(255, 196, 0, 0.3); }
-
-/* Comunas y Descartados: consultas/mantención, no un track propio — mismo gris mudo que las
-   píldoras "reference" del nav de arriba, sin depender de su selector (viven en .app-subnav). */
+a.nav-pdf-oficina43,
 a.nav-cd-tool {
     background: rgba(148, 163, 184, 0.16);
-    border: 1px solid rgba(148, 163, 184, 0.55);
+    border: 1px solid rgba(148, 163, 184, 0.5);
     color: #cbd5e1;
     font-weight: 600;
     border-radius: 999px;
@@ -364,9 +299,28 @@ a.nav-cd-tool {
     text-transform: uppercase;
     letter-spacing: 0.3px;
     font-size: var(--font-md);
-    transition: background 0.15s ease;
+    transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
 }
-a.nav-cd-tool:hover { background: rgba(148, 163, 184, 0.28); }
+
+a.nav-casos:hover,
+a.nav-certificado:hover,
+a.nav-estadisticas:hover,
+a.nav-pdf-archivo:hover,
+a.nav-pdf-oficina43:hover,
+a.nav-cd-tool:hover {
+    background: rgba(148, 163, 184, 0.3);
+}
+
+a.nav-casos.active,
+a.nav-certificado.active,
+a.nav-estadisticas.active,
+a.nav-pdf-archivo.active,
+a.nav-pdf-oficina43.active,
+a.nav-cd-tool.active {
+    background: var(--color-accent);
+    border-color: var(--color-accent);
+    color: #fff;
+}
 
 /* Barra de filtros de Casos (Cambio de Domicilio): vive en una tarjeta clara, no en el header
    oscuro, así que no puede reusar las reglas de nav.app-nav — mismo dibujo, paleta clara propia. */

@@ -5,24 +5,24 @@
     var currentTab = Model.Tab ?? "Todos";
 }
 
-<div class="nav-group">
-    <a href="/F8/Index?tab=Todos" class="@(currentTab == "Todos" ? "active" : "")">Todos</a>
-    <a href="/F8/Index?tab=Pendientes" class="@(currentTab == "Pendientes" ? "active" : "")">Pendientes</a>
-    <a href="/F8/Index?tab=Subidas" class="@(currentTab == "Subidas" ? "active" : "")">Subidas</a>
-    <a href="/F8/Index?tab=Certificados" class="@(currentTab == "Certificados" ? "active" : "")">Solicitud de certificado</a>
-    <a href="/F8/Index?flagged=true" class="@(Model.Flagged == true ? "active" : "")">
-        Requiere revisión
-        @if (Model.FlaggedCount > 0)
-        {
-            <span class="badge badge-review">@Model.FlaggedCount</span>
-        }
-    </a>
-    <a href="/F8/SectorF8?sector=Archivo" class="pdf-chip pdf-chip-archivo">PDF Archivo</a>
-    <a href="/F8/SectorF8?sector=Oficina43" class="pdf-chip pdf-chip-oficina43">PDF Oficina 43</a>
-    <a href="/F8/Estadisticas" class="pdf-chip pdf-chip-stats">Estadísticas</a>
-    <a href="/F8/ImpresionMensual" class="pdf-chip pdf-chip-stats">Impresión mensual</a>
-    <form method="post" asp-page-handler="Sincronizar" style="display:inline-block; margin-left:8px;">
-        <button class="btn-outline btn-sync" type="submit" title="Trae casos 'NO HAY CARPETA' de la matriz y actualiza los ya subidos">
+<partial name="_F8Nav" />
+
+<div class="card cd-filter-bar" style="padding:8px 14px; margin-bottom:10px; display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+    <div style="display:flex; gap:6px; flex-wrap:wrap;">
+        <a href="/F8/Index?tab=Todos" class="@(currentTab == "Todos" ? "active" : "")">Todos</a>
+        <a href="/F8/Index?tab=Pendientes" class="@(currentTab == "Pendientes" ? "active" : "")">Pendientes</a>
+        <a href="/F8/Index?tab=Subidas" class="@(currentTab == "Subidas" ? "active" : "")">Subidas</a>
+        <a href="/F8/Index?tab=Certificados" class="@(currentTab == "Certificados" ? "active" : "")">Solicitud de certificado</a>
+        <a href="/F8/Index?flagged=true" class="@(Model.Flagged == true ? "active" : "")">
+            Requiere revisión
+            @if (Model.FlaggedCount > 0)
+            {
+                <span class="badge badge-review">@Model.FlaggedCount</span>
+            }
+        </a>
+    </div>
+    <form method="post" asp-page-handler="Sincronizar" style="margin-left:auto;">
+        <button type="submit" class="nav-sync" title="Trae casos 'NO HAY CARPETA' de la matriz y actualiza los ya subidos">
             Sincronizar datos
         </button>
     </form>
