@@ -56,6 +56,9 @@
 
                     <details class="sidebar-section-collapsible" open="@enGestionLicencias">
                         <summary class="sidebar-link sidebar-section-label @(enGestionLicencias ? "active" : "")">🪪 Gestión de Licencias</summary>
+                        @* Un <summary> solo abre/cierra, nunca navega — sin este link se perdía la
+                           forma de llegar a la tabla de Casos con un clic. *@
+                        <a asp-page="/Index" class="sidebar-link sidebar-link-reference">🗂️ Ver Casos</a>
                         @if (puedeVerReportesYReferencia)
                         {
                             <a asp-page="/Sector" asp-route-sector="Archivo" class="sidebar-link sidebar-link-doc">📄 Informe Archivo</a>
@@ -91,6 +94,7 @@
                     {
                         <details class="sidebar-section-collapsible" open="@enF8">
                             <summary class="sidebar-link sidebar-section-label @(enF8 ? "active" : "")">🚨 F8 Urgentes</summary>
+                            <a asp-page="/F8/Index" class="sidebar-link sidebar-link-reference">🗂️ Ver Casos F8</a>
                             <a asp-page="/F8/SectorF8" asp-route-sector="Archivo" class="sidebar-link sidebar-link-doc">📄 Informe Archivo</a>
                             <a asp-page="/F8/SectorF8" asp-route-sector="Oficina43" class="sidebar-link sidebar-link-doc">📄 Informe Oficina 43</a>
                             <a asp-page="/F8/ImpresionMensual" class="sidebar-link sidebar-link-reference">🖨️ Impresión mensual</a>
