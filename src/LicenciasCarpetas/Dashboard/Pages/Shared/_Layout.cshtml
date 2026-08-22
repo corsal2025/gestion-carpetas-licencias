@@ -56,13 +56,18 @@
                     {
                         <details open class="sidebar-section-collapsible">
                             <summary class="sidebar-link sidebar-section-label @(enCambioDomicilio ? "active" : "")">📥 Enviar Cambio de Domicilio</summary>
-                            <a asp-page="/CambioDomicilio/Index" class="sidebar-link sidebar-link-reference">🗂️ Solicitudes recibidas</a>
-                            @if (enCambioDomicilio)
-                            {
-                                <a asp-page="/CambioDomicilio/Certificado" class="sidebar-link sidebar-link-reference">📜 Certificado</a>
-                                <a asp-page="/CambioDomicilio/Comunas" class="sidebar-link sidebar-link-reference">🏘️ Comunas</a>
-                                <a asp-page="/CambioDomicilio/Discarded" class="sidebar-link sidebar-link-reference">🗑️ Descartados</a>
-                            }
+                            @* "Solicitudes recibidas" es link real Y desplegable a la vez: el <a>
+                               adentro del <summary> sigue navegando al hacer clic en el texto, la
+                               flechita solo abre/cierra Certificado/Comunas/Descartados debajo. *@
+                            <details open class="sidebar-subsection-collapsible">
+                                <summary><a asp-page="/CambioDomicilio/Index" class="sidebar-link sidebar-link-reference">🗂️ Solicitudes recibidas</a></summary>
+                                @if (enCambioDomicilio)
+                                {
+                                    <a asp-page="/CambioDomicilio/Certificado" class="sidebar-link sidebar-link-reference">📜 Certificado</a>
+                                    <a asp-page="/CambioDomicilio/Comunas" class="sidebar-link sidebar-link-reference">🏘️ Comunas</a>
+                                    <a asp-page="/CambioDomicilio/Discarded" class="sidebar-link sidebar-link-reference">🗑️ Descartados</a>
+                                }
+                            </details>
                         </details>
                         <details open class="sidebar-section-collapsible">
                             <summary class="sidebar-link sidebar-section-label">📤 Solicitar Cambios de Domicilio</summary>

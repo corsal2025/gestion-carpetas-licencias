@@ -179,21 +179,35 @@ body {
 .sidebar-section-collapsible > summary::-webkit-details-marker {
     display: none;
 }
-.sidebar-section-collapsible > summary::before {
+/* "Solicitudes recibidas" (y equivalentes): el <summary> envuelve un <a> real — el link sigue
+   navegando al hacer clic en el texto, la flechita antes del link solo abre/cierra lo que cuelga
+   debajo (Certificado/Comunas/Descartados). Separado un poco más que un desplegable de módulo. */
+.sidebar-subsection-collapsible {
+    margin: 8px 0 8px 4px;
+}
+.sidebar-subsection-collapsible > summary {
+    cursor: pointer;
+    list-style: none;
+    display: flex;
+    align-items: center;
+}
+.sidebar-subsection-collapsible > summary::-webkit-details-marker {
+    display: none;
+}
+.sidebar-subsection-collapsible > summary::before {
     content: "▸";
     display: inline-block;
-    margin-right: 4px;
+    margin-right: 6px;
+    color: var(--color-sidebar-text-muted);
     transition: transform 0.15s ease;
 }
-.sidebar-section-collapsible[open] > summary::before {
+.sidebar-subsection-collapsible[open] > summary::before {
     transform: rotate(90deg);
 }
-/* Todo lo que cuelga de un desplegable abierto se corre un poco a la derecha — sin esto quedaba
-   pegado al borde izquierdo, a la misma altura que el título que lo abre. */
-.sidebar-section-collapsible > a,
-.sidebar-section-collapsible > .sidebar-section {
-    margin-left: 10px;
+.sidebar-subsection-collapsible > a {
+    margin-left: 14px;
 }
+
 /* "Módulos" es un desplegable que contiene un desplegable por módulo — este indent es lo único
    que distingue "un módulo adentro de Módulos" de "una sección suelta", sin duplicar CSS. */
 .sidebar-section-collapsible .sidebar-section-collapsible {
