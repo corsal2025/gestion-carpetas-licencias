@@ -48,7 +48,7 @@
                con una línea divisoria entre grupos (.nav-group ya la dibuja) y el color ya definido
                en el CSS para cada tipo de acción, reutilizado en vez de inventado. Cada grupo/link
                aparece solo si el rol de la sesión puede abrir esa pantalla. *@
-            @if (puedeVerReportesYReferencia)
+            @if (enGestionLicencias && puedeVerReportesYReferencia)
             {
                 <div class="nav-group nav-group-labeled">
                     <span class="nav-group-label">Reportes</span>
@@ -59,21 +59,50 @@
                 </div>
                 <div class="nav-group">
                     <a asp-page="/Comunas" class="nav-pill nav-reference">Comunas</a>
-                    <a asp-page="/Papelera" class="nav-pill nav-reference">Papelera</a>
                 </div>
             }
-            @if (puedeImportar)
+            @if (enGestionLicencias && puedeImportar)
             {
                 <div class="nav-group">
                     <a asp-page="/Importar" class="nav-pill nav-sync">Importar Excel</a>
                 </div>
             }
+            @* Sin franja propia por módulo: cada uno sube sus links acá arriba, mismo patrón que
+               Gestión de Licencias (grupo "Reportes" con etiqueta + grupo suelto de herramientas),
+               visible solo mientras se navega ese módulo. *@
+            @if (enF8)
+            {
+                <div class="nav-group nav-group-labeled">
+                    <span class="nav-group-label">Reportes</span>
+                    <span class="nav-group-pills">
+                        <a asp-page="/F8/SectorF8" asp-route-sector="Archivo" class="nav-pill nav-doc">Archivo</a>
+                        <a asp-page="/F8/SectorF8" asp-route-sector="Oficina43" class="nav-pill nav-doc">Oficina 43</a>
+                    </span>
+                </div>
+                <div class="nav-group">
+                    <a asp-page="/F8/ImpresionMensual" class="nav-pill nav-reference">Impresión mensual</a>
+                </div>
+            }
+            @if (enCambioDomicilio)
+            {
+                <div class="nav-group nav-group-labeled">
+                    <span class="nav-group-label">Reportes</span>
+                    <span class="nav-group-pills">
+                        <a asp-page="/CambioDomicilio/Sector" asp-route-sector="Archivo" class="nav-pill nav-doc">Archivo</a>
+                        <a asp-page="/CambioDomicilio/Sector" asp-route-sector="Oficina43" class="nav-pill nav-doc">Oficina 43</a>
+                    </span>
+                </div>
+                <div class="nav-group">
+                    <a asp-page="/CambioDomicilio/Certificado" class="nav-pill nav-reference">Certificado</a>
+                    <a asp-page="/CambioDomicilio/Comunas" class="nav-pill nav-reference">Comunas</a>
+                    <a asp-page="/CambioDomicilio/Discarded" class="nav-pill nav-reference">Descartados</a>
+                </div>
+            }
             @{
-                // Estadísticas solo acá cuando estás en Gestión de Licencias — F8 y Cambio de
-                // Domicilio ya traen la suya propia dentro del grupo "Reportes" de su propia franja
-                // (_F8Nav.cshtml/_CambioDomicilioNav.cshtml); repetirla acá arriba era el mismo link
-                // dos veces en pantalla al mismo tiempo.
-                var puedeVerEstadisticasDelModuloActivo = enGestionLicencias && puedeVerReportesYReferencia;
+                // Estadísticas de cuál: cada módulo tiene la suya propia (Estadisticas.cshtml en
+                // Casos, CambioDomicilio y F8, cada una con sus propios números) — estadisticasPage
+                // (BrandNavigation) sigue al módulo activo en vez de forzar siempre el de Casos.
+                var puedeVerEstadisticasDelModuloActivo = enCambioDomicilio || enF8 || puedeVerReportesYReferencia;
             }
             <div class="nav-group">
                 @* Casos (Gestión de Licencias) es un módulo más de la lista, igual que los otros dos —
@@ -110,6 +139,10 @@
                 @if (User.IsInRole("Administrador"))
                 {
                     <a asp-page="/Usuarios" class="nav-pill">Usuarios</a>
+                }
+                @if (enGestionLicencias && puedeVerReportesYReferencia)
+                {
+                    <a asp-page="/Papelera" class="nav-pill nav-reference">Papelera</a>
                 }
                 <a asp-page="/ChangePassword" class="nav-pill nav-account">Cambiar contraseña</a>
                 <form asp-page="/Logout" method="post"><button type="submit" class="nav-pill nav-logout">Salir</button></form>

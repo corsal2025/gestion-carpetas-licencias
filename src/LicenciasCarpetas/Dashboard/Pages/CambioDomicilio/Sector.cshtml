@@ -1,7 +1,6 @@
 @page "{sector?}"
 @model LicenciasCarpetas.Dashboard.Pages.CambioDomicilio.SectorModel
 @{ ViewData["Title"] = "Cola de impresión — Cambio de Domicilio"; }
-<partial name="_CambioDomicilioNav" />
 
         <form id="mark-printed-form" method="post" asp-page-handler="MarkPrinted" asp-route-sector="@Model.SelectedSector" style="display:none;"></form>
         <div class="no-print" style="margin-bottom: 14px; display:flex; gap:10px; align-items:center; flex-wrap:wrap;">

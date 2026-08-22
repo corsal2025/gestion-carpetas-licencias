@@ -104,8 +104,8 @@ main {
 }
 
 /* Fila de controles no-navegación de página (selector de mes, botones de imprimir, etc en
-   ImpresionMensual) — las pestañas/links de navegación reales ahora viven en _F8Nav.cshtml
-   (dashboard.css) o en .cd-filter-bar (dashboard.css), ambas compartidas con Cambio de Domicilio. */
+   ImpresionMensual) — las pestañas/links de navegación reales viven en el header compartido
+   (_Layout.cshtml, grupos condicionales por módulo) o en .cd-filter-bar (dashboard.css). */
 main > .nav-group {
     border-left: none;
     padding: 4px 0 16px;

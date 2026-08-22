@@ -88,27 +88,6 @@ header.app-header .brand small {
     text-transform: uppercase;
 }
 
-/* F8 and Certificado are their own separate systems (own screens, own data, own emails) — pulled
-   out of the main nav into a distinct strip so they read as "somewhere else", not mixed in with
-   the Cambio de Domicilio view filters and tools. */
-div.app-subnav {
-    background: #12212f;
-    padding: 8px 24px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 10px;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-}
-
-div.app-subnav span.app-subnav-label {
-    color: rgba(255, 255, 255, 0.5);
-    font-size: var(--font-sm);
-    text-transform: uppercase;
-    letter-spacing: 0.6px;
-    margin-right: 4px;
-}
-
 nav.app-nav {
     display: flex;
     align-items: center;
@@ -278,49 +257,6 @@ nav.app-nav form button.nav-logout {
 }
 nav.app-nav form button.nav-logout:hover { background: rgba(161, 29, 51, 0.4); }
 
-/* Casos (Cambio de Domicilio), F8, Certificado, Comunas, etc — todas las páginas de un módulo,
-   listadas juntas en su propia tira div.app-subnav para que cambiar de pantalla sea un clic desde
-   cualquier lado. Un solo color neutro para todas; la única que se distingue es la página en la
-   que estás parado (.active) — antes cada una tenía su propio color sin relación con las demás
-   (ni con si era la actual), puro ruido visual sin significado real. */
-a.nav-casos,
-a.nav-certificado,
-a.nav-estadisticas,
-a.nav-pdf-archivo,
-a.nav-pdf-oficina43,
-a.nav-module-tool {
-    background: rgba(148, 163, 184, 0.16);
-    border: 1px solid rgba(148, 163, 184, 0.5);
-    color: #cbd5e1;
-    font-weight: 600;
-    border-radius: 999px;
-    padding: 6px 14px;
-    text-decoration: none;
-    text-transform: uppercase;
-    letter-spacing: 0.3px;
-    font-size: var(--font-md);
-    transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
-}
-
-a.nav-casos:hover,
-a.nav-certificado:hover,
-a.nav-estadisticas:hover,
-a.nav-pdf-archivo:hover,
-a.nav-pdf-oficina43:hover,
-a.nav-module-tool:hover {
-    background: rgba(148, 163, 184, 0.3);
-}
-
-a.nav-casos.active,
-a.nav-certificado.active,
-a.nav-estadisticas.active,
-a.nav-pdf-archivo.active,
-a.nav-pdf-oficina43.active,
-a.nav-module-tool.active {
-    background: var(--color-accent);
-    border-color: var(--color-accent);
-    color: #fff;
-}
 
 /* Barra de filtros de Casos (Cambio de Domicilio): vive en una tarjeta clara, no en el header
    oscuro, así que no puede reusar las reglas de nav.app-nav — mismo dibujo, paleta clara propia. */
@@ -389,13 +325,6 @@ nav.app-nav form button:hover { background: rgba(255, 255, 255, 0.22); }
 }
 
 .nav-group:first-child {
-    padding-left: 0;
-    border-left: none;
-}
-
-/* En .app-subnav el primer hijo real es span.app-subnav-label, no un .nav-group — sin esto el
-   primer grupo (Casos) heredaba la línea divisoria pegada justo después de la etiqueta del módulo. */
-div.app-subnav .nav-group:first-of-type {
     padding-left: 0;
     border-left: none;
 }
@@ -1219,11 +1148,6 @@ button.btn-outline-danger:hover { background: var(--color-review-bg); }
         border-left: none;
     }
 
-    div.app-subnav {
-        flex-wrap: wrap;
-        padding: 8px 12px;
-    }
-
     .login-card {
         width: 100%;
         padding: 24px 20px;
@@ -1585,7 +1509,6 @@ table.cases-index tbody td select {
    filas no se parten por la mitad, que es lo que arruina un listado de dos páginas. */
 @media print {
     .app-header,
-    .app-subnav,
     [data-print-hide] {
         display: none !important;
     }
