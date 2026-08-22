@@ -184,13 +184,6 @@ public class IndexModel(IFolderCaseRepository cases, IExcelCaseExporter exporter
         return new EmptyResult();
     }
 
-    /// <summary>Asistencia del día: alimenta el % de atención de Estadísticas.</summary>
-    public IActionResult OnPostToggleAttended(long id, bool attendedValue)
-    {
-        cases.SetAttended(id, attendedValue);
-        return new EmptyResult();
-    }
-
     public IActionResult OnPostDelete(long id)
     {
         cases.Delete(id);

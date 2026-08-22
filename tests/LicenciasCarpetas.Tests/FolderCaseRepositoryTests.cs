@@ -95,6 +95,26 @@ public class FolderCaseRepositoryTests
         Assert.Equal(1, db.Cases.Count(new CaseFilter { FolderState = FolderState.PrimeraLicencia }));
     }
 
+    /// <summary>CitationDay powers Estadísticas' "marcar asistencia" bulk action — needs one exact
+    /// day's agenda, independent of Year/Month (which only narrow to a whole month).</summary>
+    [Fact]
+    public void Filters_by_exact_citation_day()
+    {
+        using var db = new SqliteTestDatabase();
+
+        db.Cases.Upsert(Case(rut: "13.025.150-1", row: 3, day: 2));
+        db.Cases.Upsert(Case(rut: "16.487.222-K", row: 4, day: 2));
+        db.Cases.Upsert(Case(rut: "5.667.048-3", row: 5, day: 5));
+
+        var day2 = db.Cases.QueryAll(new CaseFilter { CitationDay = new DateOnly(2026, 1, 2) });
+        var day5 = db.Cases.QueryAll(new CaseFilter { CitationDay = new DateOnly(2026, 1, 5) });
+        var day9 = db.Cases.QueryAll(new CaseFilter { CitationDay = new DateOnly(2026, 1, 9) });
+
+        Assert.Equal(2, day2.Count);
+        Assert.Single(day5);
+        Assert.Empty(day9);
+    }
+
     [Fact]
     public void Searches_a_rut_typed_without_dots()
     {

@@ -578,7 +578,7 @@ table.cases-index td {
    Chilean name needs — and the rest sizes to its content. */
 table.cases-index th:nth-child(1), table.cases-index td:nth-child(1) { width: 46px; }
 
-table.cases-index td:nth-child(4) { min-width: 230px; }
+table.cases-index td.name-cell { min-width: 230px; }
 
 /* Nothing wraps and nothing is cut: each cell keeps its text on one line and the table grows to
    the right, scrolling inside its card. A truncated name or state is worse than a scrollbar. */
@@ -1179,7 +1179,11 @@ button.btn-outline-danger:hover { background: var(--color-review-bg); }
    y ese fondo propio tapa el color de la fila: por eso cada estado (alterna, marcada, en revisión,
    bajo el cursor) se repite abajo para las dos columnas.
    La posición del RUT depende del ancho real de la columna de nombre, que cambia según los
-   nombres de cada página: la mide el script de la pantalla y la deja en --sticky-rut-left. */
+   nombres de cada página: la mide el script de la pantalla y la deja en --sticky-rut-left.
+   Selectores por .name-cell/.rut-cell, no por nth-child: Casos y Cambio de Domicilio comparten la
+   clase "cases-index" pero tienen Nombre/RUT en posiciones distintas (columnas propias antes de
+   estas dos difieren entre los dos módulos) — un nth-child fijo solo podía servir a una tabla a la
+   vez, y quedó roto en la otra la última vez que a una de las dos se le agregó o sacó una columna. */
 table.cases-index thead th {
     position: sticky;
     top: 0;
@@ -1187,54 +1191,54 @@ table.cases-index thead th {
     background: #eef2f6;
 }
 
-table.cases-index th:nth-child(4),
-table.cases-index td:nth-child(4),
-table.cases-index th:nth-child(5),
-table.cases-index td:nth-child(5) {
+table.cases-index th.name-cell,
+table.cases-index td.name-cell,
+table.cases-index th.rut-cell,
+table.cases-index td.rut-cell {
     position: sticky;
     z-index: 1;
     background: #ffffff;
 }
 
-table.cases-index th:nth-child(4),
-table.cases-index td:nth-child(4) { left: 0; }
+table.cases-index th.name-cell,
+table.cases-index td.name-cell { left: 0; }
 
-table.cases-index th:nth-child(5),
-table.cases-index td:nth-child(5) {
+table.cases-index th.rut-cell,
+table.cases-index td.rut-cell {
     left: var(--sticky-rut-left, 260px);
     /* La línea marca dónde termina lo fijo y empieza lo que se desplaza. */
     box-shadow: 1px 0 0 var(--color-border);
 }
 
-table.cases-index thead th:nth-child(4),
-table.cases-index thead th:nth-child(5) {
+table.cases-index thead th.name-cell,
+table.cases-index thead th.rut-cell {
     z-index: 3;
     background: #eef2f6;
 }
 
-table.cases-index tbody tr.row-alt td:nth-child(4),
-table.cases-index tbody tr.row-alt td:nth-child(5) { background: #fafbfc; }
+table.cases-index tbody tr.row-alt td.name-cell,
+table.cases-index tbody tr.row-alt td.rut-cell { background: #fafbfc; }
 
-table.cases-index tbody tr:hover td:nth-child(4),
-table.cases-index tbody tr:hover td:nth-child(5) { background: #f0f6fb; }
+table.cases-index tbody tr:hover td.name-cell,
+table.cases-index tbody tr:hover td.rut-cell { background: #f0f6fb; }
 
-table.cases-index tbody tr:has(input[name="markedValue"]:checked) td:nth-child(4),
-table.cases-index tbody tr:has(input[name="markedValue"]:checked) td:nth-child(5) {
+table.cases-index tbody tr:has(input[name="markedValue"]:checked) td.name-cell,
+table.cases-index tbody tr:has(input[name="markedValue"]:checked) td.rut-cell {
     background: #bfe3b4 !important;
 }
 
-table.cases-index tbody tr:has(input[name="markedValue"]:checked):hover td:nth-child(4),
-table.cases-index tbody tr:has(input[name="markedValue"]:checked):hover td:nth-child(5) {
+table.cases-index tbody tr:has(input[name="markedValue"]:checked):hover td.name-cell,
+table.cases-index tbody tr:has(input[name="markedValue"]:checked):hover td.rut-cell {
     background: #aed89f !important;
 }
 
-table.cases-index tbody tr.row-needs-review td:nth-child(4),
-table.cases-index tbody tr.row-needs-review td:nth-child(5) {
+table.cases-index tbody tr.row-needs-review td.name-cell,
+table.cases-index tbody tr.row-needs-review td.rut-cell {
     background: var(--color-review-bg) !important;
 }
 
-table.cases-index tbody tr.row-needs-review:hover td:nth-child(4),
-table.cases-index tbody tr.row-needs-review:hover td:nth-child(5) {
+table.cases-index tbody tr.row-needs-review:hover td.name-cell,
+table.cases-index tbody tr.row-needs-review:hover td.rut-cell {
     background: #f6d0d8 !important;
 }
 
@@ -1369,7 +1373,7 @@ table.cases-index tbody td select {
 
 /* RUT repetido: el libro lo pinta violeta con un COUNTIF. Marca a la misma persona citada dos
    veces dentro de lo que se está mirando. */
-table.cases-index tbody tr.rut-duplicado td:nth-child(5) input {
+table.cases-index tbody tr.rut-duplicado td.rut-cell input {
     background: #f3e0ff;
     border-color: #9900FF;
     font-weight: 700;

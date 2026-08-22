@@ -947,6 +947,12 @@ public sealed class FolderCaseRepository(string connectionString) : IFolderCaseR
             command.Parameters.AddWithValue("$month", month.ToString("D2"));
         }
 
+        if (filter.CitationDay is { } citationDay)
+        {
+            clauses.Add("CitationDate = $citationDay");
+            command.Parameters.AddWithValue("$citationDay", citationDay.ToString("yyyy-MM-dd"));
+        }
+
         if (filter.FolderState is { } state)
         {
             clauses.Add("FolderState = $state");

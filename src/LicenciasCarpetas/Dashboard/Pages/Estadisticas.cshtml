@@ -34,6 +34,53 @@
     </form>
 </div>
 
+@* "Atendido" se marca acá, por día, en vez de fila por fila en la tabla grande de Casos — un
+   día de agenda es una lista corta y manejable, la tabla de Casos tiene miles de filas. *@
+<div class="card" style="padding:16px 20px; margin-bottom:16px;">
+    <h2 class="text-xl" style="margin:0 0 10px;">Marcar asistencia</h2>
+    <form method="get" style="display:flex; gap:10px; align-items:flex-end; flex-wrap:wrap; margin-bottom: @(Model.AttendanceDayCases.Count > 0 ? "14px" : "0")">
+        <input type="hidden" name="year" value="@Model.Year" />
+        <input type="hidden" name="month" value="@Model.Month" />
+        <div>
+            <label class="form-label" for="attendanceDate">Día</label>
+            <input type="date" id="attendanceDate" name="attendanceDate" value="@Model.AttendanceDate" />
+        </div>
+        <button type="submit" class="btn-outline">Ver agenda del día</button>
+    </form>
+    @if (!string.IsNullOrEmpty(Model.AttendanceDate) && Model.AttendanceDayCases.Count == 0)
+    {
+        <p class="text-md" style="margin:0; color:var(--color-text-muted);">Sin citaciones ese día.</p>
+    }
+    @if (Model.AttendanceDayCases.Count > 0)
+    {
+        <form method="post" asp-page-handler="MarkAttendance" asp-route-year="@Model.Year" asp-route-month="@Model.Month">
+            <input type="hidden" name="attendanceDate" value="@Model.AttendanceDate" />
+            <table class="cases table-wide">
+                <thead>
+                    <tr>
+                        <th>Atendido</th>
+                        <th>Nombre</th>
+                        <th>RUT</th>
+                        <th>Oficina</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var dayCase in Model.AttendanceDayCases)
+                    {
+                        <tr>
+                            <td><input type="checkbox" name="attendedIds" value="@dayCase.Id" checked="@dayCase.Attended" /></td>
+                            <td class="text-cell">@dayCase.FullName</td>
+                            <td class="text-cell">@dayCase.Rut</td>
+                            <td class="text-cell">@OfficeCatalog.Display(dayCase.Office)</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+            <button type="submit" class="btn-primary" style="margin-top:10px;">Guardar asistencia</button>
+        </form>
+    }
+</div>
+
 <div class="card" style="padding:16px 20px; margin-bottom:16px;">
     <h2 class="text-xl" style="margin:0 0 10px;">Resumen de @SpanishDate.MonthName(stats.Month) @stats.Year</h2>
     <p class="text-md" style="margin:0;">

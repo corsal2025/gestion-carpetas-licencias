@@ -221,13 +221,12 @@
         <thead>
             <tr>
                 <th>Marcar</th>
-                <th title="La persona asistió a su citación. Alimenta el % de atención de Estadísticas">Atendido</th>
                 @* El texto va dentro de un <span>: escrito como "Oficina@Model...", Razor lee
                    "texto@algo" como una dirección de correo y lo imprime literal en vez de
                    evaluarlo. El ">" que cierra el span rompe esa heurística. *@
                 <th><a asp-page="/Index" asp-all-route-data="@Model.SortRouteValues(CaseSort.CitationDate)" class="sort-link"><span>Citación</span>@Model.SortIndicator(CaseSort.CitationDate)</a></th>
-                <th><a asp-page="/Index" asp-all-route-data="@Model.SortRouteValues(CaseSort.Name)" class="sort-link"><span>Nombre completo</span>@Model.SortIndicator(CaseSort.Name)</a></th>
-                <th><a asp-page="/Index" asp-all-route-data="@Model.SortRouteValues(CaseSort.Rut)" class="sort-link"><span>RUT</span>@Model.SortIndicator(CaseSort.Rut)</a></th>
+                <th class="name-cell"><a asp-page="/Index" asp-all-route-data="@Model.SortRouteValues(CaseSort.Name)" class="sort-link"><span>Nombre completo</span>@Model.SortIndicator(CaseSort.Name)</a></th>
+                <th class="rut-cell"><a asp-page="/Index" asp-all-route-data="@Model.SortRouteValues(CaseSort.Rut)" class="sort-link"><span>RUT</span>@Model.SortIndicator(CaseSort.Rut)</a></th>
                 <th><a asp-page="/Index" asp-all-route-data="@Model.SortRouteValues(CaseSort.Office)" class="sort-link"><span>Oficina</span>@Model.SortIndicator(CaseSort.Office)</a></th>
                 <th><a asp-page="/Index" asp-all-route-data="@Model.SortRouteValues(CaseSort.FolderUploadedDate)" class="sort-link"><span>Fecha subida de carpeta</span>@Model.SortIndicator(CaseSort.FolderUploadedDate)</a></th>
                 <th><a asp-page="/Index" asp-all-route-data="@Model.SortRouteValues(CaseSort.LastFolderDate)" class="sort-link"><span>Fecha última carpeta</span>@Model.SortIndicator(CaseSort.LastFolderDate)</a></th>
@@ -275,14 +274,6 @@
                         <input type="hidden" name="id" value="@item.Id" />
                         <input type="checkbox" name="markedValue" class="marked-checkbox" @(item.Marked ? "checked" : "")
                                onchange="submitCheckboxToggle(this, 'markedValue')" title="Marcar caso" />
-                    </form>
-                </td>
-                <td class="marked-cell">
-                    <form method="post" asp-page-handler="ToggleAttended" class="marked-form">
-                        <input type="hidden" name="id" value="@item.Id" />
-                        <input type="checkbox" name="attendedValue" class="marked-checkbox" @(item.Attended ? "checked" : "")
-                               onchange="submitCheckboxToggle(this, 'attendedValue')"
-                               title="@(item.Attended ? "Asistió" : "No asistió")" />
                     </form>
                 </td>
                 <td>
@@ -611,7 +602,7 @@
     // panel fijo, pintan encima pese al z-index (mismo tipo de problema que las filas de la tabla,
     // pero las sticky lo hacen incluso contra position:fixed). El panel nunca puede empezar más a
     // la izquierda que el borde derecho del RUT — así no hay superposición que perder.
-    var rutHeader = document.querySelector('table.cases-index thead th:nth-child(5)');
+    var rutHeader = document.querySelector('table.cases-index thead th.rut-cell');
     document.querySelectorAll('.popover-celda').forEach(function (cell) {
         cell.addEventListener('toggle', function () {
             var panel = cell.querySelector('.popover-panel');
@@ -660,8 +651,7 @@
         if (!table) return;
 
         function placeRutColumn() {
-            // Columna 4 = Nombre completo (1 Marcar, 2 Atendido, 3 Citación).
-            var nameHeader = table.querySelector('thead th:nth-child(4)');
+            var nameHeader = table.querySelector('thead th.name-cell');
             if (!nameHeader) return;
             table.style.setProperty('--sticky-rut-left', nameHeader.getBoundingClientRect().width + 'px');
         }

@@ -15,6 +15,7 @@ public class EstadisticasModel(
 {
     public MonthlyStatistics? Statistics { get; private set; }
     public IReadOnlyList<int> Years { get; private set; } = [];
+    public IReadOnlyList<FolderCase> AttendanceDayCases { get; private set; } = [];
 
     [BindProperty(SupportsGet = true)]
     public int Year { get; set; } = DateTime.Today.Year;
@@ -22,11 +23,41 @@ public class EstadisticasModel(
     [BindProperty(SupportsGet = true)]
     public int Month { get; set; } = DateTime.Today.Month;
 
+    /// <summary>Día elegido para marcar asistencia en bloque — "Atendido" se registra acá, no fila
+    /// por fila en la tabla de Casos (que ya no trae esa columna).</summary>
+    [BindProperty(SupportsGet = true)]
+    public string? AttendanceDate { get; set; }
+
     public string? Message { get; set; }
 
     public void OnGet()
     {
         Load();
+    }
+
+    public IActionResult OnPostMarkAttendance(string attendanceDate, long[] attendedIds)
+    {
+        if (!DateOnly.TryParseExact(attendanceDate, "yyyy-MM-dd", out var date))
+        {
+            TempData["Message"] = $"Fecha inválida: {attendanceDate}";
+            return RedirectToPage(new { year = Year, month = Month });
+        }
+
+        var attendedSet = attendedIds.ToHashSet();
+        var dayCases = cases.QueryAll(new CaseFilter { CitationDay = date });
+        var attendedCount = 0;
+        foreach (var dayCase in dayCases)
+        {
+            var attended = attendedSet.Contains(dayCase.Id);
+            cases.SetAttended(dayCase.Id, attended);
+            if (attended) attendedCount++;
+        }
+
+        // attendedSet.Count, no: un id de attendedIds ajeno al día (formulario obsoleto o
+        // manipulado) nunca se usa para escribir, pero contarlo igual daría un mensaje como
+        // "5 de 4 atendido(s)" — attendedCount solo cuenta los que de verdad son de este día.
+        TempData["Message"] = $"Asistencia del {date:dd-MM-yyyy} guardada ({attendedCount} de {dayCases.Count} atendido(s)).";
+        return RedirectToPage(new { year = Year, month = Month, attendanceDate });
     }
 
     /// <summary>Escaneadas / subidas are the only numbers nobody can derive from the agenda, so they
@@ -54,6 +85,13 @@ public class EstadisticasModel(
 
         Statistics = statistics.ForMonth(Year, Month);
         Message = TempData["Message"] as string;
+
+        if (DateOnly.TryParseExact(AttendanceDate, "yyyy-MM-dd", out var date))
+        {
+            AttendanceDayCases = cases.QueryAll(new CaseFilter { CitationDay = date })
+                .OrderBy(c => c.FullName, StringComparer.OrdinalIgnoreCase)
+                .ToList();
+        }
     }
 
     public static string Percent(double? rate) => rate is { } value ? $"{value * 100:0.#}%" : "—";

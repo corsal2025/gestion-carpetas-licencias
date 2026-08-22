@@ -28,6 +28,11 @@ public sealed record CaseFilter
 
     public int? Year { get; init; }
 
+    /// <summary>Exact citation day — used by the "marcar asistencia" bulk action on the statistics
+    /// screen, which needs one day's agenda regardless of office/state/etc. Wins over
+    /// <see cref="Month"/>/<see cref="Year"/> when set (both wouldn't normally be combined).</summary>
+    public DateOnly? CitationDay { get; init; }
+
     public FolderState? FolderState { get; init; }
 
     public FinalDecision? FinalDecision { get; init; }
