@@ -95,10 +95,12 @@
                 @* Reportes imprimibles, en el espacio que deja libre esta fila más angosta que la de
                    los selects — mismo destino que el grupo "Reportes" del sidebar, un atajo directo
                    sin tener que salir de la tabla para imprimirlos. *@
-                <span style="margin-left:auto; display:flex; gap:8px; align-items:center;">
+                <span style="margin-left:auto; display:flex; flex-direction:column; gap:3px; align-items:flex-start;">
                     <span class="text-sm" style="font-weight:700; color:#926100;">Informes</span>
-                    <a asp-page="/Sector" asp-route-sector="Archivo" class="nav-pill nav-doc text-sm">Informe Archivo</a>
-                    <a asp-page="/Sector" asp-route-sector="Oficina43" class="nav-pill nav-doc text-sm">Informe Oficina 43</a>
+                    <span style="display:flex; gap:8px; align-items:center;">
+                        <a asp-page="/Sector" asp-route-sector="Archivo" class="nav-pill nav-doc text-sm">Informe Archivo</a>
+                        <a asp-page="/Sector" asp-route-sector="Oficina43" class="nav-pill nav-doc text-sm">Informe Oficina 43</a>
+                    </span>
                 </span>
             }
         </div>
