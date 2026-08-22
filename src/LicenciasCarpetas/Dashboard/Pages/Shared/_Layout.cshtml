@@ -60,15 +60,10 @@
                         {
                             <a asp-page="/Sector" asp-route-sector="Archivo" class="sidebar-link sidebar-link-doc">📄 Informe Archivo</a>
                             <a asp-page="/Sector" asp-route-sector="Oficina43" class="sidebar-link sidebar-link-doc">📄 Informe Oficina 43</a>
-                            <a asp-page="/Comunas" class="sidebar-link sidebar-link-reference">🏘️ Comunas</a>
                         }
                         @if (puedeImportar)
                         {
                             <a asp-page="/Importar" class="sidebar-link sidebar-link-sync">📥 Importar Excel</a>
-                        }
-                        @if (puedeVerReportesYReferencia)
-                        {
-                            <a asp-page="/Estadisticas" class="sidebar-link sidebar-link-module">📈 Estadísticas</a>
                         }
                     </details>
 
@@ -84,7 +79,6 @@
                             <a asp-page="/CambioDomicilio/Certificado" class="sidebar-link sidebar-link-reference">📜 Certificado</a>
                             <a asp-page="/CambioDomicilio/Comunas" class="sidebar-link sidebar-link-reference">🏘️ Comunas</a>
                             <a asp-page="/CambioDomicilio/Discarded" class="sidebar-link sidebar-link-reference">🗑️ Descartados</a>
-                            <a asp-page="/CambioDomicilio/Estadisticas" class="sidebar-link sidebar-link-module">📈 Estadísticas</a>
                         </details>
                         <details class="sidebar-section-collapsible" open="@enCambioDomicilio">
                             <summary class="sidebar-link sidebar-section-label">📤 Solicitar Cambios de Domicilio</summary>
@@ -100,10 +94,24 @@
                             <a asp-page="/F8/SectorF8" asp-route-sector="Archivo" class="sidebar-link sidebar-link-doc">📄 Informe Archivo</a>
                             <a asp-page="/F8/SectorF8" asp-route-sector="Oficina43" class="sidebar-link sidebar-link-doc">📄 Informe Oficina 43</a>
                             <a asp-page="/F8/ImpresionMensual" class="sidebar-link sidebar-link-reference">🖨️ Impresión mensual</a>
-                            <a asp-page="/F8/Estadisticas" class="sidebar-link sidebar-link-module">📈 Estadísticas</a>
                         </details>
                     }
                 </details>
+
+                @* Estadísticas y la libreta de Comunas (Gestión de Licencias) quedan afuera de
+                   "Módulos" — Estadísticas sigue al módulo activo (una sola entrada, no una por
+                   módulo) y Comunas es una consulta transversal, no algo específico de un flujo. *@
+                @{
+                    var puedeVerEstadisticasDelModuloActivo = enCambioDomicilio || enF8 || puedeVerReportesYReferencia;
+                }
+                @if (puedeVerEstadisticasDelModuloActivo)
+                {
+                    <a asp-page="@estadisticasPage" class="sidebar-link sidebar-link-module">📈 Estadísticas</a>
+                }
+                @if (puedeVerReportesYReferencia)
+                {
+                    <a asp-page="/Comunas" class="sidebar-link sidebar-link-reference">🏘️ Comunas</a>
+                }
             </nav>
             <div class="sidebar-footer">
                 @if (User.IsInRole("Administrador"))
