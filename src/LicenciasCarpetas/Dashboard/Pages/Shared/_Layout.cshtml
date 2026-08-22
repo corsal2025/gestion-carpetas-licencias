@@ -25,172 +25,111 @@
         var enGestionLicencias = nav.EnGestionLicencias;
         var estadisticasPage = nav.EstadisticasPage;
     }
-    <header class="app-header">
-        <div class="brand">
-            <img src="~/images/logo-municipalidad.png" alt="Municipalidad de Valparaíso" class="brand-logo" />
-            <span>
-                @brandTitle
-                <small>Municipalidad de Valparaíso</small>
-                <small>Depto. Licencias de Conducir</small>
-            </span>
-        </div>
-        @{
-            // Mismos roles que los [Authorize(Roles=...)] de cada PageModel — si una pantalla no
-            // deja entrar a un rol por URL directa, tampoco le muestra el link.
-            var puedeVerReportesYReferencia = User.IsInRole("Administrador") || User.IsInRole("Jefatura") || User.IsInRole("Coordinador");
-            var puedeImportar = User.IsInRole("Administrador") || User.IsInRole("Jefatura");
-            var puedeCambioDomicilio = User.HasClaim("mod:cambio-domicilio", "true");
-            var puedeF8 = User.HasClaim("mod:f8-urgentes", "true");
-        }
-        <nav class="app-nav">
-            @* Antes todo en una sola tira sin distinción; ahora agrupado por qué hace cada cosa —
-               trabajo diario, documentos que se imprimen, consultas de referencia, sincronización —
-               con una línea divisoria entre grupos (.nav-group ya la dibuja) y el color ya definido
-               en el CSS para cada tipo de acción, reutilizado en vez de inventado. Cada grupo/link
-               aparece solo si el rol de la sesión puede abrir esa pantalla. *@
-            @if (enGestionLicencias && puedeVerReportesYReferencia)
-            {
-                <div class="nav-group nav-group-labeled">
-                    <span class="nav-group-label">Reportes</span>
-                    <span class="nav-group-pills">
-                        <a asp-page="/Sector" asp-route-sector="Archivo" class="nav-pill nav-doc">Archivo</a>
-                        <a asp-page="/Sector" asp-route-sector="Oficina43" class="nav-pill nav-doc">Oficina 43</a>
-                    </span>
-                </div>
-                <div class="nav-group">
-                    <a asp-page="/Comunas" class="nav-pill nav-reference">Comunas</a>
-                </div>
-            }
-            @if (enGestionLicencias && puedeImportar)
-            {
-                <div class="nav-group">
-                    <a asp-page="/Importar" class="nav-pill nav-sync">Importar Excel</a>
-                </div>
-            }
-            @* Sin franja propia por módulo: cada uno sube sus links acá arriba, mismo patrón que
-               Gestión de Licencias (grupo "Reportes" con etiqueta + grupo suelto de herramientas),
-               visible solo mientras se navega ese módulo. *@
-            @if (enF8)
-            {
-                <div class="nav-group nav-group-labeled">
-                    <span class="nav-group-label">Reportes</span>
-                    <span class="nav-group-pills">
-                        <a asp-page="/F8/SectorF8" asp-route-sector="Archivo" class="nav-pill nav-doc">Archivo</a>
-                        <a asp-page="/F8/SectorF8" asp-route-sector="Oficina43" class="nav-pill nav-doc">Oficina 43</a>
-                    </span>
-                </div>
-                <div class="nav-group">
-                    <a asp-page="/F8/ImpresionMensual" class="nav-pill nav-reference">Impresión mensual</a>
-                </div>
-            }
-            @if (enCambioDomicilio)
-            {
-                <div class="nav-group nav-group-labeled">
-                    <span class="nav-group-label">Reportes</span>
-                    <span class="nav-group-pills">
-                        <a asp-page="/CambioDomicilio/Sector" asp-route-sector="Archivo" class="nav-pill nav-doc">Archivo</a>
-                        <a asp-page="/CambioDomicilio/Sector" asp-route-sector="Oficina43" class="nav-pill nav-doc">Oficina 43</a>
-                    </span>
-                </div>
-                <div class="nav-group">
-                    <a asp-page="/CambioDomicilio/Certificado" class="nav-pill nav-reference">Certificado</a>
-                    <a asp-page="/CambioDomicilio/Comunas" class="nav-pill nav-reference">Comunas</a>
-                    <a asp-page="/CambioDomicilio/Discarded" class="nav-pill nav-reference">Descartados</a>
-                </div>
-            }
+    <div class="app-shell">
+        <aside class="app-sidebar">
+            <div class="sidebar-brand">
+                <img src="~/images/logo-municipalidad.png" alt="Municipalidad de Valparaíso" class="brand-logo" />
+                <span>
+                    @brandTitle
+                    <small>Municipalidad de Valparaíso</small>
+                    <small>Depto. Licencias de Conducir</small>
+                </span>
+            </div>
             @{
-                // Estadísticas de cuál: cada módulo tiene la suya propia (Estadisticas.cshtml en
-                // Casos, CambioDomicilio y F8, cada una con sus propios números) — estadisticasPage
-                // (BrandNavigation) sigue al módulo activo en vez de forzar siempre el de Casos.
-                var puedeVerEstadisticasDelModuloActivo = enCambioDomicilio || enF8 || puedeVerReportesYReferencia;
+                // Mismos roles que los [Authorize(Roles=...)] de cada PageModel — si una pantalla no
+                // deja entrar a un rol por URL directa, tampoco le muestra el link.
+                var puedeVerReportesYReferencia = User.IsInRole("Administrador") || User.IsInRole("Jefatura") || User.IsInRole("Coordinador");
+                var puedeImportar = User.IsInRole("Administrador") || User.IsInRole("Jefatura");
+                var puedeCambioDomicilio = User.HasClaim("mod:cambio-domicilio", "true");
+                var puedeF8 = User.HasClaim("mod:f8-urgentes", "true");
             }
-            <div class="nav-group">
-                @* Volver directo a Gestión de Licencias sin pasar por el desplegable — Administrador/
-                   Jefatura/Coordinador son los roles que de verdad saltan entre módulos seguido, un
-                   Administrativo normalmente vive en uno solo. Solo aparece estando en otro módulo:
-                   en Gestión de Licencias ya estás ahí, no hace falta el botón. *@
-                @if (!enGestionLicencias && (User.IsInRole("Administrador") || User.IsInRole("Jefatura") || User.IsInRole("Coordinador")))
-                {
-                    <a asp-page="/Index" class="nav-pill nav-module">← Volver a inicio</a>
-                }
-                @* Casos (Gestión de Licencias) es un módulo más de la lista, igual que los otros dos —
-                   ninguno es una app aparte ya: mismo proceso, mismo login, misma carpetas.db — los
-                   links son rutas internas, filtradas por el mismo claim que gatea cada página del
-                   lado del servidor. Un solo botón con desplegable en vez de píldoras sueltas: más
-                   prolijo y escala si se suma un cuarto módulo. *@
-                <div class="nav-modules" data-nav-modules>
-                    <button type="button" class="nav-pill nav-module nav-modules-toggle" aria-haspopup="true" aria-expanded="false">
-                        Módulos: @brandTitle
-                        <span class="nav-modules-caret" aria-hidden="true">▾</span>
-                    </button>
-                    @* Sin role="menu"/"menuitem": esa semántica ARIA le promete al lector de pantalla
-                       navegación con flechas, que esto no implementa (solo clic/Tab/Escape) — una
-                       lista de links común, que es lo que realmente es, no genera esa expectativa falsa. *@
-                    <div class="nav-modules-panel">
-                        <a asp-page="/Index" class="@(enGestionLicencias ? "active" : "")">Gestión de Licencias</a>
-                        @if (puedeCambioDomicilio)
-                        {
-                            <a asp-page="/CambioDomicilio/Index" class="@(enCambioDomicilio ? "active" : "")">Cambio de Domicilio</a>
-                        }
-                        @if (puedeF8)
-                        {
-                            <a asp-page="/F8/Index" class="@(enF8 ? "active" : "")">F8 Urgentes</a>
-                        }
-                    </div>
+            <nav class="sidebar-nav">
+                <a asp-page="/Inicio" class="sidebar-link sidebar-link-home">Panel de Control</a>
+
+                <div class="sidebar-section">
+                    <span class="sidebar-section-label">Módulos</span>
+                    <a asp-page="/Index" class="sidebar-link @(enGestionLicencias ? "active" : "")">Gestión de Licencias</a>
+                    @if (puedeCambioDomicilio)
+                    {
+                        <a asp-page="/CambioDomicilio/Index" class="sidebar-link @(enCambioDomicilio ? "active" : "")">Cambio de Domicilio</a>
+                    }
+                    @if (puedeF8)
+                    {
+                        <a asp-page="/F8/Index" class="sidebar-link @(enF8 ? "active" : "")">F8 Urgentes</a>
+                    }
                 </div>
+
+                @* Mismos bloques @if por módulo que antes tenía .app-nav, ahora apilados en vez de
+                   en una tira horizontal — cada grupo/link aparece solo si el rol de la sesión puede
+                   abrir esa pantalla, igual que antes. *@
+                @if (enGestionLicencias && puedeVerReportesYReferencia)
+                {
+                    <div class="sidebar-section">
+                        <span class="sidebar-section-label">Reportes</span>
+                        <a asp-page="/Sector" asp-route-sector="Archivo" class="sidebar-link sidebar-link-doc">Archivo</a>
+                        <a asp-page="/Sector" asp-route-sector="Oficina43" class="sidebar-link sidebar-link-doc">Oficina 43</a>
+                    </div>
+                    <a asp-page="/Comunas" class="sidebar-link sidebar-link-reference">Comunas</a>
+                }
+                @if (enGestionLicencias && puedeImportar)
+                {
+                    <a asp-page="/Importar" class="sidebar-link sidebar-link-sync">Importar Excel</a>
+                }
+                @if (enF8)
+                {
+                    <div class="sidebar-section">
+                        <span class="sidebar-section-label">Reportes</span>
+                        <a asp-page="/F8/SectorF8" asp-route-sector="Archivo" class="sidebar-link sidebar-link-doc">Archivo</a>
+                        <a asp-page="/F8/SectorF8" asp-route-sector="Oficina43" class="sidebar-link sidebar-link-doc">Oficina 43</a>
+                    </div>
+                    <a asp-page="/F8/ImpresionMensual" class="sidebar-link sidebar-link-reference">Impresión mensual</a>
+                }
+                @if (enCambioDomicilio)
+                {
+                    <div class="sidebar-section">
+                        <span class="sidebar-section-label">Reportes</span>
+                        <a asp-page="/CambioDomicilio/Sector" asp-route-sector="Archivo" class="sidebar-link sidebar-link-doc">Archivo</a>
+                        <a asp-page="/CambioDomicilio/Sector" asp-route-sector="Oficina43" class="sidebar-link sidebar-link-doc">Oficina 43</a>
+                    </div>
+                    <a asp-page="/CambioDomicilio/Certificado" class="sidebar-link sidebar-link-reference">Certificado</a>
+                    <a asp-page="/CambioDomicilio/Comunas" class="sidebar-link sidebar-link-reference">Comunas</a>
+                    <a asp-page="/CambioDomicilio/Discarded" class="sidebar-link sidebar-link-reference">Descartados</a>
+                }
+                @{
+                    // Estadísticas de cuál: cada módulo tiene la suya propia (Estadisticas.cshtml en
+                    // Casos, CambioDomicilio y F8, cada una con sus propios números) — estadisticasPage
+                    // (BrandNavigation) sigue al módulo activo en vez de forzar siempre el de Casos.
+                    var puedeVerEstadisticasDelModuloActivo = enCambioDomicilio || enF8 || puedeVerReportesYReferencia;
+                }
                 @if (puedeVerEstadisticasDelModuloActivo)
                 {
-                    <a asp-page="@estadisticasPage" class="nav-pill nav-module">Estadísticas</a>
+                    <a asp-page="@estadisticasPage" class="sidebar-link sidebar-link-module">Estadísticas</a>
                 }
-            </div>
-            <div class="nav-group nav-group-end">
+            </nav>
+            <div class="sidebar-footer">
                 @if (User.IsInRole("Administrador"))
                 {
-                    <a asp-page="/Usuarios" class="nav-pill">Usuarios</a>
+                    <a asp-page="/Usuarios" class="sidebar-link">Usuarios</a>
                 }
                 @if (enGestionLicencias && puedeVerReportesYReferencia)
                 {
-                    <a asp-page="/Papelera" class="nav-pill nav-reference">Papelera</a>
+                    <a asp-page="/Papelera" class="sidebar-link sidebar-link-reference">Papelera</a>
                 }
-                <a asp-page="/ChangePassword" class="nav-pill nav-account">Cambiar contraseña</a>
-                <form asp-page="/Logout" method="post"><button type="submit" class="nav-pill nav-logout">Salir</button></form>
+                <a asp-page="/ChangePassword" class="sidebar-link sidebar-link-account">Cambiar contraseña</a>
+                <form asp-page="/Logout" method="post"><button type="submit" class="sidebar-link sidebar-link-logout">Salir</button></form>
             </div>
-        </nav>
-    </header>
-
-    <main>
-        @RenderBody()
-    </main>
+        </aside>
+        <div class="app-content">
+            <header class="app-topbar">
+                <span class="topbar-title">@ViewData["Title"]</span>
+            </header>
+            <main>
+                @RenderBody()
+            </main>
+        </div>
+    </div>
 
     <script src="~/js/scroll-preserve.js" asp-append-version="true"></script>
-    <script>
-        // Menú "Módulos": botón + panel en vez de <details> para poder animar la apertura (display:none
-        // no transiciona) y cerrar al hacer clic afuera o con Escape, que <details> no trae de fábrica.
-        (function () {
-            var wrap = document.querySelector('[data-nav-modules]');
-            if (!wrap) return;
-            var toggle = wrap.querySelector('.nav-modules-toggle');
-
-            function close() {
-                wrap.classList.remove('open');
-                toggle.setAttribute('aria-expanded', 'false');
-            }
-            function isOpen() { return wrap.classList.contains('open'); }
-
-            toggle.addEventListener('click', function (event) {
-                event.stopPropagation();
-                var opening = !isOpen();
-                wrap.classList.toggle('open', opening);
-                toggle.setAttribute('aria-expanded', opening ? 'true' : 'false');
-            });
-            document.addEventListener('click', function (event) {
-                if (isOpen() && !wrap.contains(event.target)) close();
-            });
-            document.addEventListener('keydown', function (event) {
-                if (event.key === 'Escape' && isOpen()) close();
-            });
-        })();
-    </script>
     @await RenderSectionAsync("Scripts", required: false)
 </body>
 </html>

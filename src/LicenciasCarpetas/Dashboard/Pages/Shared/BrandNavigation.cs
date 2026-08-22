@@ -3,7 +3,7 @@ using Microsoft.AspNetCore.Http;
 namespace LicenciasCarpetas.Dashboard.Pages.Shared;
 
 /// <summary>Which module the current request is in, used by _Layout.cshtml for both the brand
-/// title text and which "Módulos" dropdown entry gets marked active — one source of truth so the
+/// title text and which "Módulos" sidebar entry gets marked active — one source of truth so the
 /// two can't drift apart the way two independent StartsWith checks could.</summary>
 public readonly record struct BrandNavigation(
     string Title, bool EnCambioDomicilio, bool EnF8, bool EnGestionLicencias, string EstadisticasPage)

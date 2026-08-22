@@ -7,6 +7,15 @@
     --color-border: #d7dde3;
     --color-text: #1f2933;
     --color-text-muted: #5c6b7a;
+    --color-sidebar-bg: #ffffff;
+    --color-sidebar-border: var(--color-border);
+    --color-sidebar-text: var(--color-text);
+    --color-sidebar-text-muted: var(--color-text-muted);
+    --color-sidebar-active-bg: #eaf2fa;
+    --color-sidebar-active-text: var(--color-primary);
+    --color-sidebar-hover-bg: #f4f6f8;
+    --color-topbar-bg: #ffffff;
+    --sidebar-width: 248px;
     --color-pending: #6b7280;
     --color-pending-bg: #eceff1;
     --color-uploaded: #926100;
@@ -50,221 +59,203 @@ body {
     color: var(--color-text);
 }
 
-header.app-header {
-    background: linear-gradient(135deg, var(--color-primary), var(--color-primary-dark));
-    color: #fff;
-    padding: 14px 24px;
+/* ── Sidebar (reemplaza al header horizontal) ────────────────────────────────────────────────
+   Misma idea de antes — marca arriba, módulo activo resaltado, links agrupados por lo que hacen
+   (documentos, referencia, sync) con el mismo color por tipo — ahora en una columna fija a la
+   izquierda en vez de una franja arriba, para dejarle más alto a la tabla de Casos. */
+.app-shell {
     display: flex;
-    align-items: center;
-    justify-content: space-between;
-    flex-wrap: wrap;
+    /* height fija, no min-height: con min-height un sidebar con muchos links (Administrador en
+       Cambio de Domicilio, por ejemplo) estira toda la fila más allá de 100vh, y como la tabla de
+       Casos (body.viewport-locked) fija su propio alto a 100vh por separado, quedaban
+       desincronizados — la fila crecía pero la tabla no, rompiendo el recorte que viewport-locked
+       necesita. Con height fija el sidebar se ve obligado a su propio scroll interno en vez de
+       empujar la fila entera. */
+    height: 100vh;
+}
+
+.app-sidebar {
+    flex: 0 0 var(--sidebar-width);
+    width: var(--sidebar-width);
+    /* Sin esto, un flex item en fila puede ignorar la altura fija del padre y crecer igual según
+       el contenido (el "automatic minimum size" de flexbox) — así el overflow-y de abajo sí llega
+       a activarse en vez de quedar de adorno. */
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
     gap: 10px;
-    box-shadow: var(--shadow-sm);
+    background: var(--color-sidebar-bg);
+    border-right: 1px solid var(--color-sidebar-border);
+    padding: 16px 14px;
+    overflow-y: auto;
 }
 
-header.app-header .brand {
+.sidebar-brand {
     display: flex;
     align-items: center;
-    gap: 14px;
+    gap: 10px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--color-sidebar-border);
     font-weight: 600;
-    font-size: var(--font-2xl);
+    font-size: var(--font-lg);
     letter-spacing: 0.2px;
+    color: var(--color-sidebar-text);
 }
 
-header.app-header .brand-logo {
-    height: 76px;
+.sidebar-brand .brand-logo {
+    height: 52px;
     width: auto;
     border-radius: 6px;
     background: #fff;
     padding: 3px;
+    border: 1px solid var(--color-sidebar-border);
 }
 
-header.app-header .brand small {
+.sidebar-brand small {
     display: block;
     font-weight: 400;
-    font-size: var(--font-lg);
-    opacity: 0.85;
-    letter-spacing: 0.4px;
+    font-size: var(--font-xs);
+    color: var(--color-sidebar-text-muted);
+    letter-spacing: 0.3px;
     text-transform: uppercase;
 }
 
-nav.app-nav {
+.sidebar-nav {
     display: flex;
-    /* flex-end, no center: los grupos con etiqueta (.nav-group-labeled, "Reportes") apilan label +
-       píldoras en dos filas internas, volviendo esa columna más alta que el resto — con
-       align-items:center el resto de las píldoras (Módulos, Estadísticas, Usuarios...) quedaba
-       centrado más abajo, pareciendo una segunda fila aunque es la misma. Alineando abajo, todas
-       las píldoras comparten la misma línea de base y el rótulo queda arriba, sin afectar nada más. */
-    align-items: flex-end;
-    justify-content: center;
+    flex-direction: column;
     gap: 4px;
-    flex-wrap: wrap;
+    /* flex:1 para que .sidebar-footer quede siempre pegado abajo, aunque el módulo activo tenga
+       pocos links. */
     flex: 1;
 }
 
-nav.app-nav a {
-    color: #eaf2fa;
-    text-decoration: none;
-    padding: 4px 9px;
-    border-radius: var(--radius);
-    font-size: var(--font-sm);
-    text-transform: uppercase;
-    letter-spacing: 0.2px;
-    white-space: nowrap;
-    transition: background 0.15s ease;
-}
-
-nav.app-nav a:hover { background: rgba(255, 255, 255, 0.15); }
-nav.app-nav a.active { background: rgba(255, 255, 255, 0.22); font-weight: 600; }
-
-/* Every nav link/button is colored by what it does, reusing the same status colors already used
-   on the case-list badges (Pendiente/Subido/Confirmado/Requiere revisión) so a filter pill and the
-   rows it filters to visually agree — plus three more groups (documents, reference views, and
-   sync) that don't otherwise have an established color of their own. Pill shape + uppercase
-   matches the Casos/F8/Certificado subnav strip so the whole header reads as one system. */
-nav.app-nav a.nav-pill,
-nav.app-nav form button.nav-pill {
-    border-radius: 999px;
-    font-weight: 600;
-    border: 1px solid transparent;
-}
-
-nav.app-nav a.nav-filter-pending { background: rgba(107, 114, 128, 0.2); border-color: rgba(107, 114, 128, 0.7); color: #d7dbe0; }
-nav.app-nav a.nav-filter-pending:hover { background: rgba(107, 114, 128, 0.32); }
-nav.app-nav a.nav-filter-pending.active { background: rgba(107, 114, 128, 0.45); }
-
-nav.app-nav a.nav-filter-uploaded { background: rgba(255, 178, 29, 0.2); border-color: rgba(255, 178, 29, 0.7); color: #ffd479; }
-nav.app-nav a.nav-filter-uploaded:hover { background: rgba(255, 178, 29, 0.32); }
-nav.app-nav a.nav-filter-uploaded.active { background: rgba(255, 178, 29, 0.45); }
-
-nav.app-nav a.nav-filter-confirmed { background: rgba(30, 122, 61, 0.25); border-color: rgba(52, 199, 107, 0.7); color: #86efac; }
-nav.app-nav a.nav-filter-confirmed:hover { background: rgba(30, 122, 61, 0.38); }
-nav.app-nav a.nav-filter-confirmed.active { background: rgba(30, 122, 61, 0.5); }
-
-nav.app-nav a.nav-filter-review { background: rgba(161, 29, 51, 0.25); border-color: rgba(239, 68, 68, 0.7); color: #fca5a5; }
-nav.app-nav a.nav-filter-review:hover { background: rgba(161, 29, 51, 0.38); }
-nav.app-nav a.nav-filter-review.active { background: rgba(161, 29, 51, 0.5); }
-
-/* Documents: PDF generation and the bulk "select for this sector" actions that feed it — same
-   amber family as the F8 subnav pill, since both are ultimately about the printed folder list. */
-nav.app-nav a.nav-doc,
-nav.app-nav form button.nav-doc {
-    background: rgba(255, 196, 0, 0.18);
-    border-color: rgba(255, 196, 0, 0.6);
-    color: #ffe28a;
-}
-nav.app-nav a.nav-doc:hover, nav.app-nav form button.nav-doc:hover { background: rgba(255, 196, 0, 0.3); }
-
-/* Reference views: read-only lookups, not actions — kept neutral/muted on purpose. */
-nav.app-nav a.nav-reference {
-    background: rgba(148, 163, 184, 0.16);
-    border-color: rgba(148, 163, 184, 0.55);
-    color: #cbd5e1;
-}
-nav.app-nav a.nav-reference:hover { background: rgba(148, 163, 184, 0.28); }
-
-/* Sync/search: teal, same family as the Certificado subnav pill — an active, positive action. */
-nav.app-nav form.nav-search,
-nav.app-nav form button.nav-sync {
-    background: transparent;
-}
-nav.app-nav .nav-search button.nav-pill,
-nav.app-nav form button.nav-sync,
-nav.app-nav a.nav-sync {
-    background: rgba(84, 199, 165, 0.18);
-    border-color: rgba(84, 199, 165, 0.6);
-    color: #a7ecd8;
-}
-nav.app-nav .nav-search button.nav-pill:hover,
-nav.app-nav form button.nav-sync:hover,
-nav.app-nav a.nav-sync:hover {
-    background: rgba(84, 199, 165, 0.3);
-}
-
-/* Módulos externos: violeta, para que se lea a simple vista "esto abre otra app" — ni el verde de
-   sync (misma app, acción positiva) ni el ámbar de reportes (documento de esta misma base). */
-nav.app-nav .nav-modules-toggle.nav-module,
-nav.app-nav a.nav-module {
-    background: rgba(147, 51, 234, 0.18);
-    border-color: rgba(168, 85, 247, 0.6);
-    color: #d8b4fe;
-}
-nav.app-nav .nav-modules-toggle.nav-module:hover,
-nav.app-nav a.nav-module:hover { background: rgba(147, 51, 234, 0.3); }
-
-/* Un botón con desplegable en vez de dos píldoras sueltas — mismo look violeta "módulo externo",
-   con un panel que aparece con una transición corta en vez de aparecer/desaparecer de golpe. */
-.nav-modules {
-    position: relative;
-}
-.nav-modules-toggle {
-    display: inline-flex;
-    align-items: center;
-    gap: 4px;
-    font: inherit;
-}
-.nav-modules-caret {
-    display: inline-block;
-    font-size: 0.7em;
-    transition: transform 0.18s ease;
-}
-.nav-modules.open .nav-modules-caret {
-    transform: rotate(180deg);
-}
-.nav-modules-panel {
-    position: absolute;
-    top: calc(100% + 8px);
-    left: 50%;
-    transform: translate(-50%, -6px);
-    min-width: 200px;
+.sidebar-section {
     display: flex;
     flex-direction: column;
-    gap: 3px;
-    background: var(--color-primary-dark);
-    border: 1px solid rgba(168, 85, 247, 0.5);
-    border-radius: 10px;
-    padding: 6px;
-    box-shadow: 0 12px 28px rgba(4, 12, 22, 0.45);
-    opacity: 0;
-    pointer-events: none;
-    transition: opacity 0.15s ease, transform 0.15s ease;
-    z-index: 20;
+    gap: 2px;
+    margin: 6px 0;
 }
-.nav-modules.open .nav-modules-panel {
-    opacity: 1;
-    pointer-events: auto;
-    transform: translate(-50%, 0);
+
+.sidebar-section-label {
+    color: var(--color-sidebar-text-muted);
+    font-size: var(--font-xs);
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    padding: 0 10px;
+    margin-bottom: 2px;
 }
-.nav-modules-panel a {
-    text-align: left;
-    white-space: nowrap;
-    border-radius: 6px;
-    padding: 8px 12px 8px 10px;
-}
-.nav-modules-panel a.active {
-    background: rgba(147, 51, 234, 0.3);
+
+.sidebar-link {
+    display: block;
+    color: var(--color-sidebar-text);
+    text-decoration: none;
+    padding: 7px 10px;
+    border-radius: var(--radius);
+    font-size: var(--font-sm);
     font-weight: 600;
+    white-space: nowrap;
+    transition: background 0.15s ease, color 0.15s ease;
 }
 
-/* Account: neutral, same muted family as the reference-view pills. */
-nav.app-nav a.nav-account {
-    background: rgba(148, 163, 184, 0.16);
-    border-color: rgba(148, 163, 184, 0.55);
-    color: #cbd5e1;
+.sidebar-link:hover { background: var(--color-sidebar-hover-bg); }
+
+.sidebar-link.active {
+    background: var(--color-sidebar-active-bg);
+    color: var(--color-sidebar-active-text);
+    font-weight: 700;
 }
-nav.app-nav a.nav-account:hover { background: rgba(148, 163, 184, 0.28); }
 
-/* Logout: same red as Requiere revisión / btn-danger elsewhere in the app — an exit action. */
-nav.app-nav form button.nav-logout {
-    background: rgba(161, 29, 51, 0.25);
-    border-color: rgba(239, 68, 68, 0.7);
-    color: #fca5a5;
+.sidebar-link-home {
+    font-size: var(--font-md);
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+    color: var(--color-primary);
 }
-nav.app-nav form button.nav-logout:hover { background: rgba(161, 29, 51, 0.4); }
+
+/* Mismos colores por función que antes tenían las píldoras del header — documentos, referencia,
+   sync, módulos externos, cuenta y salir — reutilizados acá como texto/borde en vez de fondo de
+   píldora, que se lee mejor en una columna angosta y clara. */
+.sidebar-link-doc {
+    color: #926100;
+    border-left: 3px solid #ffc400;
+    padding-left: 7px;
+}
+.sidebar-link-doc:hover { background: var(--color-uploaded-bg); }
+
+.sidebar-link-reference {
+    color: var(--color-text-muted);
+    border-left: 3px solid #94a3b8;
+    padding-left: 7px;
+}
+
+.sidebar-link-sync {
+    color: #1e7a3d;
+    border-left: 3px solid #54c7a5;
+    padding-left: 7px;
+}
+.sidebar-link-sync:hover { background: var(--color-confirmed-bg); }
+
+.sidebar-link-module {
+    color: #7c3aed;
+    border-left: 3px solid #a855f7;
+    padding-left: 7px;
+}
+.sidebar-link-module:hover { background: rgba(147, 51, 234, 0.1); }
+
+.sidebar-link-account {
+    color: var(--color-text-muted);
+}
+
+.sidebar-link-logout {
+    width: 100%;
+    text-align: left;
+    background: none;
+    border: none;
+    font: inherit;
+    color: var(--color-review);
+    cursor: pointer;
+}
+.sidebar-link-logout:hover { background: var(--color-review-bg); }
+
+.sidebar-footer {
+    margin-top: auto;
+    padding-top: 10px;
+    border-top: 1px solid var(--color-sidebar-border);
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.sidebar-footer form {
+    margin: 0;
+}
+
+.app-content {
+    flex: 1 1 auto;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+}
+
+.app-topbar {
+    background: var(--color-topbar-bg);
+    border-bottom: 1px solid var(--color-border);
+    padding: 12px 24px;
+    box-shadow: var(--shadow-sm);
+}
+
+.topbar-title {
+    font-weight: 600;
+    font-size: var(--font-xl);
+    color: var(--color-text);
+}
 
 
-/* Barra de filtros de Casos (Cambio de Domicilio): vive en una tarjeta clara, no en el header
-   oscuro, así que no puede reusar las reglas de nav.app-nav — mismo dibujo, paleta clara propia. */
+/* Barra de filtros de Casos (Cambio de Domicilio): vive en una tarjeta clara dentro de la página,
+   no en el sidebar oscuro, así que no puede reusar las reglas .sidebar-link — mismo dibujo,
+   paleta clara propia. */
 .cd-filter-bar a,
 .cd-filter-bar button {
     border-radius: 999px;
@@ -302,24 +293,8 @@ nav.app-nav form button.nav-logout:hover { background: rgba(161, 29, 51, 0.4); }
     color: var(--color-text-muted);
 }
 
-nav.app-nav form button {
-    background: rgba(255, 255, 255, 0.12);
-    color: #fff;
-    border: 1px solid rgba(255, 255, 255, 0.35);
-    border-radius: var(--radius);
-    padding: 4px 9px;
-    font-size: var(--font-sm);
-    text-transform: uppercase;
-    letter-spacing: 0.2px;
-    white-space: nowrap;
-    cursor: pointer;
-}
-nav.app-nav form button:hover { background: rgba(255, 255, 255, 0.22); }
-
-/* Three logical groups (view filters | reference tools | search+actions) instead of one long
-   run of links — each group wraps as a unit and gets a divider, so on a narrow window the nav
-   breaks between groups rather than mid-group. nav-group-end pins right on wide screens via
-   margin-left:auto and drops that once the row wraps (flex-wrap puts it on its own line). */
+/* Usado por ImpresionMensual.cshtml (barra de acciones no-print) — no está ligado al header ya
+   retirado, así que se mantiene tal cual. */
 .nav-group {
     display: flex;
     align-items: center;
@@ -332,35 +307,6 @@ nav.app-nav form button:hover { background: rgba(255, 255, 255, 0.22); }
 .nav-group:first-child {
     padding-left: 0;
     border-left: none;
-}
-
-/* No longer forced onto its own row (flex-basis:100%) — with the smaller pill size below, all
-   three groups (filters | tools | search+actions) now fit on one line at normal window widths,
-   which is the point of a single continuous nav strip instead of it wrapping into separate rows. */
-.nav-group-end {
-    border-left: 1px solid rgba(255, 255, 255, 0.2);
-    padding-left: 8px;
-}
-
-/* Grupo con título propio arriba de sus píldoras (en vez de un rótulo suelto al lado, que se leía
-   como una pastilla más rota) — columna en dos filas: título chico, píldoras debajo. */
-.nav-group-labeled {
-    flex-direction: column;
-    align-items: center;
-    gap: 2px;
-}
-
-.nav-group-label {
-    color: rgba(255, 255, 255, 0.55);
-    font-size: var(--font-xs);
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.8px;
-}
-
-.nav-group-labeled .nav-group-pills {
-    display: flex;
-    gap: 3px;
 }
 
 .nav-search {
@@ -457,6 +403,38 @@ main {
 
 .stat-tile-alert .stat-value {
     color: var(--color-review);
+}
+
+/* Panel de Control (/Inicio): tarjeta de acceso por módulo con conteo en vivo, misma base .card
+   que el resto del dashboard. */
+.hub-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 16px;
+}
+
+.hub-card {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 20px 24px;
+}
+
+.hub-card-count {
+    font-size: var(--font-2xl);
+    font-weight: 700;
+    color: var(--color-primary);
+}
+
+.hub-card-link {
+    margin-top: auto;
+    color: var(--color-accent);
+    text-decoration: none;
+    font-weight: 600;
+}
+
+.hub-card-link:hover {
+    text-decoration: underline;
 }
 
 .stat-label {
@@ -1296,18 +1274,6 @@ button.btn-outline-danger:hover { background: var(--color-review-bg); }
    the same composition (header -> subnav -> filters -> table) still fits without overflowing
    the viewport or clipping controls off-screen. */
 @media (max-width: 900px) {
-    header.app-header {
-        padding: 10px 14px;
-    }
-
-    header.app-header .brand-logo {
-        height: 52px;
-    }
-
-    header.app-header .brand {
-        font-size: var(--font-xl);
-    }
-
     main {
         padding: 14px 12px 28px;
     }
@@ -1323,29 +1289,11 @@ button.btn-outline-danger:hover { background: var(--color-review-bg); }
 }
 
 @media (max-width: 600px) {
-    header.app-header {
-        flex-direction: column;
-        align-items: stretch;
-    }
-
-    header.app-header .brand {
-        justify-content: center;
-        text-align: center;
-    }
-
-    nav.app-nav {
-        justify-content: flex-start;
-    }
-
     .nav-group {
         justify-content: center;
         width: 100%;
         border-left: none;
         padding-left: 0;
-    }
-
-    .nav-group-end {
-        border-left: none;
     }
 
     .login-card {
@@ -1510,19 +1458,19 @@ table.cases.table-wide td {
    aplicado a todas las pantallas dejaba fuera de alcance lo que no cupiera: el documento de Sector,
    la pantalla de importación y la de contraseña quedaban cortados sin forma de desplazarse. Las
    demás pantallas se desplazan como una página normal. */
-body.viewport-locked {
+body.viewport-locked .app-content {
     height: 100vh;
     overflow: hidden;
 }
 
-body.viewport-locked main {
+body.viewport-locked .app-content main {
     overflow: hidden;
     /* La tabla llega hasta el borde inferior: sin ese hueco final la barra lateral queda más
        abajo que la pantalla. */
     padding-bottom: 8px;
 }
 
-body.viewport-locked .card.table-card {
+body.viewport-locked .app-content .card.table-card {
     flex: 1 1 auto;
     /* Un piso, para que en pantallas bajas la tabla no se reduzca a una franja inservible. */
     min-height: 220px;
@@ -1584,7 +1532,7 @@ body.cases-page main > * {
 
 /* Estirar la tarjeta para llenar la ventana solo tiene sentido donde la tabla es el contenido
    principal y se desplaza por dentro. En el resto dejaba un hueco blanco enorme bajo la tabla. */
-body.viewport-locked main > .card.table-card {
+body.viewport-locked .app-content main > .card.table-card {
     flex: 1 1 auto;
 }
 
@@ -1712,7 +1660,8 @@ table.cases-index tbody td select {
 /* Impresión: queda la hoja y nada más. La cabecera de la tabla se repite en cada página y las
    filas no se parten por la mitad, que es lo que arruina un listado de dos páginas. */
 @media print {
-    .app-header,
+    .app-sidebar,
+    .app-topbar,
     [data-print-hide] {
         display: none !important;
     }

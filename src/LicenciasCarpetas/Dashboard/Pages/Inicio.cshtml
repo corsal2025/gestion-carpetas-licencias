@@ -1,0 +1,36 @@
+@page
+@model LicenciasCarpetas.Dashboard.Pages.InicioModel
+@{
+    ViewData["Title"] = "Panel de Control";
+}
+
+<h1 class="text-xl" style="margin:0 0 16px;">Panel de Control</h1>
+
+<div class="hub-grid">
+    <div class="card hub-card">
+        <h2 class="text-lg" style="margin:0;">Gestión de Licencias</h2>
+        <div class="hub-card-count">@Model.CasosCount</div>
+        <p class="text-md" style="margin:0; color:var(--color-text-muted);">caso(s) registrados</p>
+        <a asp-page="/Index" class="hub-card-link">Ir al módulo →</a>
+    </div>
+
+    @if (Model.PuedeCambioDomicilio)
+    {
+        <div class="card hub-card">
+            <h2 class="text-lg" style="margin:0;">Cambio de Domicilio</h2>
+            <div class="hub-card-count">@Model.CambioDomicilioPendientes</div>
+            <p class="text-md" style="margin:0; color:var(--color-text-muted);">solicitud(es) pendiente(s)</p>
+            <a asp-page="/CambioDomicilio/Index" class="hub-card-link">Ir al módulo →</a>
+        </div>
+    }
+
+    @if (Model.PuedeF8)
+    {
+        <div class="card hub-card">
+            <h2 class="text-lg" style="margin:0;">F8 Urgentes</h2>
+            <div class="hub-card-count">@Model.F8Count</div>
+            <p class="text-md" style="margin:0; color:var(--color-text-muted);">solicitud(es) pendiente(s)</p>
+            <a asp-page="/F8/Index" class="hub-card-link">Ir al módulo →</a>
+        </div>
+    }
+</div>
