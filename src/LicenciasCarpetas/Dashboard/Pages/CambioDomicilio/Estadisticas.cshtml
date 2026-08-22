@@ -1,75 +1,216 @@
 @page
 @model LicenciasCarpetas.Dashboard.Pages.CambioDomicilio.EstadisticasModel
-@using System.Text.Json
-@{ ViewData["Title"] = "Estadísticas — Cambio de Domicilio"; }
+@{
+    ViewData["Title"] = "Estadísticas — Cambio de Domicilio";
+    var ic = System.Globalization.CultureInfo.InvariantCulture;
+    var sectorTotal = Model.SectorDistribution.Archivo + Model.SectorDistribution.Oficina43;
+    var sectorPct = sectorTotal > 0 ? Model.SectorDistribution.Archivo * 100.0 / sectorTotal : 0;
+}
 
-        <div class="stats-grid">
-            <div class="stats-card">
-                <h2>Casos por estado</h2>
-                <canvas id="chart-status"></canvas>
-            </div>
-            <div class="stats-card">
-                <h2>Ingresos por semana</h2>
-                <canvas id="chart-weekly"></canvas>
-            </div>
-            <div class="stats-card">
-                <h2>Top comunas por volumen</h2>
-                <canvas id="chart-comunas"></canvas>
-            </div>
-            <div class="stats-card">
-                <h2>Tiempo promedio de confirmación</h2>
-                @if (Model.Turnaround.HasData)
-                {
-                    <canvas id="chart-turnaround"></canvas>
-                }
-                else
-                {
-                    <p class="stats-nodata">Todavía no hay casos confirmados.</p>
-                }
-            </div>
-            <div class="stats-card">
-                <h2>Dispersión de tiempos de confirmación</h2>
-                @if (Model.Turnaround.HasData)
-                {
-                    <canvas id="chart-turnaround-scatter"></canvas>
-                }
-                else
-                {
-                    <p class="stats-nodata">Todavía no hay casos confirmados.</p>
-                }
-            </div>
-            <div class="stats-card">
-                <h2>Sector: Archivo vs Oficina 43</h2>
-                <canvas id="chart-sector"></canvas>
-            </div>
-            <div class="stats-card">
-                <h2>F8: plazo (15 días hábiles)</h2>
-                <canvas id="chart-f8-deadline"></canvas>
-            </div>
-            <div class="stats-card">
-                <h2>F8: PDFs generados</h2>
-                <canvas id="chart-f8-pdf"></canvas>
-            </div>
-            <div class="stats-card stats-card-wide">
-                <h2>Correos descartados por motivo</h2>
-                <canvas id="chart-discarded"></canvas>
-            </div>
+@* Antes esta pantalla dependía de un chart.umd.js/estadisticas.js que nunca llegaron a existir en
+   el repo — quedaba completamente en blanco, sin ningún dato de los que el modelo ya calculaba.
+   Reescrita con el mismo patrón CSS puro que F8 (dashboard.css, compartido entre los dos ahora):
+   sin librería de gráficos externa, mismo look en los dos módulos. *@
+<div class="stats-grid">
+    <div class="card stat-tile">
+        <div class="stat-value">@Model.StatusCounts.Pending</div>
+        <div class="stat-label">Pendientes</div>
+    </div>
+    <div class="card stat-tile">
+        <div class="stat-value">@Model.StatusCounts.Uploaded</div>
+        <div class="stat-label">Subidos</div>
+    </div>
+    <div class="card stat-tile">
+        <div class="stat-value">@Model.StatusCounts.Confirmed</div>
+        <div class="stat-label">Confirmados</div>
+    </div>
+    <div class="card stat-tile @(Model.F8DeadlineBacklog.PastDeadline > 0 ? "stat-tile-alert" : "")">
+        <div class="stat-value">@Model.F8DeadlineBacklog.PastDeadline</div>
+        <div class="stat-label">F8 fuera de plazo</div>
+    </div>
+    <div class="card stat-tile @(Model.CertificadoFolderStatus.NotFound > 0 ? "stat-tile-alert" : "")">
+        <div class="stat-value">@Model.CertificadoFolderStatus.NotFound</div>
+        <div class="stat-label">Certificado sin carpeta</div>
+    </div>
+</div>
+
+<div class="card donut-card">
+    <h3>Sector: Archivo vs Oficina 43</h3>
+    @if (sectorTotal > 0)
+    {
+        <div class="donut-chart" style="background: conic-gradient(var(--color-confirmed) 0% @(sectorPct.ToString(ic))%, var(--color-pending) @(sectorPct.ToString(ic))% 100%);">
+            <div class="donut-hole">@(sectorPct.ToString("0"))%</div>
         </div>
+        <div class="donut-legend">
+            <span><i style="background:var(--color-confirmed)"></i> Archivo (@Model.SectorDistribution.Archivo)</span>
+            <span><i style="background:var(--color-pending)"></i> Oficina 43 (@Model.SectorDistribution.Oficina43)</span>
+        </div>
+    }
+    else
+    {
+        <p class="empty-hint">Sin casos con sector asignado todavía.</p>
+    }
+</div>
 
-    <script id="stats-data" type="application/json">
-        @Html.Raw(JsonSerializer.Serialize(new
+@{
+    var chartW = 620.0; var chartH = 170.0;
+    var padL = 34.0; var padR = 14.0; var padT = 10.0; var padB = 26.0;
+    var weeks = Model.WeeklyIntake;
+    var maxY = weeks.Count > 0 ? Math.Max(1, weeks.Max(w => w.Count)) : 1;
+    var n = weeks.Count;
+    var linePoints = new System.Text.StringBuilder();
+    var xs = new double[Math.Max(n, 1)];
+    for (var i = 0; i < n; i++)
+    {
+        xs[i] = n > 1 ? padL + (chartW - padL - padR) * i / (n - 1) : (chartW / 2);
+        var y = padT + (chartH - padT - padB) * (1 - weeks[i].Count / (double)maxY);
+        linePoints.Append(xs[i].ToString(ic)).Append(',').Append(y.ToString(ic)).Append(' ');
+    }
+}
+<div class="card line-card">
+    <h3>Ingresos por semana (fecha de recepción)</h3>
+    @if (n == 0)
+    {
+        <p class="empty-hint">Sin datos todavía.</p>
+    }
+    else
+    {
+        <svg viewBox="0 0 @(chartW.ToString(ic)) @(chartH.ToString(ic))" class="line-chart" preserveAspectRatio="xMidYMid meet">
+            @for (var g = 0; g <= 4; g++)
+            {
+                var gy = padT + (chartH - padT - padB) * g / 4;
+                <line x1="@padL.ToString(ic)" x2="@((chartW - padR).ToString(ic))" y1="@gy.ToString(ic)" y2="@gy.ToString(ic)" class="chart-gridline" />
+            }
+            <polyline points="@linePoints.ToString()" class="line-path" />
+            @for (var i = 0; i < n; i++)
+            {
+                var y = padT + (chartH - padT - padB) * (1 - weeks[i].Count / (double)maxY);
+                // Con año: sin esto, dos semanas de años distintos (una vez que el módulo acumule
+                // más de 12 meses de datos) comparten la misma etiqueta "06-01" sin forma de distinguirlas.
+                var weekLabel = weeks[i].WeekStart.ToString("dd-MM-yy");
+                <circle cx="@xs[i].ToString(ic)" cy="@y.ToString(ic)" r="3.5" class="line-dot">
+                    <title>Semana del @weekLabel: @weeks[i].Count caso(s)</title>
+                </circle>
+                @if (n <= 12 || i % (n / 12 + 1) == 0)
+                {
+                    @Html.Raw($"<text x=\"{xs[i].ToString(ic)}\" y=\"{(chartH - 6).ToString(ic)}\" class=\"chart-axis-label\" text-anchor=\"middle\">{System.Net.WebUtility.HtmlEncode(weekLabel)}</text>")
+                }
+            }
+        </svg>
+    }
+</div>
+
+@if (Model.Turnaround.HasData)
+{
+    <div class="card avg-days-card">
+        <h3>Tiempo promedio de confirmación</h3>
+        <div class="avg-days-value">@Model.Turnaround.AverageDays.ToString("0.#") días</div>
+        <div class="avg-days-hint">Desde recepción del correo hasta confirmación al contribuyente</div>
+    </div>
+}
+
+<div class="stats-breakdowns">
+    <div class="card breakdown-card">
+        <h3>Top comunas por volumen</h3>
+        @if (Model.TopComunas.Count == 0)
         {
-            status = Model.StatusCounts,
-            weekly = Model.WeeklyIntake,
-            comunas = Model.TopComunas,
-            turnaround = Model.Turnaround,
-            turnaroundDistribution = Model.TurnaroundDistribution,
-            sector = Model.SectorDistribution,
-            f8Deadline = Model.F8DeadlineBacklog,
-            f8Pdf = Model.F8PdfStatus,
-            discarded = Model.DiscardedByReason
-        }, new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase }))
-    </script>
-    <script src="~/js/vendor/chart.umd.js"></script>
-    <script src="~/js/estadisticas.js" asp-append-version="true"></script>
-    <script src="~/js/scroll-preserve.js" asp-append-version="true"></script>
+            <p class="empty-hint">Sin datos todavía.</p>
+        }
+        else
+        {
+            var maxComuna = Model.TopComunas.Max(c => c.Count);
+            @foreach (var (comuna, count) in Model.TopComunas)
+            {
+                <div class="breakdown-row">
+                    <span class="breakdown-label">@comuna</span>
+                    <div class="breakdown-bar-track">
+                        <div class="breakdown-bar" style="width:@(Math.Max(1, count * 100 / maxComuna))%"></div>
+                    </div>
+                    <span class="breakdown-count">@count</span>
+                </div>
+            }
+        }
+    </div>
+
+    <div class="card breakdown-card">
+        <h3>Correos descartados por motivo</h3>
+        @if (Model.DiscardedByReason.Count == 0)
+        {
+            <p class="empty-hint">Sin correos descartados todavía.</p>
+        }
+        else
+        {
+            var maxReason = Model.DiscardedByReason.Max(r => r.Count);
+            @foreach (var (reason, count) in Model.DiscardedByReason)
+            {
+                <div class="breakdown-row">
+                    <span class="breakdown-label">@reason</span>
+                    <div class="breakdown-bar-track">
+                        <div class="breakdown-bar" style="width:@(Math.Max(1, count * 100 / maxReason))%"></div>
+                    </div>
+                    <span class="breakdown-count">@count</span>
+                </div>
+            }
+        }
+    </div>
+
+    <div class="card breakdown-card">
+        <h3>F8: plazo (15 días hábiles)</h3>
+        @{ var f8Total = Math.Max(1, Model.F8DeadlineBacklog.WithinDeadline + Model.F8DeadlineBacklog.PastDeadline); }
+        <div class="breakdown-row">
+            <span class="breakdown-label">Dentro de plazo</span>
+            <div class="breakdown-bar-track"><div class="breakdown-bar" style="width:@(Model.F8DeadlineBacklog.WithinDeadline * 100 / f8Total)%"></div></div>
+            <span class="breakdown-count">@Model.F8DeadlineBacklog.WithinDeadline</span>
+        </div>
+        <div class="breakdown-row">
+            <span class="breakdown-label">Fuera de plazo</span>
+            <div class="breakdown-bar-track"><div class="breakdown-bar" style="width:@(Model.F8DeadlineBacklog.PastDeadline * 100 / f8Total)%"></div></div>
+            <span class="breakdown-count">@Model.F8DeadlineBacklog.PastDeadline</span>
+        </div>
+    </div>
+
+    <div class="card breakdown-card">
+        <h3>F8: PDFs generados</h3>
+        @{ var pdfTotal = Math.Max(1, Model.F8PdfStatus.Generated + Model.F8PdfStatus.Pending); }
+        <div class="breakdown-row">
+            <span class="breakdown-label">Generado</span>
+            <div class="breakdown-bar-track"><div class="breakdown-bar" style="width:@(Model.F8PdfStatus.Generated * 100 / pdfTotal)%"></div></div>
+            <span class="breakdown-count">@Model.F8PdfStatus.Generated</span>
+        </div>
+        <div class="breakdown-row">
+            <span class="breakdown-label">Pendiente</span>
+            <div class="breakdown-bar-track"><div class="breakdown-bar" style="width:@(Model.F8PdfStatus.Pending * 100 / pdfTotal)%"></div></div>
+            <span class="breakdown-count">@Model.F8PdfStatus.Pending</span>
+        </div>
+    </div>
+
+    <div class="card breakdown-card">
+        <h3>Certificado: carpeta</h3>
+        @{ var folderTotal = Math.Max(1, Model.CertificadoFolderStatus.Found + Model.CertificadoFolderStatus.NotFound); }
+        <div class="breakdown-row">
+            <span class="breakdown-label">Encontrada</span>
+            <div class="breakdown-bar-track"><div class="breakdown-bar" style="width:@(Model.CertificadoFolderStatus.Found * 100 / folderTotal)%"></div></div>
+            <span class="breakdown-count">@Model.CertificadoFolderStatus.Found</span>
+        </div>
+        <div class="breakdown-row">
+            <span class="breakdown-label">No encontrada</span>
+            <div class="breakdown-bar-track"><div class="breakdown-bar" style="width:@(Model.CertificadoFolderStatus.NotFound * 100 / folderTotal)%"></div></div>
+            <span class="breakdown-count">@Model.CertificadoFolderStatus.NotFound</span>
+        </div>
+    </div>
+
+    <div class="card breakdown-card">
+        <h3>Certificado: notificación</h3>
+        @{ var notifTotal = Math.Max(1, Model.CertificadoNotificationStatus.Notified + Model.CertificadoNotificationStatus.Pending); }
+        <div class="breakdown-row">
+            <span class="breakdown-label">Notificado</span>
+            <div class="breakdown-bar-track"><div class="breakdown-bar" style="width:@(Model.CertificadoNotificationStatus.Notified * 100 / notifTotal)%"></div></div>
+            <span class="breakdown-count">@Model.CertificadoNotificationStatus.Notified</span>
+        </div>
+        <div class="breakdown-row">
+            <span class="breakdown-label">Pendiente</span>
+            <div class="breakdown-bar-track"><div class="breakdown-bar" style="width:@(Model.CertificadoNotificationStatus.Pending * 100 / notifTotal)%"></div></div>
+            <span class="breakdown-count">@Model.CertificadoNotificationStatus.Pending</span>
+        </div>
+    </div>
+</div>

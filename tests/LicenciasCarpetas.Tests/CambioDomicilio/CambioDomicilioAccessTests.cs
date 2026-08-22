@@ -20,6 +20,26 @@ public class CambioDomicilioAccessTests : IClassFixture<CambioDomicilioWebAppFac
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
     }
 
+    /// <summary>This page used to reference ~/js/vendor/chart.umd.js and ~/js/estadisticas.js,
+    /// neither of which ever existed in the repo — it rendered a 200 with no useful content for an
+    /// unknown stretch of time, with nothing here to catch it. Rewritten to reuse F8's CSS-only
+    /// chart components (dashboard.css); this guards both that a render-time exception (e.g. a
+    /// null-ref on one of the statistics model's lists) doesn't creep back in, and specifically
+    /// that neither of those two missing files sneaks back into the markup.</summary>
+    [Fact]
+    public async Task An_authorized_operator_reaches_a_working_statistics_page()
+    {
+        using var client = factory.CreateAuthenticatedClient(canAccessCambioDomicilio: true);
+
+        var response = await client.GetAsync("/CambioDomicilio/Estadisticas");
+        var body = await response.Content.ReadAsStringAsync();
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.DoesNotContain("chart.umd.js", body);
+        Assert.DoesNotContain("estadisticas.js", body);
+        Assert.Contains("stats-grid", body);
+    }
+
     /// <summary>Same shape as an F8-only operator: authenticated, but without the
     /// "mod:cambio-domicilio" claim — the policy must refuse without ever throwing.</summary>
     [Fact]

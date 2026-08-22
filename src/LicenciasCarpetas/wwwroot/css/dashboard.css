@@ -430,6 +430,201 @@ main {
     overflow-y: hidden;
 }
 
+/* Estadísticas: tarjetas KPI, dona, línea y barras de desglose — CSS puro, sin librería de
+   gráficos (equipo municipal sin internet garantizado). Compartido entre F8 y Cambio de
+   Domicilio (antes vivía solo en f8-dashboard.css, cargado solo ahí). */
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 12px;
+    margin-bottom: 20px;
+}
+
+.stat-tile {
+    padding: 16px;
+    text-align: center;
+}
+
+.stat-tile-alert {
+    border-left: 4px solid var(--color-review);
+}
+
+.stat-value {
+    font-size: 1.8rem;
+    font-weight: 700;
+    color: var(--color-primary);
+}
+
+.stat-tile-alert .stat-value {
+    color: var(--color-review);
+}
+
+.stat-label {
+    font-size: 0.78rem;
+    color: var(--color-text-muted);
+    margin-top: 4px;
+}
+
+.donut-card {
+    padding: 16px;
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    gap: 24px;
+    flex-wrap: wrap;
+}
+
+.donut-card h3 {
+    width: 100%;
+    margin: 0 0 4px;
+    font-size: 0.9rem;
+    color: var(--color-text-muted);
+}
+
+.donut-chart {
+    width: 120px;
+    height: 120px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.donut-hole {
+    width: 76px;
+    height: 76px;
+    border-radius: 50%;
+    background: var(--color-surface, #fff);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 1.1rem;
+}
+
+.donut-legend {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    font-size: 0.82rem;
+}
+
+.donut-legend i {
+    display: inline-block;
+    width: 10px;
+    height: 10px;
+    border-radius: 2px;
+    margin-right: 6px;
+}
+
+.line-card,
+.avg-days-card {
+    padding: 16px;
+    margin-bottom: 20px;
+}
+
+.line-card h3,
+.avg-days-card h3 {
+    margin: 0 0 10px;
+    font-size: 0.9rem;
+    color: var(--color-text-muted);
+}
+
+.line-chart {
+    width: 100%;
+    height: auto;
+    overflow: visible;
+}
+
+.chart-gridline {
+    stroke: var(--color-border);
+    stroke-width: 1;
+}
+
+.line-path {
+    fill: none;
+    stroke: var(--color-accent);
+    stroke-width: 2;
+}
+
+.line-dot {
+    fill: var(--color-accent);
+    stroke: #fff;
+    stroke-width: 1.5;
+}
+
+.chart-axis-label {
+    font-size: 8px;
+    fill: var(--color-text-muted);
+}
+
+.empty-hint {
+    color: var(--color-text-muted);
+    font-size: 0.82rem;
+    margin: 0;
+}
+
+.avg-days-value {
+    font-size: 1.8rem;
+    font-weight: 700;
+    color: var(--color-primary);
+}
+
+.avg-days-hint {
+    font-size: 0.78rem;
+    color: var(--color-text-muted);
+    margin-top: 4px;
+}
+
+.stats-breakdowns {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: 14px;
+}
+
+.breakdown-card {
+    padding: 14px 16px;
+}
+
+.breakdown-card h3 {
+    font-size: 0.9rem;
+    margin: 0 0 10px;
+    color: var(--color-text-muted);
+}
+
+.breakdown-row {
+    display: grid;
+    grid-template-columns: minmax(90px, 140px) 1fr 32px;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 6px;
+    font-size: 0.78rem;
+}
+
+.breakdown-label {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.breakdown-bar-track {
+    background: var(--color-bg);
+    border-radius: 3px;
+    height: 10px;
+    overflow: hidden;
+}
+
+.breakdown-bar {
+    background: var(--color-accent);
+    height: 100%;
+}
+
+.breakdown-count {
+    text-align: right;
+    font-weight: 700;
+}
+
 /* On the cases table (Index page), pin the table's own area to the viewport height instead of
    letting the whole page scroll — otherwise the horizontal scrollbar sits at the bottom of a
    potentially very long table, requiring a long vertical scroll first just to reach it. With
