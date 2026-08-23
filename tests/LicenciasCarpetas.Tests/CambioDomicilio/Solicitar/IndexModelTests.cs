@@ -65,7 +65,7 @@ public class IndexModelTests
         FakeComunaContactRepository ComunaContacts,
         RecordingEmailSender EmailSender);
 
-    private static Fixture BuildModel()
+    private static Fixture BuildModel(SqliteTestDatabase db)
     {
         var repository = new FakeOutboundAddressChangeRequestRepository();
         var comunaContacts = new FakeComunaContactRepository();
@@ -78,7 +78,7 @@ public class IndexModelTests
                 [new Claim(ClaimTypes.NameIdentifier, UserId.ToString())], "Test"))
         };
 
-        var model = new IndexModel(repository, sender)
+        var model = new IndexModel(repository, sender, db.Cases)
         {
             PageContext = new PageContext(new ActionContext(httpContext, new RouteData(), new PageActionDescriptor())),
             TempData = new TempDataDictionary(httpContext, new InMemoryTempDataProvider())
@@ -99,7 +99,8 @@ public class IndexModelTests
     [Fact]
     public async Task OnPostSolicitar_DraftWithRegisteredContact_SendsAndMarksEnviada()
     {
-        var fixture = BuildModel();
+        using var db = new SqliteTestDatabase();
+        var fixture = BuildModel(db);
         fixture.ComunaContacts.Upsert(new ComunaContact { Comuna = "Quillota", Email = "contacto@muniquillota.cl" });
         var id = SeedDraft(fixture.Repository);
 
@@ -114,7 +115,8 @@ public class IndexModelTests
     [Fact]
     public async Task OnPostSolicitar_NoRegisteredContact_KeepsItAsDraftAndDoesNotSend()
     {
-        var fixture = BuildModel();
+        using var db = new SqliteTestDatabase();
+        var fixture = BuildModel(db);
         var id = SeedDraft(fixture.Repository, comuna: "Comuna Sin Contacto");
 
         var result = await fixture.Model.OnPostSolicitar(id);
@@ -127,7 +129,8 @@ public class IndexModelTests
     [Fact]
     public async Task OnPostSolicitar_AlreadySentRequest_DoesNotSendAgain()
     {
-        var fixture = BuildModel();
+        using var db = new SqliteTestDatabase();
+        var fixture = BuildModel(db);
         fixture.ComunaContacts.Upsert(new ComunaContact { Comuna = "Quillota", Email = "contacto@muniquillota.cl" });
         var id = SeedDraft(fixture.Repository);
         await fixture.Model.OnPostSolicitar(id);
@@ -142,11 +145,138 @@ public class IndexModelTests
     [Fact]
     public async Task OnPostSolicitar_UnknownId_DoesNotThrow()
     {
-        var fixture = BuildModel();
+        using var db = new SqliteTestDatabase();
+        var fixture = BuildModel(db);
 
         var result = await fixture.Model.OnPostSolicitar(999_999);
 
         Assert.IsType<RedirectToPageResult>(result);
         Assert.Equal(0, fixture.EmailSender.CallCount);
+    }
+
+    [Fact]
+    public void OnPostGuardarEstado_SavesWorkflowStateOnTheRequest()
+    {
+        using var db = new SqliteTestDatabase();
+        var fixture = BuildModel(db);
+        var id = SeedDraft(fixture.Repository);
+
+        var result = fixture.Model.OnPostGuardarEstado(id, FolderState.SubidaConF8);
+
+        Assert.IsType<RedirectToPageResult>(result);
+        Assert.Equal(FolderState.SubidaConF8, fixture.Repository.FindById(id)!.WorkflowState);
+    }
+
+    /// <summary>Cuando la solicitud nació del botón "Solicitar" en Casos, cambiar su Estado acá
+    /// también actualiza el FolderState del FolderCase de origen — el operador no repite el cambio
+    /// en las dos pantallas.</summary>
+    [Fact]
+    public void OnPostGuardarEstado_RequestWithSourceCase_PropagatesToTheFolderCase()
+    {
+        using var db = new SqliteTestDatabase();
+        var fixture = BuildModel(db);
+        var caseId = db.Cases.Insert(new FolderCase
+        {
+            FullName = "GUSTAVO PEÑA CASTRO",
+            Rut = "18.785.387-7",
+            Office = Office.AvenidaArgentina,
+            FolderState = FolderState.CambioDomicilioSolicitado
+        });
+        var id = fixture.Repository.Insert(new OutboundAddressChangeRequest
+        {
+            FullName = "GUSTAVO PEÑA CASTRO",
+            Rut = "18.785.387-7",
+            DestinationComuna = "Quillota",
+            CreatedByUserId = UserId,
+            SourceFolderCaseId = caseId
+        });
+
+        fixture.Model.OnPostGuardarEstado(id, FolderState.CambioDomicilioSubidoAConaset);
+
+        Assert.Equal(FolderState.CambioDomicilioSubidoAConaset, db.Cases.FindById(caseId)!.FolderState);
+    }
+
+    /// <summary>Sin caso de origen (creada desde "+ Nueva Solicitud"), no hay nada que propagar —
+    /// el estado de la solicitud igual se guarda.</summary>
+    [Fact]
+    public void OnPostGuardarEstado_RequestWithoutSourceCase_JustSavesItsOwnState()
+    {
+        using var db = new SqliteTestDatabase();
+        var fixture = BuildModel(db);
+        var id = SeedDraft(fixture.Repository);
+
+        var result = fixture.Model.OnPostGuardarEstado(id, FolderState.CambioDomicilioSubidoConCorreo);
+
+        Assert.IsType<RedirectToPageResult>(result);
+        Assert.Equal(FolderState.CambioDomicilioSubidoConCorreo, fixture.Repository.FindById(id)!.WorkflowState);
+    }
+
+    /// <summary>Un estado fuera de WorkflowStateCatalog.Options (ej. PrimeraLicencia, que no está
+    /// en la lista reducida de 5) se rechaza — no se guarda ni en la solicitud ni en el caso.</summary>
+    [Fact]
+    public void OnPostGuardarEstado_StateOutsideTheCatalog_IsRejected()
+    {
+        using var db = new SqliteTestDatabase();
+        var fixture = BuildModel(db);
+        var id = SeedDraft(fixture.Repository);
+
+        var result = fixture.Model.OnPostGuardarEstado(id, FolderState.PrimeraLicencia);
+
+        Assert.IsType<RedirectToPageResult>(result);
+        Assert.Null(fixture.Repository.FindById(id)!.WorkflowState);
+    }
+
+    /// <summary>Volver el desplegable a "—" (null) limpia el campo de la solicitud, pero NO debe
+    /// tocar el FolderState del caso de origen — ese es el registro autoritativo y puede estar en
+    /// un estado fuera de este catálogo reducido (ej. "1° LICENCIA"); propagar null lo borraría en
+    /// silencio.</summary>
+    [Fact]
+    public void OnPostGuardarEstado_ClearingToNull_DoesNotClobberTheSourceFolderCase()
+    {
+        using var db = new SqliteTestDatabase();
+        var fixture = BuildModel(db);
+        var caseId = db.Cases.Insert(new FolderCase
+        {
+            FullName = "GUSTAVO PEÑA CASTRO",
+            Rut = "18.785.387-7",
+            Office = Office.AvenidaArgentina,
+            FolderState = FolderState.PrimeraLicencia
+        });
+        var id = fixture.Repository.Insert(new OutboundAddressChangeRequest
+        {
+            FullName = "GUSTAVO PEÑA CASTRO",
+            Rut = "18.785.387-7",
+            DestinationComuna = "Quillota",
+            CreatedByUserId = UserId,
+            SourceFolderCaseId = caseId,
+            WorkflowState = FolderState.SubidaConF8
+        });
+
+        fixture.Model.OnPostGuardarEstado(id, null);
+
+        Assert.Null(fixture.Repository.FindById(id)!.WorkflowState);
+        Assert.Equal(FolderState.PrimeraLicencia, db.Cases.FindById(caseId)!.FolderState);
+    }
+
+    /// <summary>El caso de origen fue borrado mientras tanto — el estado de la solicitud igual se
+    /// guarda, la propagación simplemente no tiene a quién escribirle.</summary>
+    [Fact]
+    public void OnPostGuardarEstado_SourceCaseNoLongerExists_StillSavesTheRequestsOwnState()
+    {
+        using var db = new SqliteTestDatabase();
+        var fixture = BuildModel(db);
+        var id = fixture.Repository.Insert(new OutboundAddressChangeRequest
+        {
+            FullName = "GUSTAVO PEÑA CASTRO",
+            Rut = "18.785.387-7",
+            DestinationComuna = "Quillota",
+            CreatedByUserId = UserId,
+            SourceFolderCaseId = 999_999
+        });
+
+        var result = fixture.Model.OnPostGuardarEstado(id, FolderState.SubidaConF8);
+
+        Assert.IsType<RedirectToPageResult>(result);
+        Assert.Equal(FolderState.SubidaConF8, fixture.Repository.FindById(id)!.WorkflowState);
     }
 }

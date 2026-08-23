@@ -1,5 +1,6 @@
 using Microsoft.Data.Sqlite;
 using LicenciasCarpetas.CambioDomicilio.Domain;
+using LicenciasCarpetas.Domain;
 
 namespace LicenciasCarpetas.CambioDomicilio.Data;
 
@@ -41,7 +42,8 @@ public sealed class OutboundAddressChangeRequestRepository(string connectionStri
                     SentAt TEXT NULL,
                     SentByUserId INTEGER NULL,
                     CreatedByUserId INTEGER NOT NULL,
-                    SourceFolderCaseId INTEGER NULL
+                    SourceFolderCaseId INTEGER NULL,
+                    WorkflowState TEXT NULL
                 );
                 CREATE INDEX IF NOT EXISTS IX_OutboundAddressChangeRequest_Status ON OutboundAddressChangeRequest (Status);
 
@@ -72,12 +74,14 @@ public sealed class OutboundAddressChangeRequestRepository(string connectionStri
     {
         bool streetIsNotNull;
         bool hasSourceFolderCaseId;
+        bool hasWorkflowState;
         using (var pragmaCommand = connection.CreateCommand())
         {
             pragmaCommand.CommandText = "PRAGMA table_info(OutboundAddressChangeRequest)";
             using var reader = pragmaCommand.ExecuteReader();
             streetIsNotNull = false;
             hasSourceFolderCaseId = false;
+            hasWorkflowState = false;
             while (reader.Read())
             {
                 var columnName = reader.GetString(1);
@@ -89,13 +93,17 @@ public sealed class OutboundAddressChangeRequestRepository(string connectionStri
                 {
                     hasSourceFolderCaseId = true;
                 }
+                else if (string.Equals(columnName, "WorkflowState", StringComparison.OrdinalIgnoreCase))
+                {
+                    hasWorkflowState = true;
+                }
             }
         }
 
         if (streetIsNotNull)
         {
-            // The rebuilt table already includes SourceFolderCaseId and its index, so nothing
-            // else is needed after this regardless of whether the old table happened to have it.
+            // The rebuilt table already includes SourceFolderCaseId/WorkflowState and their index,
+            // so nothing else is needed after this regardless of what the old table happened to have.
             RebuildWithNullableStreetAndNumber(connection);
             return;
         }
@@ -104,6 +112,13 @@ public sealed class OutboundAddressChangeRequestRepository(string connectionStri
         {
             using var alterCommand = connection.CreateCommand();
             alterCommand.CommandText = "ALTER TABLE OutboundAddressChangeRequest ADD COLUMN SourceFolderCaseId INTEGER NULL";
+            alterCommand.ExecuteNonQuery();
+        }
+
+        if (!hasWorkflowState)
+        {
+            using var alterCommand = connection.CreateCommand();
+            alterCommand.CommandText = "ALTER TABLE OutboundAddressChangeRequest ADD COLUMN WorkflowState TEXT NULL";
             alterCommand.ExecuteNonQuery();
         }
 
@@ -136,7 +151,8 @@ public sealed class OutboundAddressChangeRequestRepository(string connectionStri
                     SentAt TEXT NULL,
                     SentByUserId INTEGER NULL,
                     CreatedByUserId INTEGER NOT NULL,
-                    SourceFolderCaseId INTEGER NULL
+                    SourceFolderCaseId INTEGER NULL,
+                    WorkflowState TEXT NULL
                 );
                 INSERT INTO OutboundAddressChangeRequest_new
                     (Id, FullName, Rut, Phone, Street, Number, Unit, DestinationComuna, Status, CreatedAt, SentAt, SentByUserId, CreatedByUserId)
@@ -158,9 +174,9 @@ public sealed class OutboundAddressChangeRequestRepository(string connectionStri
         using var command = connection.CreateCommand();
         command.CommandText = """
             INSERT INTO OutboundAddressChangeRequest
-                (FullName, Rut, Phone, Street, Number, Unit, DestinationComuna, Status, CreatedAt, SentAt, SentByUserId, CreatedByUserId, SourceFolderCaseId)
+                (FullName, Rut, Phone, Street, Number, Unit, DestinationComuna, Status, CreatedAt, SentAt, SentByUserId, CreatedByUserId, SourceFolderCaseId, WorkflowState)
             VALUES
-                ($fullName, $rut, $phone, $street, $number, $unit, $destinationComuna, $status, $createdAt, $sentAt, $sentByUserId, $createdByUserId, $sourceFolderCaseId);
+                ($fullName, $rut, $phone, $street, $number, $unit, $destinationComuna, $status, $createdAt, $sentAt, $sentByUserId, $createdByUserId, $sourceFolderCaseId, $workflowState);
             SELECT last_insert_rowid();
             """;
         command.Parameters.AddWithValue("$fullName", request.FullName);
@@ -177,6 +193,7 @@ public sealed class OutboundAddressChangeRequestRepository(string connectionStri
         command.Parameters.AddWithValue("$sentByUserId", (object?)request.SentByUserId ?? DBNull.Value);
         command.Parameters.AddWithValue("$createdByUserId", request.CreatedByUserId);
         command.Parameters.AddWithValue("$sourceFolderCaseId", (object?)request.SourceFolderCaseId ?? DBNull.Value);
+        command.Parameters.AddWithValue("$workflowState", (object?)request.WorkflowState?.ToString() ?? DBNull.Value);
 
         return (long)command.ExecuteScalar()!;
     }
@@ -188,7 +205,7 @@ public sealed class OutboundAddressChangeRequestRepository(string connectionStri
         command.CommandText = """
             UPDATE OutboundAddressChangeRequest
             SET FullName = $fullName, Rut = $rut, Phone = $phone, Street = $street, Number = $number,
-                Unit = $unit, DestinationComuna = $destinationComuna
+                Unit = $unit, DestinationComuna = $destinationComuna, WorkflowState = $workflowState
             WHERE Id = $id
             """;
         command.Parameters.AddWithValue("$fullName", request.FullName);
@@ -198,6 +215,7 @@ public sealed class OutboundAddressChangeRequestRepository(string connectionStri
         command.Parameters.AddWithValue("$number", (object?)request.Number ?? DBNull.Value);
         command.Parameters.AddWithValue("$unit", (object?)request.Unit ?? DBNull.Value);
         command.Parameters.AddWithValue("$destinationComuna", request.DestinationComuna);
+        command.Parameters.AddWithValue("$workflowState", (object?)request.WorkflowState?.ToString() ?? DBNull.Value);
         command.Parameters.AddWithValue("$id", request.Id);
         command.ExecuteNonQuery();
     }
@@ -331,7 +349,14 @@ public sealed class OutboundAddressChangeRequestRepository(string connectionStri
         SentAt = reader.IsDBNull(reader.GetOrdinal("SentAt")) ? null : DateTimeOffset.Parse(reader.GetString(reader.GetOrdinal("SentAt"))),
         SentByUserId = reader.IsDBNull(reader.GetOrdinal("SentByUserId")) ? null : reader.GetInt64(reader.GetOrdinal("SentByUserId")),
         CreatedByUserId = reader.GetInt64(reader.GetOrdinal("CreatedByUserId")),
-        SourceFolderCaseId = reader.IsDBNull(reader.GetOrdinal("SourceFolderCaseId")) ? null : reader.GetInt64(reader.GetOrdinal("SourceFolderCaseId"))
+        SourceFolderCaseId = reader.IsDBNull(reader.GetOrdinal("SourceFolderCaseId")) ? null : reader.GetInt64(reader.GetOrdinal("SourceFolderCaseId")),
+        // TryParse, no Parse: un valor que ya no coincide con ningún miembro de FolderState (el
+        // enum cambió, o la fila se editó a mano) no debe tirar abajo el listado entero — se lee
+        // como sin estado en vez de reventar GetAll()/FindById() para todas las filas.
+        WorkflowState = !reader.IsDBNull(reader.GetOrdinal("WorkflowState"))
+            && Enum.TryParse<FolderState>(reader.GetString(reader.GetOrdinal("WorkflowState")), out var workflowState)
+                ? workflowState
+                : null
     };
 
     private static OutboundAddressChangeAttachment MapAttachment(SqliteDataReader reader) => new()

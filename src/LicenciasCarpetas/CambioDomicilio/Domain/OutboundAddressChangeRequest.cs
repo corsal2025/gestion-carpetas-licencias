@@ -1,3 +1,5 @@
+using LicenciasCarpetas.Domain;
+
 namespace LicenciasCarpetas.CambioDomicilio.Domain;
 
 public enum OutboundRequestStatus
@@ -30,6 +32,14 @@ public sealed class OutboundAddressChangeRequest
     /// create (and email) a duplicate. Null for requests started from Solicitar Cambios de
     /// Domicilio directly, which has no originating case to correlate.</summary>
     public long? SourceFolderCaseId { get; set; }
+
+    /// <summary>Dónde va quedando la carpeta física en el flujo de Conaset — un subconjunto de
+    /// FolderState.Selectable, no todos los valores (ver WorkflowStateCatalog en Index.cshtml.cs).
+    /// Distinto de Status: Status dice si el CORREO de la solicitud se mandó o no; esto dice en qué
+    /// paso está la carpeta una vez que la otra comuna responde. Cuando SourceFolderCaseId no es
+    /// null, cambiar este valor también actualiza el FolderState del FolderCase de origen — así el
+    /// operador no tiene que ir a Casos a repetir el mismo cambio dos veces.</summary>
+    public FolderState? WorkflowState { get; set; }
 }
 
 /// <summary>One file attached to an OutboundAddressChangeRequest — stored on disk under

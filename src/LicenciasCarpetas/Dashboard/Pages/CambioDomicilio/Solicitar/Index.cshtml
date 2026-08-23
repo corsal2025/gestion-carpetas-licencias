@@ -1,6 +1,7 @@
 @page
 @model LicenciasCarpetas.Dashboard.Pages.CambioDomicilio.Solicitar.IndexModel
 @using LicenciasCarpetas.CambioDomicilio.Domain
+@using LicenciasCarpetas.Domain
 @{
     ViewData["Title"] = "Solicitar Cambios de Domicilio";
 }
@@ -48,6 +49,18 @@
                         };
                     }
                     <span class="badge @badgeClass">@badgeText</span>
+                    @* Estado de la carpeta física (subconjunto de Estado de carpeta de Casos) — si
+                       la solicitud nació del botón Solicitar en Casos, cambiarlo acá también
+                       actualiza el FolderState del caso de origen (ver OnPostGuardarEstado). *@
+                    <form method="post" asp-page-handler="GuardarEstado" asp-route-id="@item.Id" style="margin-top:4px;">
+                        <select name="workflowState" class="input-inline" style="font-size:0.72rem;" onchange="this.form.submit()">
+                            <option value="">—</option>
+                            @foreach (var state in WorkflowStateCatalog.Options)
+                            {
+                                <option value="@state" selected="@(item.WorkflowState == state)">@WorkflowStateCatalog.Display(state)</option>
+                            }
+                        </select>
+                    </form>
                 </td>
                 <td style="display:flex; gap:6px; align-items:center; justify-content:center;">
                     @if (item.Status == OutboundRequestStatus.Borrador)

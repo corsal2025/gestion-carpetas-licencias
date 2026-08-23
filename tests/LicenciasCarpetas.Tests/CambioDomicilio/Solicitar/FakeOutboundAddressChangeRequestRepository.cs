@@ -31,6 +31,7 @@ public sealed class FakeOutboundAddressChangeRequestRepository : IOutboundAddres
         existing.Number = request.Number;
         existing.Unit = request.Unit;
         existing.DestinationComuna = request.DestinationComuna;
+        existing.WorkflowState = request.WorkflowState;
     }
 
     public OutboundAddressChangeRequest? FindById(long id) => _requests.FirstOrDefault(r => r.Id == id);
