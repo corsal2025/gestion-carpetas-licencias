@@ -172,6 +172,28 @@ public class FolderCaseRepositoryTests
     }
 
     [Fact]
+    public void CambioDomicilioComuna_round_trips_through_insert_and_UpdateEditableFields()
+    {
+        using var db = new SqliteTestDatabase();
+        var id = db.Cases.Insert(Case());
+
+        var inserted = db.Cases.Insert(new FolderCase
+        {
+            FullName = "MARIA LOPEZ",
+            Rut = "9.271.271-K",
+            Office = Office.AvenidaArgentina,
+            CambioDomicilioComuna = "Quillota"
+        });
+        Assert.Equal("Quillota", db.Cases.FindById(inserted)!.CambioDomicilioComuna);
+
+        db.Cases.UpdateEditableFields(id, "JUAN PEREZ", "13.025.150-1", new DateOnly(2026, 1, 2),
+            null, null, null, FolderState.CambioDomicilioSolicitado, null, null,
+            null, needsReview: false, cambioDomicilioComuna: "Valparaíso");
+
+        Assert.Equal("Valparaíso", db.Cases.FindById(id)!.CambioDomicilioComuna);
+    }
+
+    [Fact]
     public void Editing_a_case_clears_the_raw_leftovers_and_the_review_flag()
     {
         using var db = new SqliteTestDatabase();

@@ -1,3 +1,4 @@
+using Microsoft.Data.Sqlite;
 using LicenciasCarpetas.CambioDomicilio.Data;
 using LicenciasCarpetas.CambioDomicilio.Domain;
 
@@ -144,6 +145,69 @@ public class OutboundAddressChangeRequestRepositoryTests : IDisposable
         _repository.DeleteAttachment(attachmentId);
 
         Assert.Empty(_repository.GetAttachments(requestId));
+    }
+
+    /// <summary>Reproduces a database created before this fix: Street/Number NOT NULL, no
+    /// SourceFolderCaseId column — exactly what CREATE TABLE IF NOT EXISTS alone cannot fix on an
+    /// already-existing table. EnsureSchema() must rebuild it so a row with both blank can be
+    /// inserted and read back, not just leave the old NOT NULL constraint in place.</summary>
+    [Fact]
+    public void EnsureSchema_migrates_a_pre_existing_table_with_NOT_NULL_Street_and_Number()
+    {
+        var path = Path.Combine(Path.GetTempPath(), $"licencias-carpetas-oacd-legacy-{Guid.NewGuid():N}.db");
+        var connectionString = $"Data Source={path}";
+        try
+        {
+            using (var connection = new SqliteConnection(connectionString))
+            {
+                connection.Open();
+                using var command = connection.CreateCommand();
+                command.CommandText = """
+                    CREATE TABLE OutboundAddressChangeRequest (
+                        Id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        FullName TEXT NOT NULL,
+                        Rut TEXT NOT NULL,
+                        Phone TEXT NULL,
+                        Street TEXT NOT NULL,
+                        Number TEXT NOT NULL,
+                        Unit TEXT NULL,
+                        DestinationComuna TEXT NOT NULL,
+                        Status TEXT NOT NULL,
+                        CreatedAt TEXT NOT NULL,
+                        SentAt TEXT NULL,
+                        SentByUserId INTEGER NULL,
+                        CreatedByUserId INTEGER NOT NULL
+                    );
+                    """;
+                command.ExecuteNonQuery();
+            }
+
+            var repository = new OutboundAddressChangeRequestRepository(connectionString);
+            repository.EnsureSchema();
+
+            var id = repository.Insert(new OutboundAddressChangeRequest
+            {
+                FullName = "MARIA SOTO",
+                Rut = "9.879.451-3",
+                Street = null,
+                Number = null,
+                DestinationComuna = "QUILPUÉ",
+                CreatedByUserId = 1
+            });
+
+            var stored = repository.FindById(id);
+            Assert.NotNull(stored);
+            Assert.Null(stored.Street);
+            Assert.Null(stored.Number);
+        }
+        finally
+        {
+            SqliteConnection.ClearAllPools();
+            if (File.Exists(path))
+            {
+                File.Delete(path);
+            }
+        }
     }
 
     public void Dispose()

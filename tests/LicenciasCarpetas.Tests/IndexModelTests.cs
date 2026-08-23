@@ -21,6 +21,9 @@ public class IndexModelTests
         }
     }
 
+    private static IndexModel BuildModel(SqliteTestDatabase db, IExcelCaseExporter exporter, CarpetasOptions options)
+        => IndexModelTestFactory.Create(db, exporter, options);
+
     /// <summary>Inserts in one transaction: these tests need thousands of rows and the repository's
     /// row-by-row insert would make the suite crawl.</summary>
     private static void Seed(SqliteTestDatabase db, int count, Office office = Office.AvenidaArgentina)
@@ -59,7 +62,7 @@ public class IndexModelTests
         using var db = new SqliteTestDatabase();
         Seed(db, 6000);
         var exporter = new SpyExporter();
-        var model = new IndexModel(db.Cases, exporter, new CarpetasOptions { PageSize = 100 });
+        var model = BuildModel(db, exporter, new CarpetasOptions { PageSize = 100 });
 
         var result = model.OnGetExport();
 
@@ -75,10 +78,8 @@ public class IndexModelTests
     {
         using var db = new SqliteTestDatabase();
         Seed(db, 300);
-        var model = new IndexModel(db.Cases, new SpyExporter(), new CarpetasOptions { PageSize = 100 })
-        {
-            PageSize = chosen
-        };
+        var model = BuildModel(db, new SpyExporter(), new CarpetasOptions { PageSize = 100 });
+        model.PageSize = chosen;
 
         model.OnGet();
 
@@ -95,10 +96,8 @@ public class IndexModelTests
     {
         using var db = new SqliteTestDatabase();
         Seed(db, 150);
-        var model = new IndexModel(db.Cases, new SpyExporter(), new CarpetasOptions { PageSize = 100 })
-        {
-            PageSize = chosen
-        };
+        var model = BuildModel(db, new SpyExporter(), new CarpetasOptions { PageSize = 100 });
+        model.PageSize = chosen;
 
         model.OnGet();
 
@@ -110,7 +109,8 @@ public class IndexModelTests
     public void The_chosen_size_survives_paging_and_filtering()
     {
         using var db = new SqliteTestDatabase();
-        var model = new IndexModel(db.Cases, new SpyExporter(), new CarpetasOptions()) { PageSize = 50 };
+        var model = BuildModel(db, new SpyExporter(), new CarpetasOptions());
+        model.PageSize = 50;
 
         Assert.Equal("50", model.RouteValues(2)["size"]);
     }
@@ -122,10 +122,8 @@ public class IndexModelTests
         Seed(db, 30);
         Seed(db, 12, Office.Placilla);
         var exporter = new SpyExporter();
-        var model = new IndexModel(db.Cases, exporter, new CarpetasOptions { PageSize = 100 })
-        {
-            Office = Office.Placilla
-        };
+        var model = BuildModel(db, exporter, new CarpetasOptions { PageSize = 100 });
+        model.Office = Office.Placilla;
 
         model.OnGetExport();
 

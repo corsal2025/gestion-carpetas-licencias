@@ -45,12 +45,12 @@
                 <div class="solicitud-card-header">📍 Nuevo Domicilio</div>
                 <div class="solicitud-field-grid">
                     <div>
-                        <label class="form-label" for="input-street">Calle / Avenida *</label>
-                        <input type="text" id="input-street" asp-for="Input.Street" required disabled="@Model.ReadOnly" placeholder="Ej. Av. Providencia" class="solicitud-input" />
+                        <label class="form-label" for="input-street">Calle / Avenida</label>
+                        <input type="text" id="input-street" asp-for="Input.Street" disabled="@Model.ReadOnly" placeholder="Ej. Av. Providencia" class="solicitud-input" />
                     </div>
                     <div>
-                        <label class="form-label" for="input-number">Número *</label>
-                        <input type="text" id="input-number" asp-for="Input.Number" required disabled="@Model.ReadOnly" placeholder="Ej. 1234" class="solicitud-input" />
+                        <label class="form-label" for="input-number">Número</label>
+                        <input type="text" id="input-number" asp-for="Input.Number" disabled="@Model.ReadOnly" placeholder="Ej. 1234" class="solicitud-input" />
                     </div>
                     <div>
                         <label class="form-label" for="input-comuna">Comuna *</label>
@@ -90,58 +90,6 @@
                     <a asp-page="/CambioDomicilio/Solicitar/Index" class="btn-solicitud-secondary" style="display:inline-block;">Volver</a>
                 </div>
             }
-        </div>
-
-        <div style="flex:1 1 30%; min-width:260px;">
-            <div class="card solicitud-card">
-                <div class="solicitud-card-header">📎 Documentación</div>
-
-                @if (Model.Attachments.Count > 0)
-                {
-                    <ul style="list-style:none; padding:0; margin:0 0 12px 0; display:flex; flex-direction:column; gap:8px;">
-                        @foreach (var attachment in Model.Attachments)
-                        {
-                            <li class="solicitud-doc-item verified">
-                                <span style="display:flex; align-items:center; gap:8px; min-width:0;">
-                                    <span>📄</span>
-                                    <span style="min-width:0;">
-                                        <span style="display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">@attachment.FileName</span>
-                                        <span class="solicitud-doc-status verified">✓ Verificado en Sistema</span>
-                                    </span>
-                                </span>
-                                <span>✅</span>
-                                @if (!Model.ReadOnly)
-                                {
-                                    <form method="post" asp-page-handler="EliminarArchivo" style="margin:0;"
-                                          onsubmit="return confirm('¿Eliminar este documento adjunto?');">
-                                        <input type="hidden" name="id" value="@Model.RequestId" />
-                                        <input type="hidden" name="attachmentId" value="@attachment.Id" />
-                                        <button type="submit" class="btn-danger" title="Eliminar" aria-label="Eliminar" style="padding:2px 8px;">&times;</button>
-                                    </form>
-                                }
-                            </li>
-                        }
-                    </ul>
-                }
-                else
-                {
-                    <p class="text-sm" style="color:var(--color-text-muted);">Sin documentos adjuntos.</p>
-                }
-
-                @if (!Model.ReadOnly)
-                {
-                    <form method="post" asp-page-handler="SubirArchivo" enctype="multipart/form-data">
-                        <input type="hidden" name="id" value="@Model.RequestId" />
-                        <label class="solicitud-dropzone">
-                            <span style="font-size:1.4rem; display:block;">☁️</span>
-                            Arrastre archivos aquí o <u>examine</u>
-                            <input type="file" name="NewAttachment" accept=".pdf,.jpg,.jpeg" style="display:block; margin:8px auto 0;" />
-                            <span class="text-xs" style="display:block; margin-top:4px; color:var(--color-text-muted);">MÁX 5MB — PDF/JPG</span>
-                        </label>
-                        <button type="submit" class="btn-solicitud-secondary" style="margin-top:8px; width:100%;">Adjuntar</button>
-                    </form>
-                }
-            </div>
         </div>
     </div>
 </form>

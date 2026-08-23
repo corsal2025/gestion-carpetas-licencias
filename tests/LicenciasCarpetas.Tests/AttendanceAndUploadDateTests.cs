@@ -61,7 +61,7 @@ public class AttendanceAndUploadDateTests
         using var db = new SqliteTestDatabase();
         var id = Insert(db);
         db.Cases.SetAttended(id, true);
-        var model = new IndexModel(db.Cases, new NullExporter(), new CarpetasOptions());
+        var model = IndexModelTestFactory.Create(db, new NullExporter(), new CarpetasOptions());
 
         model.OnPostSave(id, "JUAN PEREZ", "13.025.150-1", "02-01-2026", subida: null, ultimaCarpeta: null,
             estado: null, decision: null, idoneidad: null, atencion: null);
@@ -80,7 +80,7 @@ public class AttendanceAndUploadDateTests
     {
         using var db = new SqliteTestDatabase();
         var id = Insert(db);
-        var model = new IndexModel(db.Cases, new NullExporter(), new CarpetasOptions());
+        var model = IndexModelTestFactory.Create(db, new NullExporter(), new CarpetasOptions());
 
         model.OnPostSave(id, "JUAN PEREZ", "13.025.150-1", "02-01-2026", subida: null, ultimaCarpeta: null,
             estado: state, decision: null, idoneidad: null, atencion: null);
@@ -96,7 +96,7 @@ public class AttendanceAndUploadDateTests
     {
         using var db = new SqliteTestDatabase();
         var id = Insert(db);
-        var model = new IndexModel(db.Cases, new NullExporter(), new CarpetasOptions());
+        var model = IndexModelTestFactory.Create(db, new NullExporter(), new CarpetasOptions());
 
         model.OnPostSave(id, "JUAN PEREZ", "13.025.150-1", "02-01-2026", subida: null, ultimaCarpeta: null,
             estado: state, decision: null, idoneidad: null, atencion: null);
@@ -108,7 +108,7 @@ public class AttendanceAndUploadDateTests
     public void A_new_case_can_be_created_with_the_f8_code_and_the_previous_folder_date()
     {
         using var db = new SqliteTestDatabase();
-        var model = new IndexModel(db.Cases, new NullExporter(), new CarpetasOptions());
+        var model = IndexModelTestFactory.Create(db, new NullExporter(), new CarpetasOptions());
 
         model.OnPostAdd("MARIA SOTO", "16.487.222-K", "02-01-2026", Office.Placilla,
             ultimaCarpeta: "01-03-2024", estado: null, decision: null, idoneidad: null, atencion: null,

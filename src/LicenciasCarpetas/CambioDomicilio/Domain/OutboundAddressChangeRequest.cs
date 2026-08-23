@@ -15,8 +15,8 @@ public sealed class OutboundAddressChangeRequest
     public required string FullName { get; set; }
     public required string Rut { get; set; }
     public string? Phone { get; set; }
-    public required string Street { get; set; }
-    public required string Number { get; set; }
+    public string? Street { get; set; }
+    public string? Number { get; set; }
     public string? Unit { get; set; }
     public required string DestinationComuna { get; set; }
     public OutboundRequestStatus Status { get; set; } = OutboundRequestStatus.Borrador;
@@ -24,6 +24,12 @@ public sealed class OutboundAddressChangeRequest
     public DateTimeOffset? SentAt { get; set; }
     public long? SentByUserId { get; set; }
     public long CreatedByUserId { get; set; }
+
+    /// <summary>The FolderCase this request was created from via the one-click Casos "Solicitar"
+    /// button, if any — lets that flow detect a request already exists for the case and refuse to
+    /// create (and email) a duplicate. Null for requests started from Solicitar Cambios de
+    /// Domicilio directly, which has no originating case to correlate.</summary>
+    public long? SourceFolderCaseId { get; set; }
 }
 
 /// <summary>One file attached to an OutboundAddressChangeRequest — stored on disk under

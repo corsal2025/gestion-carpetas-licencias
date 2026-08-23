@@ -38,6 +38,9 @@ public sealed class FakeOutboundAddressChangeRequestRepository : IOutboundAddres
     public IReadOnlyList<OutboundAddressChangeRequest> GetAll() =>
         _requests.OrderByDescending(r => r.Id).ToList();
 
+    public IReadOnlyList<OutboundAddressChangeRequest> FindBySourceFolderCaseId(long folderCaseId) =>
+        _requests.Where(r => r.SourceFolderCaseId == folderCaseId).OrderByDescending(r => r.Id).ToList();
+
     public bool MarkSent(long id, DateTimeOffset sentAt, long sentByUserId)
     {
         var request = FindById(id);

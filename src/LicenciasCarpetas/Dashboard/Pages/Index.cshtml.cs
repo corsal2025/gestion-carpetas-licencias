@@ -1,3 +1,6 @@
+using System.Security.Claims;
+using LicenciasCarpetas.CambioDomicilio.Data;
+using LicenciasCarpetas.CambioDomicilio.Solicitar;
 using LicenciasCarpetas.Configuration;
 using LicenciasCarpetas.Domain;
 using LicenciasCarpetas.Persistence;
@@ -5,11 +8,14 @@ using LicenciasCarpetas.Reporting;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using OutboundAddressChangeRequest = LicenciasCarpetas.CambioDomicilio.Domain.OutboundAddressChangeRequest;
+using OutboundRequestStatus = LicenciasCarpetas.CambioDomicilio.Domain.OutboundRequestStatus;
 
 namespace LicenciasCarpetas.Dashboard.Pages;
 
 [Authorize]
-public class IndexModel(IFolderCaseRepository cases, IExcelCaseExporter exporter, CarpetasOptions options) : PageModel
+public class IndexModel(IFolderCaseRepository cases, IExcelCaseExporter exporter, CarpetasOptions options,
+    IOutboundAddressChangeRequestRepository outboundRequests, OutboundRequestSender sender) : PageModel
 {
     public IReadOnlyList<FolderCase> Cases { get; private set; } = [];
     public int TotalCount { get; private set; }
@@ -86,7 +92,7 @@ public class IndexModel(IFolderCaseRepository cases, IExcelCaseExporter exporter
     public IActionResult OnPostSave(long id, string? nombre, string? rut, string? citacion, string? subida,
         string? ultimaCarpeta, FolderState? estado, FinalDecision? decision, MoralIdoneity? idoneidad, string? atencion,
         string? penultima = null, string? codigoF8 = null, LicenceClass[]? licencias = null, string? observaciones = null,
-        string? folioLicencia = null)
+        string? folioLicencia = null, string? comuna = null)
     {
         var existing = cases.FindById(id);
         if (existing is null)
@@ -118,7 +124,8 @@ public class IndexModel(IFolderCaseRepository cases, IExcelCaseExporter exporter
         cases.UpdateEditableFields(id, fullName, normalizedRut ?? rut?.Trim(), citationDate, uploadedDate,
             lastFolderDate, lastFolderComuna, estado, decision, idoneidad,
             string.IsNullOrWhiteSpace(atencion) ? null : atencion.Trim(), needsReview,
-            editedBy: User?.Identity?.Name);
+            editedBy: User?.Identity?.Name,
+            cambioDomicilioComuna: string.IsNullOrWhiteSpace(comuna) ? null : comuna.Trim());
 
         // Los campos que el Excel no trae van por separado, para que una reimportación no los pise.
         cases.UpdateCaseDetails(id, codigoF8, ParseDate(penultima),
@@ -201,6 +208,76 @@ public class IndexModel(IFolderCaseRepository cases, IExcelCaseExporter exporter
         return RedirectWithMessage(selectedIds.Length == 1
             ? "1 caso movido a la Papelera. Se puede restaurar desde ahí."
             : $"{selectedIds.Length} casos movidos a la Papelera. Se pueden restaurar desde ahí.");
+    }
+
+    /// <summary>One-click "Solicitar": creates an outbound Cambio de Domicilio request from the
+    /// case's own data (name, RUT, comuna already typed in this row) and sends it right away — same
+    /// contact lookup, subject/body shape and send/MarkSent sequence as
+    /// NuevaModel.OnPostEnviar, minus Street/Number/Unit, which Casos never has.</summary>
+    public async Task<IActionResult> OnPostSolicitarCambioDomicilio(long id)
+    {
+        // Manda un correo real a otra comuna — el mismo gate que el resto de Cambio de Domicilio,
+        // aunque Casos en sí quede abierto a todos los roles. El botón ya se oculta sin este claim
+        // (Index.cshtml), pero eso por sí solo no basta: cualquiera podría postear el handler.
+        if (!User.HasClaim("mod:cambio-domicilio", "true"))
+        {
+            return RedirectWithMessage("No tiene acceso al módulo Cambio de Domicilio.", isError: true);
+        }
+
+        var folderCase = cases.FindById(id);
+        if (folderCase is null)
+        {
+            return RedirectWithMessage("El caso ya no existe.", isError: true);
+        }
+
+        if (folderCase.FolderState != FolderState.CambioDomicilioSolicitado)
+        {
+            return RedirectWithMessage("El caso no está marcado como 'Cambio de domicilio solicitado'.", isError: true);
+        }
+
+        if (string.IsNullOrWhiteSpace(folderCase.CambioDomicilioComuna))
+        {
+            return RedirectWithMessage("Ingrese la comuna antes de solicitar.", isError: true);
+        }
+
+        if (string.IsNullOrWhiteSpace(folderCase.FullName) || string.IsNullOrWhiteSpace(folderCase.Rut))
+        {
+            return RedirectWithMessage("Complete nombre y RUT del caso antes de solicitar.", isError: true);
+        }
+
+        // Un clic accidental (o de otra pestaña) no debe crear ni mandar una segunda solicitud
+        // para el mismo caso — solo importan las que ya se enviaron, no un borrador huérfano.
+        var alreadyRequested = outboundRequests.FindBySourceFolderCaseId(folderCase.Id)
+            .Any(r => r.Status != OutboundRequestStatus.Borrador);
+        if (alreadyRequested)
+        {
+            return RedirectWithMessage("Ya se solicitó un cambio de domicilio para este caso.", isError: true);
+        }
+
+        var userId = long.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+        var requestId = outboundRequests.Insert(new OutboundAddressChangeRequest
+        {
+            FullName = folderCase.FullName,
+            Rut = folderCase.Rut,
+            DestinationComuna = folderCase.CambioDomicilioComuna,
+            CreatedByUserId = userId,
+            SourceFolderCaseId = folderCase.Id
+        });
+        var request = outboundRequests.FindById(requestId)!;
+
+        var result = await sender.SendAsync(request, attachments: [], userId);
+
+        return result.Outcome switch
+        {
+            OutboundSendOutcome.NoContact => RedirectWithMessage(
+                $"No hay correo de contacto registrado para '{result.DestinationComuna}'. Agréguelo en Comunas antes de solicitar.",
+                isError: true),
+            OutboundSendOutcome.SendFailed => RedirectWithMessage(
+                "No se pudo enviar el correo (revise la configuración SMTP o la conexión). La solicitud quedó como Borrador — puede reintentar desde Solicitar Cambios de Domicilio.",
+                isError: true),
+            OutboundSendOutcome.Sent => RedirectWithMessage($"Solicitud creada y correo enviado a {result.DestinationComuna}."),
+            _ => RedirectWithMessage("El correo se envió, pero la solicitud ya figuraba como enviada (posiblemente por otra pestaña/operador).")
+        };
     }
 
     private void Load()

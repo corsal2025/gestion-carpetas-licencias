@@ -46,6 +46,11 @@ public sealed class FolderCase
     /// municipality and has to be requested from it (cambio de domicilio).</summary>
     public string? LastFolderComuna { get; set; }
 
+    /// <summary>Comuna the operator types on the Casos screen when Estado carpeta is "Cambio de
+    /// domicilio solicitado", used to send the one-click outbound request. Unrelated to
+    /// <see cref="LastFolderComuna"/>, which tracks where a previous folder physically lives.</summary>
+    public string? CambioDomicilioComuna { get; set; }
+
     /// <summary>Date of the folder before the last one. Typed by hand; the workbook has no column
     /// for it, so an import never touches it. It never decides the sector — that is the última.</summary>
     public DateOnly? PenultimateFolderDate { get; set; }

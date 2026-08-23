@@ -75,7 +75,7 @@ public class ConasetUploadTests
     {
         using var db = new SqliteTestDatabase();
         var id = Insert(db, "JUAN PEREZ", "13.025.150-1", 2);
-        var model = new IndexModel(db.Cases, new NullExporter(), new CarpetasOptions());
+        var model = IndexModelTestFactory.Create(db, new NullExporter(), new CarpetasOptions());
 
         model.OnPostSave(id, "JUAN PEREZ", "13.025.150-1", "02-01-2026", subida: null,
             ultimaCarpeta: null, estado: FolderState.SubidaAConaset, decision: null, idoneidad: null, atencion: null);
@@ -88,7 +88,7 @@ public class ConasetUploadTests
     {
         using var db = new SqliteTestDatabase();
         var id = Insert(db, "JUAN PEREZ", "13.025.150-1", 2);
-        var model = new IndexModel(db.Cases, new NullExporter(), new CarpetasOptions());
+        var model = IndexModelTestFactory.Create(db, new NullExporter(), new CarpetasOptions());
 
         model.OnPostSave(id, "JUAN PEREZ", "13.025.150-1", "02-01-2026", subida: "05-01-2026",
             ultimaCarpeta: null, estado: FolderState.SubidaAConaset, decision: null, idoneidad: null, atencion: null);
@@ -101,7 +101,7 @@ public class ConasetUploadTests
     {
         using var db = new SqliteTestDatabase();
         var id = Insert(db, "JUAN PEREZ", "13.025.150-1", 2);
-        var model = new IndexModel(db.Cases, new NullExporter(), new CarpetasOptions());
+        var model = IndexModelTestFactory.Create(db, new NullExporter(), new CarpetasOptions());
 
         model.OnPostSave(id, "JUAN PEREZ", "13.025.150-1", "02-01-2026", subida: null,
             ultimaCarpeta: null, estado: FolderState.PrimeraLicencia, decision: null, idoneidad: null, atencion: null);

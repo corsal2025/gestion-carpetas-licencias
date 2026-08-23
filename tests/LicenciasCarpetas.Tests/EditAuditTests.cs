@@ -85,7 +85,7 @@ public class EditAuditTests
     {
         using var db = new SqliteTestDatabase();
         var id = Insert(db);
-        var model = new IndexModel(db.Cases, new NullExporter(), new CarpetasOptions());
+        var model = IndexModelTestFactory.Create(db, new NullExporter(), new CarpetasOptions());
 
         model.OnPostSave(id, "JUAN PEREZ", "13.025.150-1", "02-01-2026", null, null, null, null, null, null);
 

@@ -5,6 +5,9 @@
     // Esta pantalla fija su tabla al alto de la ventana para tener siempre a la vista la barra
     // de desplazamiento lateral; ninguna otra lo hace.
     ViewData["BodyClass"] = "viewport-locked";
+    // El botón "Solicitar" manda un correo real a otra comuna — mismo permiso de módulo que el
+    // resto de Cambio de Domicilio, aunque esta pantalla en sí quede abierta a todos los roles.
+    var puedeCambioDomicilio = User.HasClaim("mod:cambio-domicilio", "true");
 }
 
 @if (Model.Message is not null)
@@ -282,6 +285,7 @@
                 <th title="Fecha de la carpeta anterior a la última. No influye en el sector">Fecha penúltima<br />carpeta</th>
                 <th title="Clases que el contribuyente viene a obtener. Se pueden marcar varias">Tipo de licencia</th>
                 <th><a asp-page="/Index" asp-all-route-data="@Model.SortRouteValues(CaseSort.FolderState)" class="sort-link"><span>Estado carpeta</span>@Model.SortIndicator(CaseSort.FolderState)</a></th>
+                <th>Comuna</th>
                 <th>Idoneidad</th>
                 <th><a asp-page="/Index" asp-all-route-data="@Model.SortRouteValues(CaseSort.FinalDecision)" class="sort-link"><span>Decisión final</span>@Model.SortIndicator(CaseSort.FinalDecision)</a></th>
                 <th>Acción</th>
@@ -446,6 +450,10 @@
                     </select>
                 </td>
                 <td>
+                    <input type="text" name="comuna" form="case-form-@item.Id" class="input-inline" style="width:110px;"
+                           value="@item.CambioDomicilioComuna" placeholder="ej: Valparaíso" />
+                </td>
+                <td>
                     <select name="idoneidad" form="case-form-@item.Id" class="input-inline" onchange="repaintIdoneidad(this)">
                         <option value="">—</option>
                         @foreach (var idoneity in MoralIdoneityCatalog.All)
@@ -479,6 +487,17 @@
                         <input type="hidden" name="desc" value="@Model.Descending" />
                         <button type="submit" class="btn-danger" title="Mover a la Papelera" aria-label="Mover a la Papelera">✕</button>
                     </form>
+                    @if (item.FolderState == FolderState.CambioDomicilioSolicitado && puedeCambioDomicilio)
+                    {
+                        @* Crea-y-manda en un clic: arma una solicitud en "Solicitar Cambios de
+                           Domicilio" con lo que ya está en la fila (nombre, RUT, comuna) y manda el
+                           correo a la comuna de inmediato — sin pasar por esa pantalla. *@
+                        <form method="post" asp-page-handler="SolicitarCambioDomicilio" style="display:inline;">
+                            <input type="hidden" name="id" value="@item.Id" />
+                            <button type="submit" class="btn-primary" title="Crear la solicitud y enviar el correo a la comuna"
+                                    onclick="return confirm('Esto crea una solicitud de Cambio de Domicilio para @item.FullName y manda el correo a la comuna de inmediato. ¿Confirmar?');">Solicitar</button>
+                        </form>
+                    }
                 </td>
             </tr>
         }

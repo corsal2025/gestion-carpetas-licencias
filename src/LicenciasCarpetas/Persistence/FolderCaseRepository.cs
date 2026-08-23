@@ -50,7 +50,7 @@ public interface IFolderCaseRepository
     void UpdateEditableFields(long id, string? fullName, string? rut, DateOnly? citationDate,
         DateOnly? folderUploadedDate, DateOnly? lastFolderDate, string? lastFolderComuna,
         FolderState? folderState, FinalDecision? finalDecision, MoralIdoneity? moralIdoneity,
-        string? attentionNote, bool needsReview, string? editedBy = null);
+        string? attentionNote, bool needsReview, string? editedBy = null, string? cambioDomicilioComuna = null);
     void SetMarked(long id, bool marked);
 
     /// <summary>Whether the person showed up. Ticked from the cases screen and counted on the
@@ -134,6 +134,7 @@ public sealed class FolderCaseRepository(string connectionString) : IFolderCaseR
         AddColumnIfMissing(connection, "Email");
         AddColumnIfMissing(connection, "CellPhone");
         AddColumnIfMissing(connection, "Observations");
+        AddColumnIfMissing(connection, "CambioDomicilioComuna");
         BackfillFullNameSort(connection);
     }
 
@@ -312,13 +313,15 @@ public sealed class FolderCaseRepository(string connectionString) : IFolderCaseR
                 FirstName, LastName, FullName, FullNameSort, Rut, Office, AttentionNote, Attended,
                 MoralIdoneity, FolderState, FolderStateRaw, FinalDecision, FinalDecisionRaw,
                 SourceSheet, SourceRow, NeedsReview, Marked, CreatedAt, UpdatedAt,
-                PenultimateFolderDate, CodigoF8, LicenceClasses, Email, CellPhone, FolioLicencia)
+                PenultimateFolderDate, CodigoF8, LicenceClasses, Email, CellPhone, FolioLicencia,
+                CambioDomicilioComuna)
             VALUES (
                 $citationDate, $uploadedDate, $lastFolderDate, $lastFolderComuna,
                 $firstName, $lastName, $fullName, $fullNameSort, $rut, $office, $attention, $attended,
                 $idoneity, $state, $stateRaw, $decision, $decisionRaw,
                 $sheet, $row, $needsReview, $marked, $createdAt, $updatedAt,
-                $penultimate, $codigoF8, $licences, $email, $cellPhone, $folio);
+                $penultimate, $codigoF8, $licences, $email, $cellPhone, $folio,
+                $cambioDomicilioComuna);
             SELECT last_insert_rowid();
             """;
         BindWritableFields(command, folderCase);
@@ -337,6 +340,7 @@ public sealed class FolderCaseRepository(string connectionString) : IFolderCaseR
         command.Parameters.AddWithValue("$email", Nullable(folderCase.Email));
         command.Parameters.AddWithValue("$cellPhone", Nullable(folderCase.CellPhone));
         command.Parameters.AddWithValue("$folio", Nullable(folderCase.FolioLicencia));
+        command.Parameters.AddWithValue("$cambioDomicilioComuna", Nullable(folderCase.CambioDomicilioComuna));
 
         return (long)command.ExecuteScalar()!;
     }
@@ -723,7 +727,7 @@ public sealed class FolderCaseRepository(string connectionString) : IFolderCaseR
     public void UpdateEditableFields(long id, string? fullName, string? rut, DateOnly? citationDate,
         DateOnly? folderUploadedDate, DateOnly? lastFolderDate, string? lastFolderComuna,
         FolderState? folderState, FinalDecision? finalDecision, MoralIdoneity? moralIdoneity,
-        string? attentionNote, bool needsReview, string? editedBy = null)
+        string? attentionNote, bool needsReview, string? editedBy = null, string? cambioDomicilioComuna = null)
     {
         using var connection = Open();
         using var command = connection.CreateCommand();
@@ -744,7 +748,8 @@ public sealed class FolderCaseRepository(string connectionString) : IFolderCaseR
                 AttentionNote = $attention,
                 NeedsReview = $needsReview,
                 UpdatedAt = $updatedAt,
-                UpdatedBy = COALESCE($editedBy, UpdatedBy)
+                UpdatedBy = COALESCE($editedBy, UpdatedBy),
+                CambioDomicilioComuna = $cambioDomicilioComuna
             WHERE Id = $id
             """;
         // Attended queda fuera a propósito: lo maneja su propia casilla (SetAttended). Derivarlo
@@ -764,6 +769,7 @@ public sealed class FolderCaseRepository(string connectionString) : IFolderCaseR
         command.Parameters.AddWithValue("$needsReview", needsReview ? 1 : 0);
         command.Parameters.AddWithValue("$updatedAt", DateTimeOffset.UtcNow.ToString("O"));
         command.Parameters.AddWithValue("$editedBy", Nullable(editedBy));
+        command.Parameters.AddWithValue("$cambioDomicilioComuna", Nullable(cambioDomicilioComuna));
         command.Parameters.AddWithValue("$id", id);
         command.ExecuteNonQuery();
     }
@@ -1059,7 +1065,8 @@ public sealed class FolderCaseRepository(string connectionString) : IFolderCaseR
         LicenceClasses = ReadText(reader, "LicenceClasses"),
         Email = ReadText(reader, "Email"),
         CellPhone = ReadText(reader, "CellPhone"),
-        Observations = ReadText(reader, "Observations")
+        Observations = ReadText(reader, "Observations"),
+        CambioDomicilioComuna = ReadText(reader, "CambioDomicilioComuna")
     };
 
     private static string? ReadText(SqliteDataReader reader, string column)
