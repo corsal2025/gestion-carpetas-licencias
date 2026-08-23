@@ -891,7 +891,7 @@
             // guardó cuando en realidad el cambio solo vive en el navegador.
             if (row) {
                 row.classList.add('fila-error-guardado');
-                row.title = 'No se pudo guardar — revise la conexión e intente de nuevo (o use el botón Guardar).';
+                row.title = 'No se pudo guardar — revise la conexión e intente de nuevo.';
             }
         });
     }
@@ -903,6 +903,18 @@
         var form = document.getElementById(formId);
         if (!form) return;
         autoSaveCaseForm(form);
+    });
+
+    // Sin botón "Guardar" visible, apretar Enter en un input de texto de la fila (Código F8,
+    // Fecha penúltima carpeta, Nombre, RUT, etc.) dispara el envío nativo e implícito del form
+    // — una navegación de página completa que reventaba el autoguardado por fetch() y hacía
+    // "saltar" la página al principio, perdiendo el scroll. Se intercepta y se manda por el mismo
+    // camino que change/blur, guardando igual sin recargar nada.
+    document.addEventListener('submit', function (e) {
+        if (e.target.id && e.target.id.indexOf('case-form-') === 0) {
+            e.preventDefault();
+            autoSaveCaseForm(e.target);
+        }
     });
 </script>
 <script>
