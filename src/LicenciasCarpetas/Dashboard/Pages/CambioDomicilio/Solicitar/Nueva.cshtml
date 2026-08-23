@@ -4,6 +4,11 @@
     ViewData["Title"] = Model.ReadOnly ? "Ver Solicitud" : (Model.RequestId is null ? "Nueva Solicitud" : "Editar Solicitud");
 }
 
+<h1 class="text-xl" style="margin:0 0 4px;">Petición de Cambio de Domicilio</h1>
+<p class="text-sm" style="color:var(--color-text-muted); margin:0 0 16px;">
+    Ingrese los datos requeridos para actualizar el registro municipal. Los campos marcados con * son obligatorios.
+</p>
+
 @if (Model.Message is not null)
 {
     <p class="message-banner @(Model.MessageIsError ? "message-error" : "")">@Model.Message</p>
@@ -12,45 +17,45 @@
 <form method="post" asp-page-handler="GuardarBorrador" asp-route-id="@Model.RequestId" id="solicitud-form">
     <div style="display:flex; gap:16px; align-items:flex-start; flex-wrap:wrap;">
         <div style="flex:1 1 60%; min-width:320px; display:flex; flex-direction:column; gap:16px;">
-            <div class="card" style="padding:20px 24px;">
-                <h3 style="margin-top:0;">Datos del Contribuyente</h3>
-                <div style="display:flex; flex-direction:column; gap:10px;">
+            <div class="card solicitud-card solicitud-card-accent-primary">
+                <div class="solicitud-card-header">👤 Datos del Contribuyente</div>
+                <div class="solicitud-field-grid">
                     <div>
-                        <label class="form-label" for="input-fullname">Nombre Completo / Razón Social</label>
-                        <input type="text" id="input-fullname" asp-for="Input.FullName" required disabled="@Model.ReadOnly"
-                               style="width:100%; border:1px solid var(--color-border); border-radius:4px; padding:8px;" />
+                        <label class="form-label" for="input-rut">RUT *</label>
+                        <div class="solicitud-input-wrap">
+                            <input type="text" id="input-rut" asp-for="Input.Rut" required disabled="@Model.ReadOnly" placeholder="ej: 18.785.387-7" class="solicitud-input" />
+                            @if (!string.IsNullOrWhiteSpace(Model.Input.Rut))
+                            {
+                                <span class="solicitud-input-check" title="RUT ingresado">✓</span>
+                            }
+                        </div>
                     </div>
                     <div>
-                        <label class="form-label" for="input-rut">RUT</label>
-                        <input type="text" id="input-rut" asp-for="Input.Rut" required disabled="@Model.ReadOnly" placeholder="ej: 18.785.387-7"
-                               style="width:100%; border:1px solid var(--color-border); border-radius:4px; padding:8px;" />
+                        <label class="form-label" for="input-phone">Teléfono de Contacto</label>
+                        <input type="text" id="input-phone" asp-for="Input.Phone" disabled="@Model.ReadOnly" placeholder="+56 9 XXXX XXXX" class="solicitud-input" />
                     </div>
-                    <div>
-                        <label class="form-label" for="input-phone">Teléfono</label>
-                        <input type="text" id="input-phone" asp-for="Input.Phone" disabled="@Model.ReadOnly"
-                               style="width:100%; border:1px solid var(--color-border); border-radius:4px; padding:8px;" />
+                    <div style="grid-column:1 / -1;">
+                        <label class="form-label" for="input-fullname">Nombre Completo / Razón Social *</label>
+                        <input type="text" id="input-fullname" asp-for="Input.FullName" required disabled="@Model.ReadOnly" class="solicitud-input" />
                     </div>
                 </div>
             </div>
 
-            <div class="card" style="padding:20px 24px;">
-                <h3 style="margin-top:0;">Nuevo Domicilio</h3>
-                <div style="display:flex; flex-direction:column; gap:10px;">
+            <div class="card solicitud-card solicitud-card-accent-secondary">
+                <div class="solicitud-card-header">📍 Nuevo Domicilio</div>
+                <div class="solicitud-field-grid">
                     <div>
-                        <label class="form-label" for="input-street">Calle / Avenida</label>
-                        <input type="text" id="input-street" asp-for="Input.Street" required disabled="@Model.ReadOnly"
-                               style="width:100%; border:1px solid var(--color-border); border-radius:4px; padding:8px;" />
+                        <label class="form-label" for="input-street">Calle / Avenida *</label>
+                        <input type="text" id="input-street" asp-for="Input.Street" required disabled="@Model.ReadOnly" placeholder="Ej. Av. Providencia" class="solicitud-input" />
                     </div>
                     <div>
-                        <label class="form-label" for="input-number">Número</label>
-                        <input type="text" id="input-number" asp-for="Input.Number" required disabled="@Model.ReadOnly"
-                               style="width:100%; border:1px solid var(--color-border); border-radius:4px; padding:8px;" />
+                        <label class="form-label" for="input-number">Número *</label>
+                        <input type="text" id="input-number" asp-for="Input.Number" required disabled="@Model.ReadOnly" placeholder="Ej. 1234" class="solicitud-input" />
                     </div>
                     <div>
-                        <label class="form-label" for="input-comuna">Comuna</label>
-                        <select id="input-comuna" asp-for="Input.DestinationComuna" required disabled="@Model.ReadOnly"
-                                style="width:100%; border:1px solid var(--color-border); border-radius:4px; padding:8px;">
-                            <option value="">Seleccione...</option>
+                        <label class="form-label" for="input-comuna">Comuna *</label>
+                        <select id="input-comuna" asp-for="Input.DestinationComuna" required disabled="@Model.ReadOnly" class="solicitud-input">
+                            <option value="">Seleccionar Comuna...</option>
                             @foreach (var contact in Model.ComunaOptions)
                             {
                                 <option value="@contact.Comuna">@contact.Comuna</option>
@@ -59,43 +64,52 @@
                     </div>
                     <div>
                         <label class="form-label" for="input-unit">Oficina / Depto (opcional)</label>
-                        <input type="text" id="input-unit" asp-for="Input.Unit" disabled="@Model.ReadOnly"
-                               style="width:100%; border:1px solid var(--color-border); border-radius:4px; padding:8px;" />
+                        <input type="text" id="input-unit" asp-for="Input.Unit" disabled="@Model.ReadOnly" placeholder="Ej. Of 401" class="solicitud-input" />
+                    </div>
+                    <div class="solicitud-info-box" style="grid-column:1 / -1;">
+                        ℹ️ Verifique que la dirección se encuentre dentro de los límites jurisdiccionales de la comuna de destino para evitar rechazos automáticos.
                     </div>
                 </div>
             </div>
 
             @if (!Model.ReadOnly)
             {
-                <div style="display:flex; gap:8px;">
-                    <button type="submit" class="btn-primary" style="padding:8px 16px;">Guardar Borrador</button>
+                <div class="solicitud-actions">
                     @if (Model.RequestId.HasValue)
                     {
-                        <button type="submit" form="enviar-form" class="btn-primary" style="padding:8px 16px;"
-                                onclick="return confirm('Esto enviará la solicitud a la comuna de destino. ¿Confirmar?');">Enviar Petición</button>
+                        <button type="submit" form="enviar-form" class="btn-solicitud-primary"
+                                onclick="return confirm('Esto enviará la solicitud a la comuna de destino. ¿Confirmar?');">ENVIAR PETICIÓN ▷</button>
                     }
-                    <a asp-page="/CambioDomicilio/Solicitar/Index" style="padding:8px 16px;">Cancelar</a>
+                    <button type="submit" class="btn-solicitud-secondary">GUARDAR BORRADOR</button>
+                    <a asp-page="/CambioDomicilio/Solicitar/Index" class="btn-solicitud-cancel">⊗ CANCELAR</a>
                 </div>
             }
             else
             {
                 <div>
-                    <a asp-page="/CambioDomicilio/Solicitar/Index" style="padding:8px 16px;">Volver</a>
+                    <a asp-page="/CambioDomicilio/Solicitar/Index" class="btn-solicitud-secondary" style="display:inline-block;">Volver</a>
                 </div>
             }
         </div>
 
         <div style="flex:1 1 30%; min-width:260px;">
-            <div class="card" style="padding:20px 24px;">
-                <h3 style="margin-top:0;">Documentación</h3>
+            <div class="card solicitud-card">
+                <div class="solicitud-card-header">📎 Documentación</div>
 
                 @if (Model.Attachments.Count > 0)
                 {
-                    <ul style="list-style:none; padding:0; margin:0 0 12px 0; display:flex; flex-direction:column; gap:6px;">
+                    <ul style="list-style:none; padding:0; margin:0 0 12px 0; display:flex; flex-direction:column; gap:8px;">
                         @foreach (var attachment in Model.Attachments)
                         {
-                            <li style="display:flex; justify-content:space-between; align-items:center; gap:8px; border:1px solid var(--color-border); border-radius:4px; padding:6px 10px;">
-                                <span>@attachment.FileName</span>
+                            <li class="solicitud-doc-item verified">
+                                <span style="display:flex; align-items:center; gap:8px; min-width:0;">
+                                    <span>📄</span>
+                                    <span style="min-width:0;">
+                                        <span style="display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">@attachment.FileName</span>
+                                        <span class="solicitud-doc-status verified">✓ Verificado en Sistema</span>
+                                    </span>
+                                </span>
+                                <span>✅</span>
                                 @if (!Model.ReadOnly)
                                 {
                                     <form method="post" asp-page-handler="EliminarArchivo" style="margin:0;"
@@ -111,18 +125,20 @@
                 }
                 else
                 {
-                    <p style="color:var(--color-muted, #888); font-size:0.85rem;">Sin documentos adjuntos.</p>
+                    <p class="text-sm" style="color:var(--color-text-muted);">Sin documentos adjuntos.</p>
                 }
 
                 @if (!Model.ReadOnly)
                 {
                     <form method="post" asp-page-handler="SubirArchivo" enctype="multipart/form-data">
                         <input type="hidden" name="id" value="@Model.RequestId" />
-                        <label style="display:block; border:1px dashed var(--color-border); border-radius:4px; padding:16px; text-align:center; cursor:pointer;">
-                            Seleccionar archivo (.pdf, .jpg, .jpeg)
-                            <input type="file" name="NewAttachment" accept=".pdf,.jpg,.jpeg" style="display:block; margin-top:8px;" />
+                        <label class="solicitud-dropzone">
+                            <span style="font-size:1.4rem; display:block;">☁️</span>
+                            Arrastre archivos aquí o <u>examine</u>
+                            <input type="file" name="NewAttachment" accept=".pdf,.jpg,.jpeg" style="display:block; margin:8px auto 0;" />
+                            <span class="text-xs" style="display:block; margin-top:4px; color:var(--color-text-muted);">MÁX 5MB — PDF/JPG</span>
                         </label>
-                        <button type="submit" class="btn-primary" style="margin-top:8px; padding:6px 12px;">Adjuntar</button>
+                        <button type="submit" class="btn-solicitud-secondary" style="margin-top:8px; width:100%;">Adjuntar</button>
                     </form>
                 }
             </div>
