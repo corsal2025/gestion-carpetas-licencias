@@ -1462,28 +1462,21 @@ table.cases-index thead th {
     background: #eef2f6;
 }
 
+/* Nombre/RUT YA NO quedan fijos al desplazar la tabla en horizontal — position:sticky dentro de
+   una <table> (no un div) es una fuente conocida de bugs de renderizado cruzados entre
+   navegadores, sobre todo en mobile: pintaba por encima de las celdas de Tipo de licencia /
+   Observaciones cuando quedaban geométricamente bajo la franja fija, o al revés, esa misma franja
+   se tragaba el clic y el panel de Observaciones/Licencias no abría. Sacar el sticky elimina la
+   causa de raíz de las dos versiones del bug en vez de seguir ajustando z-index a ciegas. */
 table.cases-index th.name-cell,
 table.cases-index td.name-cell,
 table.cases-index th.rut-cell,
 table.cases-index td.rut-cell {
-    position: sticky;
-    z-index: 1;
     background: #ffffff;
-}
-
-table.cases-index th.name-cell,
-table.cases-index td.name-cell { left: 0; }
-
-table.cases-index th.rut-cell,
-table.cases-index td.rut-cell {
-    left: var(--sticky-rut-left, 260px);
-    /* La línea marca dónde termina lo fijo y empieza lo que se desplaza. */
-    box-shadow: 1px 0 0 var(--color-border);
 }
 
 table.cases-index thead th.name-cell,
 table.cases-index thead th.rut-cell {
-    z-index: 3;
     background: #eef2f6;
 }
 
