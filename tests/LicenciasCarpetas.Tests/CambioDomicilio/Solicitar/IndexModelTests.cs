@@ -1,4 +1,5 @@
 using System.Security.Claims;
+using LicenciasCarpetas.CambioDomicilio;
 using LicenciasCarpetas.CambioDomicilio.Domain;
 using LicenciasCarpetas.CambioDomicilio.Solicitar;
 using LicenciasCarpetas.Dashboard.Pages.CambioDomicilio.Solicitar;
@@ -15,7 +16,7 @@ using Microsoft.AspNetCore.Routing;
 namespace LicenciasCarpetas.Tests.CambioDomicilio.Solicitar;
 
 /// <summary>Exercises the "Solicitar" button on the outbound-requests listing (IndexModel), which
-/// sends a Borrador request directly from the table without going through Nueva.cshtml — same
+/// sends a Borrador request directly from the table — same
 /// send path (OutboundRequestSender) as NuevaModel.OnPostEnviar, just reached from a shorter click.</summary>
 public class IndexModelTests
 {
@@ -65,7 +66,7 @@ public class IndexModelTests
         FakeComunaContactRepository ComunaContacts,
         RecordingEmailSender EmailSender);
 
-    private static Fixture BuildModel(SqliteTestDatabase db)
+    private static Fixture BuildModel(SqliteTestDatabase db, CambioDomicilioOptions? options = null)
     {
         var repository = new FakeOutboundAddressChangeRequestRepository();
         var comunaContacts = new FakeComunaContactRepository();
@@ -78,7 +79,7 @@ public class IndexModelTests
                 [new Claim(ClaimTypes.NameIdentifier, UserId.ToString())], "Test"))
         };
 
-        var model = new IndexModel(repository, sender, db.Cases)
+        var model = new IndexModel(repository, sender, db.Cases, options ?? new CambioDomicilioOptions())
         {
             PageContext = new PageContext(new ActionContext(httpContext, new RouteData(), new PageActionDescriptor())),
             TempData = new TempDataDictionary(httpContext, new InMemoryTempDataProvider())
@@ -278,5 +279,83 @@ public class IndexModelTests
 
         Assert.IsType<RedirectToPageResult>(result);
         Assert.Equal(FolderState.SubidaConF8, fixture.Repository.FindById(id)!.WorkflowState);
+    }
+
+    private static string WriteWorkbook(params (string Rut, string Nombre, string Comuna)[] rows)
+    {
+        var path = Path.Combine(Path.GetTempPath(), $"solicitar-sync-{Guid.NewGuid():N}.xlsx");
+        using var workbook = new ClosedXML.Excel.XLWorkbook();
+        var sheet = workbook.Worksheets.Add("Solicitudes");
+        sheet.Cell(1, 1).Value = "RUT";
+        sheet.Cell(1, 2).Value = "NOMBRE";
+        sheet.Cell(1, 3).Value = "COMUNA";
+        for (var i = 0; i < rows.Length; i++)
+        {
+            sheet.Cell(i + 2, 1).Value = rows[i].Rut;
+            sheet.Cell(i + 2, 2).Value = rows[i].Nombre;
+            sheet.Cell(i + 2, 3).Value = rows[i].Comuna;
+        }
+        workbook.SaveAs(path);
+        return path;
+    }
+
+    [Fact]
+    public void OnPostSincronizar_NoPathConfigured_ReportsNoOpWithoutThrowing()
+    {
+        using var db = new SqliteTestDatabase();
+        var fixture = BuildModel(db, new CambioDomicilioOptions { SolicitarMatrizExcelPath = null });
+
+        var result = fixture.Model.OnPostSincronizar();
+
+        Assert.IsType<RedirectToPageResult>(result);
+        Assert.Empty(fixture.Repository.GetAll());
+    }
+
+    [Fact]
+    public void OnPostSincronizar_NewRowsInTheWorkbook_CreatesOneDraftPerRut()
+    {
+        var path = WriteWorkbook(
+            ("18.785.387-7", "GUSTAVO PEÑA CASTRO", "Quillota"),
+            ("13.025.150-1", "JUAN PEREZ", "Catemu"));
+        try
+        {
+            using var db = new SqliteTestDatabase();
+            var fixture = BuildModel(db, new CambioDomicilioOptions { SolicitarMatrizExcelPath = path });
+
+            var result = fixture.Model.OnPostSincronizar();
+
+            Assert.IsType<RedirectToPageResult>(result);
+            var created = fixture.Repository.GetAll();
+            Assert.Equal(2, created.Count);
+            Assert.Contains(created, r => r.Rut == "18.785.387-7" && r.DestinationComuna == "Quillota");
+            Assert.Contains(created, r => r.Rut == "13.025.150-1" && r.DestinationComuna == "Catemu");
+            Assert.All(created, r => Assert.Equal(OutboundRequestStatus.Borrador, r.Status));
+        }
+        finally
+        {
+            File.Delete(path);
+        }
+    }
+
+    /// <summary>Sincronizar dos veces con el mismo Excel (el archivo nunca se vacía ni se marca
+    /// fila por fila) no debe duplicar la solicitud ya cargada.</summary>
+    [Fact]
+    public void OnPostSincronizar_RunTwiceOnTheSameWorkbook_DoesNotDuplicateAnAlreadyLoadedRut()
+    {
+        var path = WriteWorkbook(("18.785.387-7", "GUSTAVO PEÑA CASTRO", "Quillota"));
+        try
+        {
+            using var db = new SqliteTestDatabase();
+            var fixture = BuildModel(db, new CambioDomicilioOptions { SolicitarMatrizExcelPath = path });
+
+            fixture.Model.OnPostSincronizar();
+            fixture.Model.OnPostSincronizar();
+
+            Assert.Single(fixture.Repository.GetAll());
+        }
+        finally
+        {
+            File.Delete(path);
+        }
     }
 }

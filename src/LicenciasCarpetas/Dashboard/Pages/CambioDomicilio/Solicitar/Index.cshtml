@@ -7,7 +7,11 @@
 }
 
 <div class="card cd-filter-bar" style="padding:8px 14px; margin-bottom:10px; display:flex; gap:8px; align-items:center;">
-    <a asp-page="/CambioDomicilio/Solicitar/Nueva" class="btn-primary" style="padding:8px 16px;">+ Nueva Solicitud</a>
+    @* Ya no hay carga manual — las solicitudes entran por el botón Solicitar en Casos o, acá,
+       sincronizando el correo de Cambio de Domicilio (ver OnPostSincronizar). *@
+    <form method="post" asp-page-handler="Sincronizar">
+        <button type="submit" class="btn-primary" style="padding:8px 16px;">↻ Sincronizar Ahora</button>
+    </form>
 </div>
 
 @if (Model.Message is not null)
@@ -16,7 +20,7 @@
 }
 
 <div class="card table-card">
-    <table class="cases">
+    <table class="cases solicitar-compact">
         <thead>
             <tr style="font-weight:700;">
                 <th>Marcar</th>
@@ -47,7 +51,7 @@
                        la solicitud nació del botón Solicitar en Casos, cambiarlo acá también
                        actualiza el FolderState del caso de origen (ver OnPostGuardarEstado). *@
                     <form method="post" asp-page-handler="GuardarEstado" asp-route-id="@item.Id" style="margin-top:4px;">
-                        <select name="workflowState" class="input-inline" style="font-size:0.72rem;" onchange="this.form.submit()">
+                        <select name="workflowState" class="input-inline" style="font-size:inherit;" onchange="this.form.submit()">
                             <option value="">—</option>
                             @foreach (var state in WorkflowStateCatalog.Options)
                             {
@@ -59,16 +63,14 @@
                 <td style="display:flex; gap:6px; align-items:center; justify-content:center;">
                     @if (item.Status == OutboundRequestStatus.Borrador)
                     {
-                        @* Envía directo desde el listado, sin entrar a Nueva.cshtml — para cuando
-                           ya está todo cargado y solo falta mandar el correo. *@
                         <form method="post" asp-page-handler="Solicitar" asp-route-id="@item.Id" style="display:inline;"
                               onsubmit="return confirm('Esto manda el correo de solicitud a la comuna de inmediato. ¿Confirmar?');">
-                            <button type="submit" class="btn-primary" style="padding:4px 10px; font-size:0.72rem;">Solicitar</button>
+                            <button type="submit" class="btn-primary" style="padding:4px 10px; font-size:inherit;">Solicitar</button>
                         </form>
                     }
                     else
                     {
-                        <a asp-page="/CambioDomicilio/Solicitar/Nueva" asp-route-id="@item.Id" style="padding:4px 10px; font-size:0.72rem;">Ver</a>
+                        <span class="badge badge-confirmed">Enviada</span>
                     }
                 </td>
             </tr>

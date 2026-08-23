@@ -227,7 +227,7 @@ public class IndexModel(IFolderCaseRepository cases, IExcelCaseExporter exporter
     /// <summary>One-click "Solicitar": creates an outbound Cambio de Domicilio request from the
     /// case's own data (name, RUT, comuna already typed in this row) and sends it right away — same
     /// contact lookup, subject/body shape and send/MarkSent sequence as
-    /// NuevaModel.OnPostEnviar, minus Street/Number/Unit, which Casos never has.</summary>
+    /// Solicitar/IndexModel.OnPostSolicitar, minus Street/Number/Unit, which Casos never has.</summary>
     public async Task<IActionResult> OnPostSolicitarCambioDomicilio(long id, string? comuna = null, string? estado = null)
     {
         // Manda un correo real a otra comuna — el mismo gate que el resto de Cambio de Domicilio,

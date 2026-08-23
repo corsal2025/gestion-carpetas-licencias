@@ -19,6 +19,12 @@ public sealed class CambioDomicilioOptions
     public int PlazoDiasHabiles { get; set; } = 15;
 
     public string? ComunaDirectoryCsvPath { get; set; }
+
+    /// <summary>Excel opcional con las peticiones de cambio de domicilio a cargar en "Solicitar
+    /// Cambios de Domicilio" (botón "Sincronizar Ahora") — mismo mecanismo que
+    /// F8:MatrizExcelPath: sin configurar, el botón lo indica y no hace nada. Encabezados
+    /// esperados en la primera hoja: RUT, NOMBRE (o NOMBRE COMPLETO), COMUNA.</summary>
+    public string? SolicitarMatrizExcelPath { get; set; }
     public string? ReportCsvPath { get; set; }
     public string? NotificationEmailAddress { get; set; }
 

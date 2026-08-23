@@ -4,9 +4,9 @@ using LicenciasCarpetas.Tests.CambioDomicilio;
 namespace LicenciasCarpetas.Tests.CambioDomicilio.Solicitar;
 
 /// <summary>Same policy gate as the rest of the Cambio de Domicilio module
-/// ("CambioDomicilioAccess"), now exercised against the two "Solicitar" pages — the sidebar link
-/// hides the pages for the wrong claim, but only this test proves the policy itself refuses a
-/// direct URL hit too.</summary>
+/// ("CambioDomicilioAccess"), now exercised against "Solicitar Cambios de Domicilio" — the
+/// sidebar link hides the page for the wrong claim, but only this test proves the policy itself
+/// refuses a direct URL hit too.</summary>
 public class AccessControlTests : IClassFixture<CambioDomicilioWebAppFactory>
 {
     private readonly CambioDomicilioWebAppFactory factory;
@@ -19,16 +19,6 @@ public class AccessControlTests : IClassFixture<CambioDomicilioWebAppFactory>
         using var client = factory.CreateAuthenticatedClient(canAccessCambioDomicilio: true);
 
         var response = await client.GetAsync("/CambioDomicilio/Solicitar/Index");
-
-        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-    }
-
-    [Fact]
-    public async Task An_authorized_operator_reaches_the_solicitar_nueva_page()
-    {
-        using var client = factory.CreateAuthenticatedClient(canAccessCambioDomicilio: true);
-
-        var response = await client.GetAsync("/CambioDomicilio/Solicitar/Nueva");
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
     }

@@ -1643,18 +1643,25 @@ table.cases-index tbody td select {
 }
 
 /* Mismo color de fila por estado, pero en la tabla de Solicitar Cambio de Domicilio (class="cases"
-   simple, no cases-index) — solo los 5 estados de WorkflowStateCatalog.Options pueden aparecer
-   ahí, así que no hace falta duplicar el resto del catálogo. */
+   simple, no cases-index) — solo los estados de WorkflowStateCatalog.Options pueden aparecer ahí,
+   así que no hace falta duplicar el resto del catálogo. */
 table.cases tbody tr.estado-subidaconf8 td { background: #BF9000; color: #ffffff; }
 table.cases tbody tr.estado-subidaconoficio td { background: #FFE599; }
 table.cases tbody tr.estado-cambiodomiciliosubidoaconaset td { background: #00FFFF; }
-table.cases tbody tr.estado-cambiodomiciliosubidoconcorreo td { background: #D0E0E3; }
-table.cases tbody tr.estado-cambiodomiciliosolicitado td { background: #9FC5E8; }
 
 table.cases tbody tr[class*="estado-"] td input,
 table.cases tbody tr[class*="estado-"] td select {
     background: #ffffff;
     color: var(--color-text);
+}
+
+/* Densidad de Solicitar Cambio de Domicilio: letra y celdas más chicas, igual que Enviar Cambio
+   de Domicilio — sin las reglas nth-child de cases-index (esta tabla no comparte estructura de
+   columnas con esa, ver el aviso de siempre contra reusar esa clase). */
+table.cases.solicitar-compact th,
+table.cases.solicitar-compact td {
+    padding: 6px 8px;
+    font-size: var(--font-xs);
 }
 
 /* RUT repetido: el libro lo pinta violeta con un COUNTIF. Marca a la misma persona citada dos

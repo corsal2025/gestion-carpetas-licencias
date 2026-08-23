@@ -25,7 +25,7 @@ public sealed record OutboundSendResult(OutboundSendOutcome Outcome, string Dest
 
 /// <summary>Everything shared by every "send this outbound Cambio de Domicilio request" flow:
 /// comuna-contact lookup, subject/body construction, the SMTP send with its failure handling, and
-/// MarkSent — used by both NuevaModel.OnPostEnviar (the full form) and
+/// MarkSent — used by both Solicitar/IndexModel.OnPostSolicitar (the outbound-requests list) and
 /// IndexModel.OnPostSolicitarCambioDomicilio (the one-click Casos button), which otherwise
 /// duplicated this ~40-line sequence with slightly different bugs.</summary>
 public sealed class OutboundRequestSender(

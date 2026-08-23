@@ -2,6 +2,7 @@ using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using LicenciasCarpetas.CambioDomicilio;
 using LicenciasCarpetas.CambioDomicilio.Data;
 using LicenciasCarpetas.CambioDomicilio.Domain;
 using LicenciasCarpetas.CambioDomicilio.Solicitar;
@@ -36,7 +37,8 @@ public static class WorkflowStateCatalog
 public sealed class IndexModel(
     IOutboundAddressChangeRequestRepository repository,
     OutboundRequestSender sender,
-    IFolderCaseRepository cases) : PageModel
+    IFolderCaseRepository cases,
+    CambioDomicilioOptions options) : PageModel
 {
     [TempData(Key = "SolicitarMessage")]
     public string? Message { get; set; }
@@ -44,6 +46,21 @@ public sealed class IndexModel(
     public IReadOnlyList<OutboundAddressChangeRequest> Requests { get; private set; } = [];
 
     public void OnGet() => Requests = repository.GetAll();
+
+    /// <summary>Mismo mecanismo que el "Sincronizar ahora" de F8 (MatrizSyncService): lee un Excel
+    /// configurado por ruta (CambioDomicilio:SolicitarMatrizExcelPath) en vez de un buzón de
+    /// correo — ver SolicitarMatrizSyncService. Sin configurar, lo indica y no hace nada, igual
+    /// que F8 cuando falta F8:MatrizExcelPath.</summary>
+    public IActionResult OnPostSincronizar()
+    {
+        var userId = long.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+        var result = SolicitarMatrizSyncService.Sync(options.SolicitarMatrizExcelPath, repository, userId);
+
+        Message = result.NoOp
+            ? "Sincronización: configure CambioDomicilio:SolicitarMatrizExcelPath en appsettings para habilitarla."
+            : result.Summary() + (result.Alerts.Count > 0 ? " Detalle: " + string.Join(" | ", result.Alerts) : string.Empty);
+        return RedirectToPage();
+    }
 
     /// <summary>Cambia el estado de la carpeta (subconjunto de WorkflowStateCatalog.Options) y, si
     /// la solicitud nació del botón "Solicitar" en Casos (SourceFolderCaseId no nulo), propaga el
@@ -88,10 +105,9 @@ public sealed class IndexModel(
         return RedirectToPage();
     }
 
-    /// <summary>Envía una solicitud Borrador directo desde el listado, sin pasar por Nueva.cshtml
-    /// — mismo camino que NuevaModel.OnPostEnviar (vía OutboundRequestSender, para no duplicar
-    /// la búsqueda de contacto ni el armado del correo), pero un clic más corto para el caso común
-    /// de "ya está todo cargado, solo falta apretar enviar".</summary>
+    /// <summary>Envía una solicitud Borrador directo desde el listado — vía OutboundRequestSender,
+    /// el mismo servicio que usa el botón "Solicitar" de Casos, para no duplicar la búsqueda de
+    /// contacto ni el armado del correo.</summary>
     public async Task<IActionResult> OnPostSolicitar(long id)
     {
         var request = repository.FindById(id);
@@ -104,7 +120,10 @@ public sealed class IndexModel(
         if (string.IsNullOrWhiteSpace(request.FullName) || string.IsNullOrWhiteSpace(request.Rut)
             || string.IsNullOrWhiteSpace(request.DestinationComuna))
         {
-            Message = "Complete todos los campos obligatorios antes de enviar (editar la solicitud).";
+            // Ya no hay pantalla de edición desde que se sacó "+ Nueva Solicitud" — esto solo
+            // puede pasar por un dato incompleto en el Excel de sincronización, así que el aviso
+            // apunta ahí en vez de a una acción que ya no existe.
+            Message = "Falta nombre, RUT o comuna — revise la fila en el Excel de sincronización.";
             return RedirectToPage();
         }
 
