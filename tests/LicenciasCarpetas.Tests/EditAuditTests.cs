@@ -3,6 +3,10 @@ using LicenciasCarpetas.Dashboard.Pages;
 using LicenciasCarpetas.Domain;
 using LicenciasCarpetas.Persistence;
 using LicenciasCarpetas.Reporting;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.RazorPages;
+using Microsoft.AspNetCore.Routing;
 
 namespace LicenciasCarpetas.Tests;
 
@@ -91,5 +95,42 @@ public class EditAuditTests
 
         // Sin sesión (fuera de una petición) queda sin autor en vez de reventar.
         Assert.Null(db.Cases.FindById(id)!.UpdatedBy);
+    }
+
+    /// <summary>Autoguardado (ver autoSaveCaseForm en Index.cshtml): el fetch() manda este mismo
+    /// header para pedir una respuesta JSON en vez de la redirección normal — sin recargar la
+    /// página, cada cambio de celda no tendría cómo saber si el guardado funcionó o no.</summary>
+    [Fact]
+    public void An_ajax_request_gets_a_json_result_instead_of_a_redirect()
+    {
+        using var db = new SqliteTestDatabase();
+        var id = Insert(db);
+        var model = IndexModelTestFactory.Create(db, new NullExporter(), new CarpetasOptions());
+        var httpContext = new DefaultHttpContext();
+        httpContext.Request.Headers["X-Requested-With"] = "XMLHttpRequest";
+        model.PageContext = new PageContext(new ActionContext(httpContext, new RouteData(), new PageActionDescriptor()));
+
+        var result = model.OnPostSave(id, "JUAN PEREZ SOTO", "13.025.150-1", "02-01-2026", null, null, null, null, null, null);
+
+        Assert.IsType<JsonResult>(result);
+        Assert.Equal("JUAN PEREZ SOTO", db.Cases.FindById(id)!.FullName);
+    }
+
+    /// <summary>Antes esta rama en particular quedaba antes del chequeo del header X-Requested-With
+    /// y siempre redirigía — un fetch() del autoguardado contra un caso borrado por otro operador
+    /// mientras tanto recibía HTML de vuelta en vez de JSON, y el response.json() del cliente
+    /// reventaba con un mensaje genérico de "sin conexión" que ocultaba la causa real.</summary>
+    [Fact]
+    public void An_ajax_request_for_a_deleted_case_still_gets_a_json_result()
+    {
+        using var db = new SqliteTestDatabase();
+        var model = IndexModelTestFactory.Create(db, new NullExporter(), new CarpetasOptions());
+        var httpContext = new DefaultHttpContext();
+        httpContext.Request.Headers["X-Requested-With"] = "XMLHttpRequest";
+        model.PageContext = new PageContext(new ActionContext(httpContext, new RouteData(), new PageActionDescriptor()));
+
+        var result = model.OnPostSave(id: 999_999, "X", null, null, null, null, null, null, null, null);
+
+        Assert.IsType<JsonResult>(result);
     }
 }

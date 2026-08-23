@@ -1683,8 +1683,9 @@ body.cases-page main > .card form {
     flex-wrap: wrap;
 }
 
-/* Fila con cambios sin guardar: el color ya cambió al elegir la opción, pero en la base sigue el
-   valor anterior hasta apretar Guardar. El borde punteado avisa de esa diferencia. */
+/* Fila con un autoguardado en curso: el cambio (color, texto) ya se ve en la fila, pero el fetch()
+   al servidor (ver autoSaveCaseForm en Index.cshtml) puede tardar un instante — el borde naranja
+   avisa que todavía no está confirmado. Se saca solo al llegar la respuesta OK. */
 table.cases-index tbody tr.fila-sin-guardar td:first-child {
     box-shadow: inset 3px 0 0 #d97706;
 }
@@ -1692,6 +1693,13 @@ table.cases-index tbody tr.fila-sin-guardar td:first-child {
 table.cases-index tbody tr.fila-sin-guardar button[type="submit"] {
     outline: 2px solid #d97706;
     outline-offset: 1px;
+}
+
+/* El autoguardado falló (sin conexión, error del servidor): a diferencia de "sin-guardar" (que se
+   saca solo al confirmar), este queda hasta que el operador reintente — silenciarlo haría creer
+   que el cambio se guardó cuando en realidad solo vive en el navegador. */
+table.cases-index tbody tr.fila-error-guardado td:first-child {
+    box-shadow: inset 3px 0 0 var(--color-danger, #dc2626);
 }
 
 /* ── Precedencia de colores en la tabla de Casos ─────────────────────────────────────────────

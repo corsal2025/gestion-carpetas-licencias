@@ -818,6 +818,96 @@
     }
 </script>
 <script>
+    // Autoguardado de la fila: elegir un estado, tipear/borrar un dato o tildar una licencia manda
+    // el form entero (case-form-ID de la fila) por fetch(), sin recargar la página — el operador no
+    // tiene que ir fila por fila apretando "Guardar" para poder seguir con la siguiente. El botón
+    // "Guardar" sigue ahí y sigue funcionando igual que antes (navegación normal), por si alguien
+    // prefiere confirmar a mano o el fetch falla.
+    // Un solo listener delegado en la tabla, no uno por cada input de cada fila (serían más de
+    // 1000 con 100 filas x 13 columnas editables) — "change" ya cubre selects/checkboxes al elegir
+    // y campos de texto al perder el foco con el valor cambiado, sin necesitar además "blur"/"focusout".
+    var autoSaveTimers = {};
+    // Un solo fetch en vuelo por fila: si una segunda edición dispara un nuevo guardado mientras el
+    // anterior todavía no responde (servidor lento, dos campos tocados con más de 400ms de
+    // diferencia), el anterior se cancela con AbortController en vez de dejarlo terminar. Sin esto,
+    // dos respuestas podían llegar en cualquier orden y la más vieja (con datos desactualizados)
+    // podía pisar a la más nueva en la base sin que la fila mostrara ningún error — cada request
+    // manda el form ENTERO, así que solo importa que el último en llegar sea siempre el último en
+    // salir.
+    var autoSaveControllers = {};
+
+    function autoSaveCaseForm(form) {
+        var row = form.closest('tr');
+        if (row) {
+            row.classList.add('fila-sin-guardar');
+            row.classList.remove('fila-error-guardado');
+        }
+        // Debounce corto: si se cambian dos campos de la misma fila casi al mismo tiempo (tabular
+        // entre inputs), se manda un solo guardado con ambos en vez de dos pisándose entre sí.
+        var formId = form.id;
+        if (autoSaveTimers[formId]) {
+            clearTimeout(autoSaveTimers[formId]);
+        }
+        autoSaveTimers[formId] = setTimeout(function () { sendAutoSave(form); }, 400);
+    }
+
+    function sendAutoSave(form) {
+        var formId = form.id;
+        var row = form.closest('tr');
+        var body = new URLSearchParams(new FormData(form)).toString();
+
+        if (autoSaveControllers[formId]) {
+            autoSaveControllers[formId].abort();
+        }
+        var controller = new AbortController();
+        autoSaveControllers[formId] = controller;
+
+        fetch(form.action, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            body: body,
+            signal: controller.signal
+        }).then(function (response) {
+            if (!response.ok) throw new Error('HTTP ' + response.status);
+            return response.json();
+        }).then(function (data) {
+            if (autoSaveControllers[formId] === controller) autoSaveControllers[formId] = null;
+            if (!row) return;
+            if (data && data.isError) {
+                row.classList.add('fila-error-guardado');
+                row.title = data.message || '';
+            } else {
+                row.classList.remove('fila-sin-guardar', 'fila-error-guardado');
+                row.title = '';
+            }
+        }).catch(function (err) {
+            // AbortError: este request lo canceló uno más nuevo para la misma fila — el que sigue
+            // en vuelo es el que manda, no hay nada que reportar acá.
+            if (err && err.name === 'AbortError') return;
+            if (autoSaveControllers[formId] === controller) autoSaveControllers[formId] = null;
+            // Sin conexión o error del servidor: la fila queda marcada como pendiente (borde
+            // naranja ya puesto arriba) más un aviso en rojo — silenciar esto haría creer que se
+            // guardó cuando en realidad el cambio solo vive en el navegador.
+            if (row) {
+                row.classList.add('fila-error-guardado');
+                row.title = 'No se pudo guardar — revise la conexión e intente de nuevo (o use el botón Guardar).';
+            }
+        });
+    }
+
+    document.addEventListener('change', function (e) {
+        var target = e.target;
+        var formId = target.getAttribute && target.getAttribute('form');
+        if (!formId || formId.indexOf('case-form-') !== 0) return;
+        var form = document.getElementById(formId);
+        if (!form) return;
+        autoSaveCaseForm(form);
+    });
+</script>
+<script>
     // Borrado masivo: el botón queda deshabilitado hasta marcar al menos una fila, y el checkbox
     // del encabezado marca/desmarca todas las visibles de una sola vez.
     (function () {

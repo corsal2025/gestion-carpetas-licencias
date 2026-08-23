@@ -94,10 +94,22 @@ public class IndexModel(IFolderCaseRepository cases, IExcelCaseExporter exporter
         string? penultima = null, string? codigoF8 = null, LicenceClass[]? licencias = null, string? observaciones = null,
         string? folioLicencia = null, string? comuna = null)
     {
+        // Autoguardado: cada cambio en una celda (elegir un estado, tipear un nombre, tildar una
+        // licencia) manda este mismo form entero por fetch() en vez de esperar a que se apriete
+        // "Guardar" — ver autoSaveCaseForm en Index.cshtml. Se decide UNA sola vez, al principio, y
+        // toda salida del handler (incluida "el caso ya no existe") pasa por SaveResult — antes esta
+        // rama en particular quedaba antes del chequeo del header y siempre redirigía, así que un
+        // fetch() contra un caso borrado por otro operador recibía HTML de vuelta en vez de JSON,
+        // el response.json() del cliente reventaba, y la fila quedaba marcada con un mensaje
+        // genérico de "sin conexión" que no era la causa real.
+        var isAjax = string.Equals(HttpContext?.Request.Headers["X-Requested-With"], "XMLHttpRequest", StringComparison.Ordinal);
+        IActionResult SaveResult(string message, bool isError) =>
+            isAjax ? new JsonResult(new { ok = true, isError, message }) : RedirectWithMessage(message, isError);
+
         var existing = cases.FindById(id);
         if (existing is null)
         {
-            return RedirectWithMessage("El caso ya no existe.", isError: true);
+            return SaveResult("El caso ya no existe.", isError: true);
         }
 
         var citationDate = ParseDate(citacion);
@@ -132,10 +144,12 @@ public class IndexModel(IFolderCaseRepository cases, IExcelCaseExporter exporter
             LicenceClassCatalog.Serialize(licencias ?? []), folioLicencia);
         cases.UpdateObservations(id, observaciones);
 
-        var message = normalizedRut is null && !string.IsNullOrWhiteSpace(rut)
+        var invalidRut = normalizedRut is null && !string.IsNullOrWhiteSpace(rut);
+        var message = invalidRut
             ? $"Guardado, pero el RUT '{rut}' no tiene dígito verificador válido — el caso queda en revisión."
             : "Caso guardado.";
-        return RedirectWithMessage(message, isError: normalizedRut is null && !string.IsNullOrWhiteSpace(rut));
+
+        return SaveResult(message, isError: invalidRut);
     }
 
     /// <summary>Adds a citation row by hand, the way a new line is typed into the agenda sheet.</summary>
