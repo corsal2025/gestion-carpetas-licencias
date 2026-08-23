@@ -24,6 +24,7 @@
                 <th>Nombre</th>
                 <th>RUT</th>
                 <th>Comuna</th>
+                <th>Origen</th>
                 <th>Recibido</th>
                 <th>Plazo (15 días hábiles)</th>
                 <th>Estado</th>
@@ -45,6 +46,18 @@
                 <td>@item.FullName</td>
                 <td>@item.Rut</td>
                 <td>@item.DestinationComuna</td>
+                <td>
+                    @* Distingue si la solicitud nació del botón "Solicitar" en la tabla de Casos
+                       (selección directa de un caso) o de "+ Nueva Solicitud" (carga manual). *@
+                    @if (item.SourceFolderCaseId is not null)
+                    {
+                        <span class="badge badge-pending">Tabla</span>
+                    }
+                    else
+                    {
+                        <span class="badge badge-confirmed">Correo</span>
+                    }
+                </td>
                 <td>—</td>
                 <td>—</td>
                 <td>
