@@ -820,19 +820,6 @@ table.cases td {
 table.cases tbody tr:nth-child(even) { background: #fafbfc; }
 table.cases tbody tr:hover { background: #f0f6fb; transition: background 0.12s ease; }
 
-/* Mismo look compacto/centrado de table.cases-index (mayúsculas, letra chica, celdas apretadas)
-   pero sin sus reglas nth-child — esta tabla tiene solo 6 columnas fijas, no comparte estructura
-   con la de Casos/Cambio de Domicilio, y engancharse a esa clase reintroduciría justo el problema
-   de columnas por posición que ya rompió dos veces antes en esta app. */
-table.solicitudes-table th {
-    padding: 6px 8px;
-    font-size: var(--font-xs);
-}
-table.solicitudes-table td {
-    padding: 6px 8px;
-    text-align: center;
-}
-
 /* Auto layout, not fixed percentages: this table has 13 columns whose content widths are known
    (a RUT is 12 characters, a date 10, a name is long), and hard-coded percentages were cutting
    names off mid-word. Columns size themselves; the card scrolls sideways when they don't fit. */

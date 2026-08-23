@@ -15,12 +15,10 @@
 }
 
 <div class="card table-card">
-    <table class="cases solicitudes-table">
+    <table class="cases">
         <thead>
             <tr>
                 <th>Marcar</th>
-                <th>F8</th>
-                <th>Pendiente Carpeta</th>
                 <th>Nombre</th>
                 <th>RUT</th>
                 <th>Comuna</th>
@@ -34,12 +32,9 @@
         @foreach (var item in Model.Requests)
         {
             <tr>
-                @* Marcar/F8/Pendiente Carpeta/Recibido/Plazo/Sector no tienen dato real en una
-                   solicitud saliente (no hay carpeta física propia acá) — se muestran inertes,
-                   solo para igualar visualmente el header de Enviar Cambio de Domicilio. *@
+                @* Marcar/Recibido/Plazo no tienen dato real en una solicitud saliente (no hay
+                   carpeta física propia acá) — se muestran inertes. *@
                 <td><input type="checkbox" disabled /></td>
-                <td>—</td>
-                <td>—</td>
                 <td>@item.FullName</td>
                 <td>@item.Rut</td>
                 <td>@item.DestinationComuna</td>
@@ -56,10 +51,16 @@
                     }
                     <span class="badge @badgeClass">@badgeText</span>
                 </td>
-                <td>
+                <td style="display:flex; gap:6px; align-items:center; justify-content:center;">
                     @if (item.Status == OutboundRequestStatus.Borrador)
                     {
-                        <a asp-page="/CambioDomicilio/Solicitar/Nueva" asp-route-id="@item.Id" class="btn-primary" style="padding:4px 10px; font-size:0.72rem;">Editar</a>
+                        <a asp-page="/CambioDomicilio/Solicitar/Nueva" asp-route-id="@item.Id" style="padding:4px 10px; font-size:0.72rem;">Editar</a>
+                        @* Envía directo desde el listado, sin entrar a Nueva.cshtml — para cuando
+                           ya está todo cargado y solo falta mandar el correo. *@
+                        <form method="post" asp-page-handler="Solicitar" asp-route-id="@item.Id" style="display:inline;"
+                              onsubmit="return confirm('Esto manda el correo de solicitud a la comuna de inmediato. ¿Confirmar?');">
+                            <button type="submit" class="btn-primary" style="padding:4px 10px; font-size:0.72rem;">Solicitar</button>
+                        </form>
                     }
                     else
                     {
