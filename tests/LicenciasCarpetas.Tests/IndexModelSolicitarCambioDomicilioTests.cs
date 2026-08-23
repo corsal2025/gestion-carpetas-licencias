@@ -174,6 +174,30 @@ public class IndexModelSolicitarCambioDomicilioTests
         Assert.Equal("Quillota", persisted.CambioDomicilioComuna);
     }
 
+    /// <summary>El desplegable Estado carpeta viaja con el form de "Guardar", no con el de
+    /// "Solicitar" — si el operador recién lo eligió y apretó Solicitar sin guardar antes, la base
+    /// todavía tiene el estado viejo. El handler debe aceptar el estado posteado directamente por
+    /// el form de Solicitar (ver prepararSolicitar en Index.cshtml) para que un solo clic alcance.</summary>
+    [Fact]
+    public async Task Estado_posted_directly_by_the_solicitar_form_is_used_even_when_not_saved_yet()
+    {
+        using var db = new SqliteTestDatabase();
+        var fixture = BuildModel(db);
+        fixture.ComunaContacts.Upsert(new ComunaContact { Comuna = "Quillota", Email = "contacto@muniquillota.cl" });
+        var id = SeedCase(db, state: null, comuna: null);
+
+        var result = await fixture.Model.OnPostSolicitarCambioDomicilio(
+            id, comuna: "Quillota", estado: "CambioDomicilioSolicitado");
+
+        Assert.IsType<RedirectToPageResult>(result);
+        Assert.Equal(1, fixture.EmailSender.CallCount);
+        var stored = Assert.Single(fixture.OutboundRequests.GetAll());
+        Assert.Equal("Quillota", stored.DestinationComuna);
+        var persisted = db.Cases.FindById(id)!;
+        Assert.Equal(FolderState.CambioDomicilioSolicitado, persisted.FolderState);
+        Assert.Equal("Quillota", persisted.CambioDomicilioComuna);
+    }
+
     [Fact]
     public async Task Wrong_folder_state_blocks_even_with_a_comuna_filled_in()
     {

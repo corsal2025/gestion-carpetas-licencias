@@ -434,7 +434,7 @@
                    persona dejaría de contar como atendida en Estadísticas. *@
                 <input type="hidden" name="atencion" form="case-form-@item.Id" value="@item.AttentionNote" />
                 <td>
-                    <select name="estado" form="case-form-@item.Id" class="input-inline estado-select"
+                    <select name="estado" id="estado-@item.Id" form="case-form-@item.Id" class="input-inline estado-select"
                             onchange="repaintRow(this)">
                         <option value="">@(item.FolderStateRaw ?? "—")</option>
                         @foreach (var state in FolderStateCatalog.Selectable)
@@ -487,16 +487,23 @@
                         <input type="hidden" name="desc" value="@Model.Descending" />
                         <button type="submit" class="btn-danger" title="Mover a la Papelera" aria-label="Mover a la Papelera">✕</button>
                     </form>
-                    @if (item.FolderState == FolderState.CambioDomicilioSolicitado && puedeCambioDomicilio)
+                    @if (puedeCambioDomicilio)
                     {
                         @* Crea-y-manda en un clic: arma una solicitud en "Solicitar Cambios de
                            Domicilio" con lo que ya está en la fila (nombre, RUT, comuna) y manda el
-                           correo a la comuna de inmediato — sin pasar por esa pantalla. *@
-                        <form method="post" asp-page-handler="SolicitarCambioDomicilio" style="display:inline;"
-                              data-solicitar-comuna-id="comuna-@item.Id" data-solicitar-fullname="@item.FullName"
+                           correo a la comuna de inmediato — sin pasar por esa pantalla, y sin exigir
+                           que el operador guarde antes de solicitar (ver prepararSolicitar más abajo).
+                           Visible según el valor ACTUAL del desplegable Estado carpeta, no según lo
+                           guardado en la base — si no fuera así, elegir la opción no mostraba nada
+                           hasta recargar la página después de un Guardar. *@
+                        <form method="post" asp-page-handler="SolicitarCambioDomicilio" class="solicitar-form"
+                              style="display:@(item.FolderState == FolderState.CambioDomicilioSolicitado ? "inline" : "none");"
+                              data-solicitar-comuna-id="comuna-@item.Id" data-solicitar-estado-id="estado-@item.Id"
+                              data-solicitar-fullname="@item.FullName"
                               onsubmit="return prepararSolicitar(this);">
                             <input type="hidden" name="id" value="@item.Id" />
                             <input type="hidden" name="comuna" />
+                            <input type="hidden" name="estado" />
                             <button type="submit" class="btn-primary" title="Crear la solicitud y enviar el correo a la comuna">Solicitar</button>
                         </form>
                     }
@@ -519,12 +526,29 @@
     function prepararSolicitar(form) {
         var comunaId = form.dataset.solicitarComunaId;
         var comunaInput = comunaId ? document.getElementById(comunaId) : null;
-        var hidden = form.querySelector('input[name="comuna"]');
-        if (hidden) {
-            hidden.value = comunaInput ? comunaInput.value : '';
+        var comunaHidden = form.querySelector('input[name="comuna"]');
+        if (comunaHidden) {
+            comunaHidden.value = comunaInput ? comunaInput.value : '';
+        }
+        var estadoId = form.dataset.solicitarEstadoId;
+        var estadoSelect = estadoId ? document.getElementById(estadoId) : null;
+        var estadoHidden = form.querySelector('input[name="estado"]');
+        if (estadoHidden) {
+            estadoHidden.value = estadoSelect ? estadoSelect.value : '';
         }
         var fullName = form.dataset.solicitarFullname || '';
         return confirm('Esto crea una solicitud de Cambio de Domicilio para ' + fullName + ' y manda el correo a la comuna de inmediato. ¿Confirmar?');
+    }
+
+    // El botón "Solicitar" tiene que aparecer apenas se elige "Cambio de domicilio solicitado" en
+    // el desplegable, no recién después de Guardar y recargar la página — si no, elegir la opción
+    // no muestra nada y parece que el sistema no hizo nada.
+    function toggleSolicitarForm(select) {
+        var row = select.closest('tr');
+        if (!row) return;
+        var form = row.querySelector('.solicitar-form');
+        if (!form) return;
+        form.style.display = select.value === 'CambioDomicilioSolicitado' ? 'inline' : 'none';
     }
 
     function repaintRow(select) {
@@ -541,6 +565,7 @@
         }
 
         fillUploadDateIfMissing(row, select.value);
+        toggleSolicitarForm(select);
         markUnsaved(select);
     }
 
