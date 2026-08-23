@@ -18,11 +18,17 @@
     <table class="cases solicitudes-table">
         <thead>
             <tr>
-                <th>Contribuyente</th>
+                <th>Marcar</th>
+                <th>F8</th>
+                <th>Pendiente Carpeta</th>
+                <th>Nombre</th>
                 <th>RUT</th>
-                <th>Comuna destino</th>
+                <th>Comuna</th>
+                <th>Recibido</th>
+                <th>Plazo (15 días hábiles)</th>
                 <th>Estado</th>
-                <th>Fecha</th>
+                <th>Fecha última carpeta</th>
+                <th>Sector</th>
                 <th>Acción</th>
             </tr>
         </thead>
@@ -30,9 +36,17 @@
         @foreach (var item in Model.Requests)
         {
             <tr>
+                @* Marcar/F8/Pendiente Carpeta/Recibido/Plazo/Sector no tienen dato real en una
+                   solicitud saliente (no hay carpeta física propia acá) — se muestran inertes,
+                   solo para igualar visualmente el header de Enviar Cambio de Domicilio. *@
+                <td><input type="checkbox" disabled /></td>
+                <td>—</td>
+                <td>—</td>
                 <td>@item.FullName</td>
                 <td>@item.Rut</td>
                 <td>@item.DestinationComuna</td>
+                <td>—</td>
+                <td>—</td>
                 <td>
                     @{
                         var (badgeClass, badgeText) = item.Status switch
@@ -45,6 +59,7 @@
                     <span class="badge @badgeClass">@badgeText</span>
                 </td>
                 <td>@(item.Status == OutboundRequestStatus.Enviada && item.SentAt is { } sentAt ? sentAt.LocalDateTime.ToString("dd-MM-yyyy") : item.CreatedAt.LocalDateTime.ToString("dd-MM-yyyy"))</td>
+                <td>—</td>
                 <td>
                     @if (item.Status == OutboundRequestStatus.Borrador)
                     {
