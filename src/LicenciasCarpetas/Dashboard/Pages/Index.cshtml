@@ -76,6 +76,18 @@
             <label class="form-label" for="search">Buscar</label>
             <input type="text" name="search" id="search" value="@Model.Search" placeholder="RUT o nombre..." />
         </div>
+        @if (User.IsInRole("Administrador") || User.IsInRole("Jefatura") || User.IsInRole("Coordinador"))
+        {
+            @* Reportes imprimibles, alineados a la derecha de la fila de selects — mismo lugar
+               relativo que en F8 y Cambio de Domicilio, no mezclado con los checkboxes de abajo. *@
+            <span style="margin-left:auto; display:flex; flex-direction:column; gap:3px; align-items:center;">
+                <span style="font-weight:700; font-size:var(--font-lg); color:#926100;">Informes</span>
+                <span style="display:flex; gap:8px; align-items:center;">
+                    <a asp-page="/Sector" asp-route-sector="Archivo" class="nav-pill nav-doc text-sm">Informe Archivo</a>
+                    <a asp-page="/Sector" asp-route-sector="Oficina43" class="nav-pill nav-doc text-sm">Informe Oficina 43</a>
+                </span>
+            </span>
+        }
         @* Checkboxes + Filtrar + Limpiar en su propia fila, separados de los selects — así no se
            cortan entre sí al envolver cuando la ventana es angosta (6 selects + buscador ya llenan
            la fila de arriba por su cuenta). *@
@@ -90,19 +102,6 @@
             </label>
             <button type="submit" class="btn-primary text-base" style="padding:3px 12px;">Filtrar</button>
             <a asp-page="/Index" class="nav-pill text-sm">Limpiar</a>
-            @if (User.IsInRole("Administrador") || User.IsInRole("Jefatura") || User.IsInRole("Coordinador"))
-            {
-                @* Reportes imprimibles, en el espacio que deja libre esta fila más angosta que la de
-                   los selects — mismo destino que el grupo "Reportes" del sidebar, un atajo directo
-                   sin tener que salir de la tabla para imprimirlos. *@
-                <span style="margin-left:auto; display:flex; flex-direction:column; gap:3px; align-items:center;">
-                    <span style="font-weight:700; font-size:var(--font-lg); color:#926100;">Informes</span>
-                    <span style="display:flex; gap:8px; align-items:center;">
-                        <a asp-page="/Sector" asp-route-sector="Archivo" class="nav-pill nav-doc text-sm">Informe Archivo</a>
-                        <a asp-page="/Sector" asp-route-sector="Oficina43" class="nav-pill nav-doc text-sm">Informe Oficina 43</a>
-                    </span>
-                </span>
-            }
         </div>
     </form>
 </div>
@@ -234,10 +233,24 @@
     }
 </datalist>
 
+@* Selección para borrado masivo, separada de "Marcar" (esa la usa la impresión por sector,
+   marcar varios para borrar la pisaría). Los checkboxes de cada fila viven dentro de <tr>,
+   asociados a este <form> vacío por el atributo form= — así no hace falta envolver la tabla
+   entera en un <form> que chocaría con los <form> propios de cada fila. *@
+<form id="bulk-delete-form" method="post" asp-page-handler="DeleteSeleccionados"></form>
+<div style="display:flex; justify-content:flex-end; align-items:center; gap:8px; margin-bottom:6px;">
+    <span id="bulk-delete-count" class="text-sm" style="color:var(--color-text-muted);"></span>
+    <button type="submit" form="bulk-delete-form" class="btn-danger" id="bulk-delete-btn" disabled
+            onclick="return confirm('Los casos seleccionados se moverán a la Papelera. Se pueden restaurar desde ahí. ¿Confirmar?');">
+        🗑️ Eliminar seleccionados
+    </button>
+</div>
+
 <div class="card table-card">
     <table class="cases cases-index">
         <thead>
             <tr>
+                <th>Sel.<br /><input type="checkbox" id="select-all-rows" title="Seleccionar todos para borrar" /></th>
                 <th>Marcar</th>
                 @* El texto va dentro de un <span>: escrito como "Oficina@Model...", Razor lee
                    "texto@algo" como una dirección de correo y lo imprime literal en vez de
@@ -246,6 +259,7 @@
                 <th class="name-cell"><a asp-page="/Index" asp-all-route-data="@Model.SortRouteValues(CaseSort.Name)" class="sort-link"><span>Nombre completo</span>@Model.SortIndicator(CaseSort.Name)</a></th>
                 <th class="rut-cell"><a asp-page="/Index" asp-all-route-data="@Model.SortRouteValues(CaseSort.Rut)" class="sort-link"><span>RUT</span>@Model.SortIndicator(CaseSort.Rut)</a></th>
                 <th><a asp-page="/Index" asp-all-route-data="@Model.SortRouteValues(CaseSort.Office)" class="sort-link"><span>Oficina</span>@Model.SortIndicator(CaseSort.Office)</a></th>
+                <th title="Número de folio de la licencia. Texto libre">Folio de licencia</th>
                 <th><a asp-page="/Index" asp-all-route-data="@Model.SortRouteValues(CaseSort.FolderUploadedDate)" class="sort-link"><span>Fecha subida de carpeta</span>@Model.SortIndicator(CaseSort.FolderUploadedDate)</a></th>
                 <th><a asp-page="/Index" asp-all-route-data="@Model.SortRouteValues(CaseSort.LastFolderDate)" class="sort-link"><span>Fecha última carpeta</span>@Model.SortIndicator(CaseSort.LastFolderDate)</a></th>
                 @* Sector va junto a Última carpeta: es la fecha de la que se calcula. *@
@@ -287,6 +301,9 @@
             var lastFolderSize = Math.Max(12, lastFolderText.Length + 2);
             var attentionSize = Math.Max(16, (item.AttentionNote?.Length ?? 0) + 2);
             <tr class="@rowClass @estadoClass @duplicadoClass @reviewClass @idoneidadClass">
+                <td>
+                    <input type="checkbox" class="bulk-select-checkbox" form="bulk-delete-form" name="selectedIds" value="@item.Id" title="Seleccionar para borrar" />
+                </td>
                 <td class="marked-cell">
                     <form method="post" asp-page-handler="ToggleMarked" class="marked-form">
                         <input type="hidden" name="id" value="@item.Id" />
@@ -346,6 +363,11 @@
                     </span>
                 </td>
                 <td class="text-cell">@OfficeCatalog.Display(item.Office)</td>
+                <td>
+                    <input type="text" name="folioLicencia" form="case-form-@item.Id" class="input-inline"
+                           size="@Math.Max(10, (item.FolioLicencia?.Length ?? 0) + 2)" value="@item.FolioLicencia"
+                           placeholder="—" />
+                </td>
                 <td>
                     @* Solo la escribe el sistema al marcar un estado de "ya subida" (fillUploadDateIfMissing) —
                        readonly, no disabled, para que el valor siga viajando al guardar. *@
@@ -600,11 +622,14 @@
             });
         });
 
-    // <details> se queda abierto hasta el próximo clic en su propio resumen — sin esto, el panel
-    // (licencias u observaciones) se queda en pantalla aunque el operador ya haya seguido trabajando
-    // en otra celda. Un clic fuera de la celda lo cierra, como cualquier menú desplegable.
+    // <details> de LICENCIAS se queda abierto hasta el próximo clic en su propio resumen — sin
+    // esto, el panel se queda en pantalla aunque el operador ya haya seguido trabajando en otra
+    // celda. Un clic fuera de la celda lo cierra, como cualquier menú desplegable.
+    // OBSERVACIONES queda afuera a propósito: un clic en otra fila (por ejemplo para leer el
+    // nombre de al lado) no debe borrar la nota a medio escribir — se cierra con la × o al
+    // guardar, nunca por un clic accidental en cualquier otro lado.
     document.addEventListener('click', function (event) {
-        document.querySelectorAll('.popover-celda[open]').forEach(function (cell) {
+        document.querySelectorAll('.popover-celda[open]:not(.observaciones-celda)').forEach(function (cell) {
             if (!cell.contains(event.target)) {
                 cell.removeAttribute('open');
             }
@@ -640,7 +665,10 @@
                 panel.style.left = cabeADerecha
                     ? (rect.right + 6) + 'px'
                     : Math.max(rect.left - ancho - 6, minLeft) + 'px';
-                panel.querySelector('textarea').focus();
+                // preventScroll: sin esto, el foco fuerza un scroll de .table-card para centrar
+                // el textarea — y ese scroll dispara el listener de abajo que cierra el panel
+                // recién abierto, dando la sensación de que "salta y se cierra solo".
+                panel.querySelector('textarea').focus({ preventScroll: true });
             }
             else {
                 panel.style.position = 'fixed';
@@ -699,5 +727,33 @@
             body: body
         });
     }
+</script>
+<script>
+    // Borrado masivo: el botón queda deshabilitado hasta marcar al menos una fila, y el checkbox
+    // del encabezado marca/desmarca todas las visibles de una sola vez.
+    (function () {
+        var selectAll = document.getElementById('select-all-rows');
+        var deleteBtn = document.getElementById('bulk-delete-btn');
+        var countLabel = document.getElementById('bulk-delete-count');
+        var rowCheckboxes = Array.from(document.querySelectorAll('.bulk-select-checkbox'));
+        if (!deleteBtn) return;
+
+        function updateState() {
+            var checked = rowCheckboxes.filter(function (cb) { return cb.checked; });
+            deleteBtn.disabled = checked.length === 0;
+            countLabel.textContent = checked.length > 0 ? checked.length + ' seleccionado(s)' : '';
+            if (selectAll) {
+                selectAll.checked = checked.length > 0 && checked.length === rowCheckboxes.length;
+            }
+        }
+
+        rowCheckboxes.forEach(function (cb) { cb.addEventListener('change', updateState); });
+        if (selectAll) {
+            selectAll.addEventListener('change', function () {
+                rowCheckboxes.forEach(function (cb) { cb.checked = selectAll.checked; });
+                updateState();
+            });
+        }
+    })();
 </script>
 }

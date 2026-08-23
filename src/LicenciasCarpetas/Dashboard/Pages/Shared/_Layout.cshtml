@@ -46,40 +46,32 @@
             <nav class="sidebar-nav">
                 <a asp-page="/Inicio" class="sidebar-link sidebar-link-home">🏠 Panel de Control</a>
 
-                <div class="sidebar-section">
-                    <span class="sidebar-section-label">Módulos</span>
+                <details open="@(enGestionLicencias || enCambioDomicilio || enF8 ? "open" : null)" class="sidebar-section sidebar-modules-collapsible">
+                    <summary class="sidebar-link sidebar-link-home">📦 Módulos</summary>
                     <a asp-page="/Index" class="sidebar-link @(enGestionLicencias ? "active" : "")">🪪 Gestión de Licencias</a>
                     @* Cambio de Domicilio no es un link plano — tiene dos flujos (recibir pedidos
                        de otras comunas / pedirle a otras comunas), así que el switcher de módulos
                        muestra directamente sus dos entradas en vez de un solo link genérico. *@
                     @if (puedeCambioDomicilio)
                     {
-                        <details open class="sidebar-section-collapsible">
-                            <summary class="sidebar-link sidebar-section-label @(enCambioDomicilio ? "active" : "")">📥 Enviar Cambio de Domicilio</summary>
-                            @* "Solicitudes recibidas" es link real Y desplegable a la vez: el <a>
-                               adentro del <summary> sigue navegando al hacer clic en el texto, la
-                               flechita solo abre/cierra Certificado/Comunas/Descartados debajo. *@
-                            <details open class="sidebar-subsection-collapsible">
-                                <summary><a asp-page="/CambioDomicilio/Index" class="sidebar-link sidebar-link-reference">🗂️ Solicitudes recibidas</a></summary>
-                                @if (enCambioDomicilio)
-                                {
-                                    <a asp-page="/CambioDomicilio/Certificado" class="sidebar-link sidebar-link-reference">📜 Certificado</a>
-                                    <a asp-page="/CambioDomicilio/Comunas" class="sidebar-link sidebar-link-reference">🏘️ Comunas</a>
-                                    <a asp-page="/CambioDomicilio/Discarded" class="sidebar-link sidebar-link-reference">🗑️ Descartados</a>
-                                }
-                            </details>
+                        <details open="@(enCambioDomicilio ? "open" : null)" class="sidebar-section-collapsible">
+                            @* El <summary> envuelve un <a> real — el link sigue navegando a
+                               Solicitudes recibidas al hacer clic en el texto, la flechita solo
+                               abre/cierra Certificado/Descartados debajo. *@
+                            <summary><a asp-page="/CambioDomicilio/Index" class="sidebar-link @(enCambioDomicilio ? "active" : "")">📥 Enviar Cambio de Domicilio</a></summary>
+                            @if (enCambioDomicilio)
+                            {
+                                <a asp-page="/CambioDomicilio/Certificado" class="sidebar-link sidebar-link-reference">📜 Certificado</a>
+                                <a asp-page="/CambioDomicilio/Discarded" class="sidebar-link sidebar-link-reference">🗑️ Descartados</a>
+                            }
                         </details>
-                        <details open class="sidebar-section-collapsible">
-                            <summary class="sidebar-link sidebar-section-label">📤 Solicitar Cambios de Domicilio</summary>
-                            <a asp-page="/CambioDomicilio/Solicitar/Index" class="sidebar-link sidebar-link-reference">📋 Solicitudes</a>
-                            <a asp-page="/CambioDomicilio/Solicitar/Nueva" class="sidebar-link sidebar-link-reference">➕ Nueva Solicitud</a>
-                        </details>
+                        <a asp-page="/CambioDomicilio/Solicitar/Index" class="sidebar-link">📤 Solicitar Cambios de Domicilio</a>
                     }
                     @if (puedeF8)
                     {
                         <a asp-page="/F8/Index" class="sidebar-link @(enF8 ? "active" : "")">🚨 F8 Urgentes</a>
                     }
-                </div>
+                </details>
 
                 @* Estadísticas y la libreta de Comunas (Gestión de Licencias) quedan afuera de
                    "Módulos" — Estadísticas sigue al módulo activo (una sola entrada, no una por
@@ -89,15 +81,15 @@
                 }
                 @if (puedeVerEstadisticasDelModuloActivo)
                 {
-                    <a asp-page="@estadisticasPage" class="sidebar-link sidebar-link-module">📈 Estadísticas</a>
+                    <a asp-page="@estadisticasPage" class="sidebar-link sidebar-link-home sidebar-link-module">📈 Estadísticas</a>
                 }
                 @if (puedeVerReportesYReferencia)
                 {
-                    <a asp-page="/Comunas" class="sidebar-link sidebar-link-reference">🏘️ Comunas</a>
+                    <a asp-page="/Comunas" class="sidebar-link sidebar-link-home sidebar-link-reference">🏘️ Comunas</a>
                 }
                 @if (puedeImportar)
                 {
-                    <a asp-page="/Importar" class="sidebar-link sidebar-link-sync">📥 Importar Excel</a>
+                    <a asp-page="/Importar" class="sidebar-link sidebar-link-home sidebar-link-sync">📥 Importar Excel</a>
                 }
             </nav>
             <div class="sidebar-footer">

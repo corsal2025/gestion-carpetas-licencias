@@ -53,6 +53,10 @@ public sealed class FolderCase
     /// <summary>F8 case code, free text. Also typed by hand and absent from the workbook.</summary>
     public string? CodigoF8 { get; set; }
 
+    /// <summary>Número de folio de la licencia, typed by hand. Absent from the workbook, so an
+    /// import never touches it — same reasoning as CodigoF8.</summary>
+    public string? FolioLicencia { get; set; }
+
     /// <summary>Clases de licencia que el contribuyente viene a obtener, separadas por coma
     /// ("B,C"). Selección múltiple: una misma citación puede cubrir varias clases.</summary>
     public string? LicenceClasses { get; set; }

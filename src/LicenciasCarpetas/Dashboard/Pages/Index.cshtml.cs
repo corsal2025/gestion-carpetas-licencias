@@ -85,7 +85,8 @@ public class IndexModel(IFolderCaseRepository cases, IExcelCaseExporter exporter
 
     public IActionResult OnPostSave(long id, string? nombre, string? rut, string? citacion, string? subida,
         string? ultimaCarpeta, FolderState? estado, FinalDecision? decision, MoralIdoneity? idoneidad, string? atencion,
-        string? penultima = null, string? codigoF8 = null, LicenceClass[]? licencias = null, string? observaciones = null)
+        string? penultima = null, string? codigoF8 = null, LicenceClass[]? licencias = null, string? observaciones = null,
+        string? folioLicencia = null)
     {
         var existing = cases.FindById(id);
         if (existing is null)
@@ -121,7 +122,7 @@ public class IndexModel(IFolderCaseRepository cases, IExcelCaseExporter exporter
 
         // Los campos que el Excel no trae van por separado, para que una reimportación no los pise.
         cases.UpdateCaseDetails(id, codigoF8, ParseDate(penultima),
-            LicenceClassCatalog.Serialize(licencias ?? []));
+            LicenceClassCatalog.Serialize(licencias ?? []), folioLicencia);
         cases.UpdateObservations(id, observaciones);
 
         var message = normalizedRut is null && !string.IsNullOrWhiteSpace(rut)
@@ -188,6 +189,18 @@ public class IndexModel(IFolderCaseRepository cases, IExcelCaseExporter exporter
     {
         cases.Delete(id);
         return RedirectWithMessage("Caso movido a la Papelera. Se puede restaurar desde ahí.");
+    }
+
+    public IActionResult OnPostDeleteSeleccionados(long[] selectedIds)
+    {
+        foreach (var id in selectedIds)
+        {
+            cases.Delete(id);
+        }
+
+        return RedirectWithMessage(selectedIds.Length == 1
+            ? "1 caso movido a la Papelera. Se puede restaurar desde ahí."
+            : $"{selectedIds.Length} casos movidos a la Papelera. Se pueden restaurar desde ahí.");
     }
 
     private void Load()

@@ -58,7 +58,7 @@ public interface IFolderCaseRepository
     void SetAttended(long id, bool attended);
 
     /// <summary>Los campos que el libro no trae: código F8, penúltima carpeta y clases de licencia.</summary>
-    void UpdateCaseDetails(long id, string? codigoF8, DateOnly? penultimateFolderDate, string? licenceClasses = null);
+    void UpdateCaseDetails(long id, string? codigoF8, DateOnly? penultimateFolderDate, string? licenceClasses = null, string? folioLicencia = null);
 
     /// <summary>Nota libre sobre la persona, agregada aparte de guardar la fila — se abre bajo
     /// demanda desde el RUT, no ocupa una columna fija.</summary>
@@ -128,6 +128,7 @@ public sealed class FolderCaseRepository(string connectionString) : IFolderCaseR
         AddColumnIfMissing(connection, "SectorPrintedAt");
         AddColumnIfMissing(connection, "PenultimateFolderDate");
         AddColumnIfMissing(connection, "CodigoF8");
+        AddColumnIfMissing(connection, "FolioLicencia");
         AddColumnIfMissing(connection, "UpdatedBy");
         AddColumnIfMissing(connection, "LicenceClasses");
         AddColumnIfMissing(connection, "Email");
@@ -311,13 +312,13 @@ public sealed class FolderCaseRepository(string connectionString) : IFolderCaseR
                 FirstName, LastName, FullName, FullNameSort, Rut, Office, AttentionNote, Attended,
                 MoralIdoneity, FolderState, FolderStateRaw, FinalDecision, FinalDecisionRaw,
                 SourceSheet, SourceRow, NeedsReview, Marked, CreatedAt, UpdatedAt,
-                PenultimateFolderDate, CodigoF8, LicenceClasses, Email, CellPhone)
+                PenultimateFolderDate, CodigoF8, LicenceClasses, Email, CellPhone, FolioLicencia)
             VALUES (
                 $citationDate, $uploadedDate, $lastFolderDate, $lastFolderComuna,
                 $firstName, $lastName, $fullName, $fullNameSort, $rut, $office, $attention, $attended,
                 $idoneity, $state, $stateRaw, $decision, $decisionRaw,
                 $sheet, $row, $needsReview, $marked, $createdAt, $updatedAt,
-                $penultimate, $codigoF8, $licences, $email, $cellPhone);
+                $penultimate, $codigoF8, $licences, $email, $cellPhone, $folio);
             SELECT last_insert_rowid();
             """;
         BindWritableFields(command, folderCase);
@@ -335,6 +336,7 @@ public sealed class FolderCaseRepository(string connectionString) : IFolderCaseR
         command.Parameters.AddWithValue("$licences", Nullable(folderCase.LicenceClasses));
         command.Parameters.AddWithValue("$email", Nullable(folderCase.Email));
         command.Parameters.AddWithValue("$cellPhone", Nullable(folderCase.CellPhone));
+        command.Parameters.AddWithValue("$folio", Nullable(folderCase.FolioLicencia));
 
         return (long)command.ExecuteScalar()!;
     }
@@ -767,19 +769,20 @@ public sealed class FolderCaseRepository(string connectionString) : IFolderCaseR
     }
 
     public void UpdateCaseDetails(long id, string? codigoF8, DateOnly? penultimateFolderDate,
-        string? licenceClasses = null)
+        string? licenceClasses = null, string? folioLicencia = null)
     {
         using var connection = Open();
         using var command = connection.CreateCommand();
         command.CommandText = """
             UPDATE FolderCase
             SET CodigoF8 = $codigo, PenultimateFolderDate = $penultimate,
-                LicenceClasses = $licences, UpdatedAt = $updatedAt
+                LicenceClasses = $licences, FolioLicencia = $folio, UpdatedAt = $updatedAt
             WHERE Id = $id
             """;
         command.Parameters.AddWithValue("$licences", Nullable(licenceClasses));
         command.Parameters.AddWithValue("$codigo", Nullable(string.IsNullOrWhiteSpace(codigoF8) ? null : codigoF8.Trim()));
         command.Parameters.AddWithValue("$penultimate", Nullable(Text(penultimateFolderDate)));
+        command.Parameters.AddWithValue("$folio", Nullable(string.IsNullOrWhiteSpace(folioLicencia) ? null : folioLicencia.Trim()));
         command.Parameters.AddWithValue("$updatedAt", DateTimeOffset.UtcNow.ToString("O"));
         command.Parameters.AddWithValue("$id", id);
         command.ExecuteNonQuery();
@@ -1051,6 +1054,7 @@ public sealed class FolderCaseRepository(string connectionString) : IFolderCaseR
         SectorPrintedAt = ReadText(reader, "SectorPrintedAt") is { } printedAt ? DateTimeOffset.Parse(printedAt) : null,
         PenultimateFolderDate = ReadDate(reader, "PenultimateFolderDate"),
         CodigoF8 = ReadText(reader, "CodigoF8"),
+        FolioLicencia = ReadText(reader, "FolioLicencia"),
         UpdatedBy = ReadText(reader, "UpdatedBy"),
         LicenceClasses = ReadText(reader, "LicenceClasses"),
         Email = ReadText(reader, "Email"),
