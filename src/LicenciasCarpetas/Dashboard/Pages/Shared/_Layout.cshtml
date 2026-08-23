@@ -54,17 +54,10 @@
                        muestra directamente sus dos entradas en vez de un solo link genérico. *@
                     @if (puedeCambioDomicilio)
                     {
-                        <details open="@(enCambioDomicilio ? "open" : null)" class="sidebar-section-collapsible">
-                            @* El <summary> envuelve un <a> real — el link sigue navegando a
-                               Solicitudes recibidas al hacer clic en el texto, la flechita solo
-                               abre/cierra Certificado/Descartados debajo. *@
-                            <summary><a asp-page="/CambioDomicilio/Index" class="sidebar-link @(enCambioDomicilio ? "active" : "")">📥 Enviar Cambio de Domicilio</a></summary>
-                            @if (enCambioDomicilio)
-                            {
-                                <a asp-page="/CambioDomicilio/Certificado" class="sidebar-link sidebar-link-reference">📜 Certificado</a>
-                                <a asp-page="/CambioDomicilio/Discarded" class="sidebar-link sidebar-link-reference">🗑️ Descartados</a>
-                            }
-                        </details>
+                        @* Certificado y Descartados viven ahora en la barra "Informes" de la propia
+                           pantalla de Enviar Cambio de Domicilio, junto a Informe Archivo/Oficina 43
+                           — ya no en el sidebar. *@
+                        <a asp-page="/CambioDomicilio/Index" class="sidebar-link @(enCambioDomicilio ? "active" : "")">📥 Enviar Cambio de Domicilio</a>
                         <a asp-page="/CambioDomicilio/Solicitar/Index" class="sidebar-link">📤 Solicitar Cambios de Domicilio</a>
                     }
                     @if (puedeF8)
