@@ -1642,6 +1642,21 @@ table.cases-index tbody td select {
     color: var(--color-text);
 }
 
+/* Mismo color de fila por estado, pero en la tabla de Solicitar Cambio de Domicilio (class="cases"
+   simple, no cases-index) — solo los 5 estados de WorkflowStateCatalog.Options pueden aparecer
+   ahí, así que no hace falta duplicar el resto del catálogo. */
+table.cases tbody tr.estado-subidaconf8 td { background: #BF9000; color: #ffffff; }
+table.cases tbody tr.estado-subidaconoficio td { background: #FFE599; }
+table.cases tbody tr.estado-cambiodomiciliosubidoaconaset td { background: #00FFFF; }
+table.cases tbody tr.estado-cambiodomiciliosubidoconcorreo td { background: #D0E0E3; }
+table.cases tbody tr.estado-cambiodomiciliosolicitado td { background: #9FC5E8; }
+
+table.cases tbody tr[class*="estado-"] td input,
+table.cases tbody tr[class*="estado-"] td select {
+    background: #ffffff;
+    color: var(--color-text);
+}
+
 /* RUT repetido: el libro lo pinta violeta con un COUNTIF. Marca a la misma persona citada dos
    veces dentro de lo que se está mirando. */
 table.cases-index tbody tr.rut-duplicado td.rut-cell input {

@@ -31,7 +31,10 @@
         <tbody>
         @foreach (var item in Model.Requests)
         {
-            <tr>
+            @* Mismo color de fila por estado que usa Casos (ver FolderStateCatalog.CssClass) —
+               la fila se recarga entera al elegir el desplegable de más abajo (no es autoguardado
+               por fetch), así que el color ya sale bien server-rendered sin JS aparte. *@
+            <tr class="@FolderStateCatalog.CssClass(item.WorkflowState)">
                 @* Marcar/Recibido no tienen dato real en una solicitud saliente (no hay carpeta
                    física propia acá) — se muestran inertes. *@
                 <td><input type="checkbox" disabled /></td>
