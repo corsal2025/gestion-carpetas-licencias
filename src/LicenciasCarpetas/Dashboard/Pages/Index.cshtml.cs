@@ -214,7 +214,7 @@ public class IndexModel(IFolderCaseRepository cases, IExcelCaseExporter exporter
     /// case's own data (name, RUT, comuna already typed in this row) and sends it right away — same
     /// contact lookup, subject/body shape and send/MarkSent sequence as
     /// NuevaModel.OnPostEnviar, minus Street/Number/Unit, which Casos never has.</summary>
-    public async Task<IActionResult> OnPostSolicitarCambioDomicilio(long id)
+    public async Task<IActionResult> OnPostSolicitarCambioDomicilio(long id, string? comuna = null)
     {
         // Manda un correo real a otra comuna — el mismo gate que el resto de Cambio de Domicilio,
         // aunque Casos en sí quede abierto a todos los roles. El botón ya se oculta sin este claim
@@ -235,9 +235,23 @@ public class IndexModel(IFolderCaseRepository cases, IExcelCaseExporter exporter
             return RedirectWithMessage("El caso no está marcado como 'Cambio de domicilio solicitado'.", isError: true);
         }
 
-        if (string.IsNullOrWhiteSpace(folderCase.CambioDomicilioComuna))
+        // El campo Comuna de la fila viaja junto con "Guardar" (otro form), no con "Solicitar" —
+        // si el operador lo escribió recién y no guardó antes, folderCase.CambioDomicilioComuna
+        // todavía tiene el valor viejo de la base. Se acepta el valor tal cual está en pantalla
+        // (posteado por este mismo form vía JS, ver Index.cshtml) y se persiste al mismo tiempo,
+        // para que un solo clic en "Solicitar" alcance sin pasar antes por "Guardar".
+        var effectiveComuna = string.IsNullOrWhiteSpace(comuna) ? folderCase.CambioDomicilioComuna : comuna.Trim();
+        if (string.IsNullOrWhiteSpace(effectiveComuna))
         {
             return RedirectWithMessage("Ingrese la comuna antes de solicitar.", isError: true);
+        }
+        if (effectiveComuna != folderCase.CambioDomicilioComuna)
+        {
+            cases.UpdateEditableFields(folderCase.Id, folderCase.FullName, folderCase.Rut, folderCase.CitationDate,
+                folderCase.FolderUploadedDate, folderCase.LastFolderDate, folderCase.LastFolderComuna,
+                folderCase.FolderState, folderCase.FinalDecision, folderCase.MoralIdoneity,
+                folderCase.AttentionNote, folderCase.NeedsReview, cambioDomicilioComuna: effectiveComuna);
+            folderCase.CambioDomicilioComuna = effectiveComuna;
         }
 
         if (string.IsNullOrWhiteSpace(folderCase.FullName) || string.IsNullOrWhiteSpace(folderCase.Rut))

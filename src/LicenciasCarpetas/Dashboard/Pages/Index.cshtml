@@ -450,7 +450,7 @@
                     </select>
                 </td>
                 <td>
-                    <input type="text" name="comuna" form="case-form-@item.Id" class="input-inline" style="width:110px;"
+                    <input type="text" name="comuna" id="comuna-@item.Id" form="case-form-@item.Id" class="input-inline" style="width:110px;"
                            value="@item.CambioDomicilioComuna" placeholder="ej: Valparaíso" />
                 </td>
                 <td>
@@ -492,10 +492,12 @@
                         @* Crea-y-manda en un clic: arma una solicitud en "Solicitar Cambios de
                            Domicilio" con lo que ya está en la fila (nombre, RUT, comuna) y manda el
                            correo a la comuna de inmediato — sin pasar por esa pantalla. *@
-                        <form method="post" asp-page-handler="SolicitarCambioDomicilio" style="display:inline;">
+                        <form method="post" asp-page-handler="SolicitarCambioDomicilio" style="display:inline;"
+                              data-solicitar-comuna-id="comuna-@item.Id" data-solicitar-fullname="@item.FullName"
+                              onsubmit="return prepararSolicitar(this);">
                             <input type="hidden" name="id" value="@item.Id" />
-                            <button type="submit" class="btn-primary" title="Crear la solicitud y enviar el correo a la comuna"
-                                    onclick="return confirm('Esto crea una solicitud de Cambio de Domicilio para @item.FullName y manda el correo a la comuna de inmediato. ¿Confirmar?');">Solicitar</button>
+                            <input type="hidden" name="comuna" />
+                            <button type="submit" class="btn-primary" title="Crear la solicitud y enviar el correo a la comuna">Solicitar</button>
                         </form>
                     }
                 </td>
@@ -510,6 +512,21 @@
     // El color de la fila lo pinta el servidor al cargar, según el estado guardado. Al elegir otra
     // opción, el color tiene que cambiar en el acto: esperar a guardar deja la fila mostrando el
     // color del estado anterior, que es exactamente lo que el operador usa para leer la agenda.
+    // El campo Comuna vive en el form de "Guardar" de cada fila, no en el de "Solicitar" —
+    // sin esto, tipear la comuna y apretar Solicitar sin guardar antes mandaba el valor viejo (o
+    // vacío) que había en la base, y la solicitud no se creaba. Copia el valor actual del input
+    // al hidden del form de Solicitar justo antes de enviarlo, para que un solo clic alcance.
+    function prepararSolicitar(form) {
+        var comunaId = form.dataset.solicitarComunaId;
+        var comunaInput = comunaId ? document.getElementById(comunaId) : null;
+        var hidden = form.querySelector('input[name="comuna"]');
+        if (hidden) {
+            hidden.value = comunaInput ? comunaInput.value : '';
+        }
+        var fullName = form.dataset.solicitarFullname || '';
+        return confirm('Esto crea una solicitud de Cambio de Domicilio para ' + fullName + ' y manda el correo a la comuna de inmediato. ¿Confirmar?');
+    }
+
     function repaintRow(select) {
         var row = select.closest('tr');
         if (!row) return;

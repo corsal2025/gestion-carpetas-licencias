@@ -150,6 +150,30 @@ public class IndexModelSolicitarCambioDomicilioTests
         Assert.Empty(fixture.OutboundRequests.GetAll());
     }
 
+    /// <summary>El input de Comuna viaja con el form de "Guardar", no con el de "Solicitar" — si el
+    /// operador la tipeó y apretó Solicitar sin guardar antes, la base todavía no tiene ese valor.
+    /// El handler debe aceptar la comuna posteada directamente por el form de Solicitar (ver
+    /// prepararSolicitar en Index.cshtml) para que un solo clic alcance, sin pasar por Guardar.</summary>
+    [Fact]
+    public async Task Comuna_posted_directly_by_the_solicitar_form_is_used_even_when_not_saved_yet()
+    {
+        using var db = new SqliteTestDatabase();
+        var fixture = BuildModel(db);
+        fixture.ComunaContacts.Upsert(new ComunaContact { Comuna = "Quillota", Email = "contacto@muniquillota.cl" });
+        var id = SeedCase(db, FolderState.CambioDomicilioSolicitado, comuna: null);
+
+        var result = await fixture.Model.OnPostSolicitarCambioDomicilio(id, comuna: "Quillota");
+
+        Assert.IsType<RedirectToPageResult>(result);
+        Assert.Equal(1, fixture.EmailSender.CallCount);
+        var stored = Assert.Single(fixture.OutboundRequests.GetAll());
+        Assert.Equal("Quillota", stored.DestinationComuna);
+        // Queda persistida en el caso también, como si se hubiera guardado — así una segunda
+        // consulta del caso (o un reintento) ve la misma comuna sin depender de un Guardar previo.
+        var persisted = db.Cases.FindById(id)!;
+        Assert.Equal("Quillota", persisted.CambioDomicilioComuna);
+    }
+
     [Fact]
     public async Task Wrong_folder_state_blocks_even_with_a_comuna_filled_in()
     {
