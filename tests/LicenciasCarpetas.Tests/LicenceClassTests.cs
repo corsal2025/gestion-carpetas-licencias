@@ -54,7 +54,7 @@ public class LicenceClassTests
     public void The_selection_reads_as_a_short_label()
     {
         Assert.Equal("B, C", LicenceClassCatalog.DisplayList("B,C"));
-        Assert.Equal("—", LicenceClassCatalog.DisplayList(null));
+        Assert.Equal(string.Empty, LicenceClassCatalog.DisplayList(null));
     }
 
     /// <summary>Las clases profesionales exigen carpeta y controles distintos; el sistema tiene que

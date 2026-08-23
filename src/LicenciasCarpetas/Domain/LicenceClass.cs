@@ -65,6 +65,6 @@ public static class LicenceClassCatalog
     public static string DisplayList(string? stored)
     {
         var selection = Parse(stored);
-        return selection.Count == 0 ? "—" : string.Join(", ", selection.Select(Display));
+        return selection.Count == 0 ? string.Empty : string.Join(", ", selection.Select(Display));
     }
 }
