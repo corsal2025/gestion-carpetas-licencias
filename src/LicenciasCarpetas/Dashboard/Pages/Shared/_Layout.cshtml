@@ -21,6 +21,7 @@
         var nav = LicenciasCarpetas.Dashboard.Pages.Shared.BrandNavigation.Resolve(Context.Request.Path);
         var brandTitle = nav.Title;
         var enCambioDomicilio = nav.EnCambioDomicilio;
+        var enCambioDomicilioSolicitar = nav.EnCambioDomicilioSolicitar;
         var enF8 = nav.EnF8;
         var enGestionLicencias = nav.EnGestionLicencias;
         var estadisticasPage = nav.EstadisticasPage;
@@ -57,8 +58,8 @@
                         @* Certificado y Descartados viven ahora en la barra "Informes" de la propia
                            pantalla de Enviar Cambio de Domicilio, junto a Informe Archivo/Oficina 43
                            — ya no en el sidebar. *@
-                        <a asp-page="/CambioDomicilio/Index" class="sidebar-link @(enCambioDomicilio ? "active" : "")">📥 Enviar Cambio de Domicilio</a>
-                        <a asp-page="/CambioDomicilio/Solicitar/Index" class="sidebar-link">📤 Solicitar Cambios de Domicilio</a>
+                        <a asp-page="/CambioDomicilio/Index" class="sidebar-link @(enCambioDomicilio && !enCambioDomicilioSolicitar ? "active" : "")">📥 Enviar Cambio de Domicilio</a>
+                        <a asp-page="/CambioDomicilio/Solicitar/Index" class="sidebar-link @(enCambioDomicilioSolicitar ? "active" : "")">📤 Solicitar Cambios de Domicilio</a>
                     }
                     @if (puedeF8)
                     {

@@ -149,25 +149,15 @@ body {
     margin-bottom: 2px;
 }
 
-/* "Módulos" es ahora un <details> propio (no reusa .sidebar-section-collapsible). Sin flecha en
-   el summary — clic en el texto abre/cierra. Los links/módulos de adentro sí llevan flecha, igual
-   que Certificado/Descartados/Solicitudes debajo de sus propios desplegables. */
+/* "Módulos" es un <details> propio (no reusa .sidebar-section-collapsible) — clic en el texto del
+   summary abre/cierra. Los links de adentro (Gestión de Licencias, Enviar/Solicitar, F8) son links
+   planos, no desplegables propios — sin flecha, tenerla ahí no abría/cerraba nada y solo confundía. */
 .sidebar-modules-collapsible > summary {
     cursor: pointer;
     list-style: none;
 }
 .sidebar-modules-collapsible > summary::-webkit-details-marker {
     display: none;
-}
-.sidebar-modules-collapsible > a {
-    display: flex;
-    align-items: center;
-}
-.sidebar-modules-collapsible > a::before {
-    content: "▸";
-    display: inline-block;
-    margin-right: 6px;
-    color: var(--color-sidebar-text-muted);
 }
 
 .sidebar-link {

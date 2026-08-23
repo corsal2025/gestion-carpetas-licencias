@@ -26,6 +26,20 @@ public class BrandNavigationTests
         Assert.Equal(expectedEstadisticasPage, nav.EstadisticasPage);
     }
 
+    /// <summary>Solicitar vive bajo el mismo prefijo /CambioDomicilio que Enviar — sin este flag
+    /// aparte, el sidebar no podía distinguir cuál de los dos links marcar activo.</summary>
+    [Theory]
+    [InlineData("/CambioDomicilio/Index", false)]
+    [InlineData("/CambioDomicilio/Solicitar/Index", true)]
+    [InlineData("/CambioDomicilio/Solicitar/Nueva", true)]
+    public void Resolve_DistinguishesSolicitarFromTheRestOfCambioDomicilio(string path, bool expectedSolicitar)
+    {
+        var nav = BrandNavigation.Resolve(new PathString(path));
+
+        Assert.True(nav.EnCambioDomicilio);
+        Assert.Equal(expectedSolicitar, nav.EnCambioDomicilioSolicitar);
+    }
+
     /// <summary>StartsWithSegments requires a segment boundary — a route that merely starts with
     /// the same letters (but isn't actually under that module) must not false-positive.</summary>
     [Theory]

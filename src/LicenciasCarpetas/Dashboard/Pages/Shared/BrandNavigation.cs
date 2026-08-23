@@ -6,13 +6,17 @@ namespace LicenciasCarpetas.Dashboard.Pages.Shared;
 /// title text and which "Módulos" sidebar entry gets marked active — one source of truth so the
 /// two can't drift apart the way two independent StartsWith checks could.</summary>
 public readonly record struct BrandNavigation(
-    string Title, bool EnCambioDomicilio, bool EnF8, bool EnGestionLicencias, string EstadisticasPage)
+    string Title, bool EnCambioDomicilio, bool EnCambioDomicilioSolicitar, bool EnF8, bool EnGestionLicencias, string EstadisticasPage)
 {
     /// <summary>StartsWithSegments requires a segment boundary (/F8 or /F8/algo, never
     /// /F8Reportes), unlike a plain StartsWith on the raw path string.</summary>
     public static BrandNavigation Resolve(PathString path)
     {
         var enCambioDomicilio = path.StartsWithSegments("/CambioDomicilio");
+        // Solicitar vive bajo el mismo prefijo /CambioDomicilio que Enviar — sin distinguirlo acá,
+        // el sidebar marcaba "Enviar" como activo (o no marcaba nada) mientras se navegaba Solicitar,
+        // porque EnCambioDomicilio por sí solo no alcanza para saber cuál de los dos es.
+        var enCambioDomicilioSolicitar = path.StartsWithSegments("/CambioDomicilio/Solicitar");
         var enF8 = path.StartsWithSegments("/F8");
         var enGestionLicencias = !enCambioDomicilio && !enF8;
         var title = enCambioDomicilio ? "Cambio de Domicilio" : enF8 ? "F8 Urgentes" : "Gestión de Licencias";
@@ -21,6 +25,6 @@ public readonly record struct BrandNavigation(
         var estadisticasPage = enCambioDomicilio ? "/CambioDomicilio/Estadisticas"
             : enF8 ? "/F8/Estadisticas"
             : "/Estadisticas";
-        return new BrandNavigation(title, enCambioDomicilio, enF8, enGestionLicencias, estadisticasPage);
+        return new BrandNavigation(title, enCambioDomicilio, enCambioDomicilioSolicitar, enF8, enGestionLicencias, estadisticasPage);
     }
 }
