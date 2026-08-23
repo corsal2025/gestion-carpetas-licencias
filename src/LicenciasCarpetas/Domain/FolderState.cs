@@ -79,7 +79,8 @@ public static class FolderStateCatalog
     [
         FolderState.SeEncuentraEnArchivos,
         FolderState.SeEncuentraEnOficina43,
-        FolderState.CrearOficio
+        FolderState.CrearOficio,
+        FolderState.CambioDomicilio
     ];
 
     public static IReadOnlyList<FolderState> All { get; } = [.. Displays.Keys];

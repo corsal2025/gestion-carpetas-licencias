@@ -250,8 +250,7 @@
     <table class="cases cases-index">
         <thead>
             <tr>
-                <th>Sel.<br /><input type="checkbox" id="select-all-rows" title="Seleccionar todos para borrar" /></th>
-                <th>Marcar</th>
+                <th>Marcar<br /><input type="checkbox" id="select-all-rows" title="Seleccionar todos para borrar" /></th>
                 @* El texto va dentro de un <span>: escrito como "Oficina@Model...", Razor lee
                    "texto@algo" como una dirección de correo y lo imprime literal en vez de
                    evaluarlo. El ">" que cierra el span rompe esa heurística. *@
@@ -301,15 +300,13 @@
             var lastFolderSize = Math.Max(12, lastFolderText.Length + 2);
             var attentionSize = Math.Max(16, (item.AttentionNote?.Length ?? 0) + 2);
             <tr class="@rowClass @estadoClass @duplicadoClass @reviewClass @idoneidadClass">
-                <td>
-                    <input type="checkbox" class="bulk-select-checkbox" form="bulk-delete-form" name="selectedIds" value="@item.Id" title="Seleccionar para borrar" />
-                </td>
-                <td class="marked-cell">
+                <td class="marked-cell" style="display:flex; gap:4px; align-items:center;">
                     <form method="post" asp-page-handler="ToggleMarked" class="marked-form">
                         <input type="hidden" name="id" value="@item.Id" />
                         <input type="checkbox" name="markedValue" class="marked-checkbox" @(item.Marked ? "checked" : "")
-                               onchange="submitCheckboxToggle(this, 'markedValue')" title="Marcar caso" />
+                               onchange="submitCheckboxToggle(this, 'markedValue')" title="Marcar caso (impresión de sector)" />
                     </form>
+                    <input type="checkbox" class="bulk-select-checkbox" form="bulk-delete-form" name="selectedIds" value="@item.Id" title="Seleccionar para borrar" />
                 </td>
                 <td>
                     <form method="post" asp-page-handler="Save" id="case-form-@item.Id"
