@@ -21,9 +21,7 @@ public static class WorkflowStateCatalog
     [
         FolderState.SubidaConF8,
         FolderState.SubidaConOficio,
-        FolderState.CambioDomicilioSubidoAConaset,
-        FolderState.CambioDomicilioSubidoConCorreo,
-        FolderState.CambioDomicilioSolicitado
+        FolderState.CambioDomicilioSubidoAConaset
     ];
 
     public static string Display(FolderState state) => state == FolderState.SubidaConOficio

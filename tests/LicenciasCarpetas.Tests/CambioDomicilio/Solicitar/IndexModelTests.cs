@@ -205,10 +205,10 @@ public class IndexModelTests
         var fixture = BuildModel(db);
         var id = SeedDraft(fixture.Repository);
 
-        var result = fixture.Model.OnPostGuardarEstado(id, FolderState.CambioDomicilioSubidoConCorreo);
+        var result = fixture.Model.OnPostGuardarEstado(id, FolderState.CambioDomicilioSubidoAConaset);
 
         Assert.IsType<RedirectToPageResult>(result);
-        Assert.Equal(FolderState.CambioDomicilioSubidoConCorreo, fixture.Repository.FindById(id)!.WorkflowState);
+        Assert.Equal(FolderState.CambioDomicilioSubidoAConaset, fixture.Repository.FindById(id)!.WorkflowState);
     }
 
     /// <summary>Un estado fuera de WorkflowStateCatalog.Options (ej. PrimeraLicencia, que no está
