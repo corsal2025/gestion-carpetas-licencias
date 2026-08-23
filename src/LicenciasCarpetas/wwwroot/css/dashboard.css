@@ -1887,8 +1887,14 @@ table.cases-index tbody td select {
     position: relative;
 }
 
+/* position+z-index por encima de las columnas sticky (Nombre/RUT, z-index:1 en tbody) SIEMPRE,
+   no solo con el panel abierto — un intento anterior de dejarlo solo en [open] (para que no
+   pintara encima de Nombre/RUT al correr la tabla) rompió el click: cuando la celda queda bajo la
+   franja fija, ese sticky se traga el clic y el <details> nunca llega a abrirse, aunque el mouse
+   se vea "sobre" el resumen. Clickeable siempre gana sobre prolijo siempre. */
 .popover-celda summary {
     position: relative;
+    z-index: 2;
     cursor: pointer;
     list-style: none;
     padding: 3px 6px;
@@ -1897,15 +1903,6 @@ table.cases-index tbody td select {
     background: #fff;
     white-space: nowrap;
     font-weight: 700;
-}
-
-/* z-index por encima de Nombre/RUT (sticky, z-index:1) solo mientras el panel está abierto —
-   necesario para que el panel y su resumen queden clickeables sobre la franja fija. En cerrado,
-   sin z-index, el resumen respeta el orden normal y se desplaza DETRÁS de Nombre/RUT al correr la
-   tabla en horizontal, igual que cualquier otra celda (select, input) de la fila. Ponerlo fijo en
-   vez de solo en [open] hacía que esta celda pintara SIEMPRE encima de Nombre/RUT, incluso cerrada. */
-.popover-celda[open] summary {
-    z-index: 2;
 }
 
 .licencias-celda summary {
