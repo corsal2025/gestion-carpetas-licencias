@@ -38,21 +38,7 @@
                         <label class="form-label" for="input-fullname">Nombre Completo / Razón Social *</label>
                         <input type="text" id="input-fullname" asp-for="Input.FullName" required disabled="@Model.ReadOnly" class="solicitud-input" />
                     </div>
-                </div>
-            </div>
-
-            <div class="card solicitud-card solicitud-card-accent-secondary">
-                <div class="solicitud-card-header">📍 Nuevo Domicilio</div>
-                <div class="solicitud-field-grid">
-                    <div>
-                        <label class="form-label" for="input-street">Calle / Avenida</label>
-                        <input type="text" id="input-street" asp-for="Input.Street" disabled="@Model.ReadOnly" placeholder="Ej. Av. Providencia" class="solicitud-input" />
-                    </div>
-                    <div>
-                        <label class="form-label" for="input-number">Número</label>
-                        <input type="text" id="input-number" asp-for="Input.Number" disabled="@Model.ReadOnly" placeholder="Ej. 1234" class="solicitud-input" />
-                    </div>
-                    <div>
+                    <div style="grid-column:1 / -1;">
                         <label class="form-label" for="input-comuna">Comuna *</label>
                         <select id="input-comuna" asp-for="Input.DestinationComuna" required disabled="@Model.ReadOnly" class="solicitud-input">
                             <option value="">Seleccionar Comuna...</option>
@@ -61,13 +47,6 @@
                                 <option value="@contact.Comuna">@contact.Comuna</option>
                             }
                         </select>
-                    </div>
-                    <div>
-                        <label class="form-label" for="input-unit">Oficina / Depto (opcional)</label>
-                        <input type="text" id="input-unit" asp-for="Input.Unit" disabled="@Model.ReadOnly" placeholder="Ej. Of 401" class="solicitud-input" />
-                    </div>
-                    <div class="solicitud-info-box" style="grid-column:1 / -1;">
-                        ℹ️ Verifique que la dirección se encuentre dentro de los límites jurisdiccionales de la comuna de destino para evitar rechazos automáticos.
                     </div>
                 </div>
             </div>
