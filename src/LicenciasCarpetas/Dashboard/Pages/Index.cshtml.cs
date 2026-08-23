@@ -278,7 +278,10 @@ public class IndexModel(IFolderCaseRepository cases, IExcelCaseExporter exporter
             needsReview = NeedsReview,
             otherComuna = OtherComuna,
             search = Search,
-            p = RequestedPage
+            p = RequestedPage,
+            size = PageSize,
+            sort = Sort,
+            desc = Descending
         });
     }
 

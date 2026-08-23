@@ -14,6 +14,12 @@
 
 <div class="card" style="padding:5px 12px; margin-bottom:8px;">
     <form method="get" class="filters-bar" style="display:flex; gap:3px 8px; align-items:flex-end; flex-wrap:wrap;">
+        @* Sin estos tres, filtrar por Oficina/Año/etc. resetea lo que el operador eligió en
+           "Ver" (tamaño de página) y en el orden de columna — el <select> de "Ver" ya guarda
+           lo suyo por su cuenta, pero este otro <form> no sabía nada de ellos. *@
+        <input type="hidden" name="size" value="@Model.PageSize" />
+        <input type="hidden" name="sort" value="@Model.Sort" />
+        <input type="hidden" name="desc" value="@Model.Descending" />
         <div>
             <label class="form-label" for="office">Oficina</label>
             <select name="office" id="office" onchange="this.form.submit()">
@@ -83,8 +89,8 @@
             <span style="margin-left:auto; display:flex; flex-direction:column; gap:3px; align-items:center;">
                 <span style="font-weight:700; font-size:var(--font-lg); color:#926100;">Informes</span>
                 <span style="display:flex; gap:8px; align-items:center;">
-                    <a asp-page="/Sector" asp-route-sector="Archivo" class="nav-pill nav-doc text-sm">Informe Archivo</a>
-                    <a asp-page="/Sector" asp-route-sector="Oficina43" class="nav-pill nav-doc text-sm">Informe Oficina 43</a>
+                    <a asp-page="/Sector" asp-route-sector="Archivo" class="nav-pill nav-doc text-sm">📄 Informe Archivo</a>
+                    <a asp-page="/Sector" asp-route-sector="Oficina43" class="nav-pill nav-doc text-sm">📄 Informe Oficina 43</a>
                 </span>
             </span>
         }
@@ -109,6 +115,9 @@
 <details class="card" style="padding:8px 14px; margin-bottom:10px;">
     <summary class="text-md" style="cursor:pointer; font-weight:600;">Agregar caso a la agenda</summary>
     <form method="post" asp-page-handler="Add" style="display:flex; gap:10px; align-items:flex-end; flex-wrap:wrap; margin-top:12px;">
+        <input type="hidden" name="size" value="@Model.PageSize" />
+        <input type="hidden" name="sort" value="@Model.Sort" />
+        <input type="hidden" name="desc" value="@Model.Descending" />
         <div>
             <label class="form-label">Nombre completo</label>
             <input type="text" name="nombre" required placeholder="ej: Gustavo Peña Castro" style="min-width:220px;" />
@@ -233,11 +242,17 @@
     }
 </datalist>
 
-@* Selección para borrado masivo, separada de "Marcar" (esa la usa la impresión por sector,
-   marcar varios para borrar la pisaría). Los checkboxes de cada fila viven dentro de <tr>,
-   asociados a este <form> vacío por el atributo form= — así no hace falta envolver la tabla
-   entera en un <form> que chocaría con los <form> propios de cada fila. *@
-<form id="bulk-delete-form" method="post" asp-page-handler="DeleteSeleccionados"></form>
+@* Un solo checkbox por fila: marca para impresión por sector Y selecciona para borrado masivo
+   a la vez (decisión del usuario pese al riesgo de que un click de más en "Eliminar
+   seleccionados" borre filas que solo se querían marcar — el borrado es soft-delete,
+   recuperable desde Papelera). Vive dentro de <tr>, asociado a este <form> vacío por el
+   atributo form= — así no hace falta envolver la tabla entera en un <form> que chocaría con
+   los <form> propios de cada fila. *@
+<form id="bulk-delete-form" method="post" asp-page-handler="DeleteSeleccionados">
+    <input type="hidden" name="size" value="@Model.PageSize" />
+    <input type="hidden" name="sort" value="@Model.Sort" />
+    <input type="hidden" name="desc" value="@Model.Descending" />
+</form>
 <div style="display:flex; justify-content:flex-end; align-items:center; gap:8px; margin-bottom:6px;">
     <span id="bulk-delete-count" class="text-sm" style="color:var(--color-text-muted);"></span>
     <button type="submit" form="bulk-delete-form" class="btn-danger" id="bulk-delete-btn" disabled
@@ -250,7 +265,7 @@
     <table class="cases cases-index">
         <thead>
             <tr>
-                <th>Marcar<br /><input type="checkbox" id="select-all-rows" title="Seleccionar todos para borrar" /></th>
+                <th>Marcar<br /><input type="checkbox" id="select-all-rows" title="Marcar/seleccionar todos" /></th>
                 @* El texto va dentro de un <span>: escrito como "Oficina@Model...", Razor lee
                    "texto@algo" como una dirección de correo y lo imprime literal en vez de
                    evaluarlo. El ">" que cierra el span rompe esa heurística. *@
@@ -264,7 +279,7 @@
                 @* Sector va junto a Última carpeta: es la fecha de la que se calcula. *@
                 <th>Sector</th>
                 <th title="Código del caso F8. Texto libre">Código F8</th>
-                <th title="Fecha de la carpeta anterior a la última. No influye en el sector">Fecha penúltima carpeta</th>
+                <th title="Fecha de la carpeta anterior a la última. No influye en el sector">Fecha penúltima<br />carpeta</th>
                 <th title="Clases que el contribuyente viene a obtener. Se pueden marcar varias">Tipo de licencia</th>
                 <th><a asp-page="/Index" asp-all-route-data="@Model.SortRouteValues(CaseSort.FolderState)" class="sort-link"><span>Estado carpeta</span>@Model.SortIndicator(CaseSort.FolderState)</a></th>
                 <th>Idoneidad</th>
@@ -281,6 +296,7 @@
             @* El color de la fila viene del estado de la carpeta, igual que en el Excel. *@
             var estadoClass = FolderStateCatalog.CssClass(item.FolderState);
             var duplicadoClass = Model.DuplicateRuts.Contains(item.Rut ?? string.Empty) ? "rut-duplicado" : "";
+            var markedClass = item.Marked ? "row-selected" : "";
             @* Idoneidad moral en alerta o por revisar: la fila entera avisa, no solo la celda —
                es lo primero que se necesita ver al mirar la agenda del día. *@
             var idoneidadClass = item.MoralIdoneity switch
@@ -299,21 +315,23 @@
             var nameSize = Math.Max(26, (item.FullName?.Length ?? 0) + 2);
             var lastFolderSize = Math.Max(12, lastFolderText.Length + 2);
             var attentionSize = Math.Max(16, (item.AttentionNote?.Length ?? 0) + 2);
-            <tr class="@rowClass @estadoClass @duplicadoClass @reviewClass @idoneidadClass">
-                <td class="marked-cell" style="display:flex; gap:4px; align-items:center;">
-                    <form method="post" asp-page-handler="ToggleMarked" class="marked-form">
+            <tr class="@rowClass @estadoClass @duplicadoClass @reviewClass @idoneidadClass @markedClass">
+                <td class="marked-cell">
+                    <form method="post" asp-page-handler="ToggleMarked" class="marked-form" id="marked-form-@item.Id">
                         <input type="hidden" name="id" value="@item.Id" />
-                        <input type="checkbox" name="markedValue" class="marked-checkbox" @(item.Marked ? "checked" : "")
-                               onchange="submitCheckboxToggle(this, 'markedValue')" title="Marcar caso (impresión de sector)" />
                     </form>
-                    <input type="checkbox" class="bulk-select-checkbox" form="bulk-delete-form" name="selectedIds" value="@item.Id" title="Seleccionar para borrar" />
+                    <input type="checkbox" class="bulk-select-checkbox" form="bulk-delete-form" name="selectedIds" value="@item.Id"
+                           @(item.Marked ? "checked" : "")
+                           onchange="toggleRowMark(this, document.getElementById('marked-form-@item.Id'))"
+                           title="Marcar caso (impresión de sector y borrado masivo)" />
                 </td>
                 <td>
                     <form method="post" asp-page-handler="Save" id="case-form-@item.Id"
                           asp-route-office="@Model.Office" asp-route-year="@Model.Year" asp-route-month="@Model.Month"
                           asp-route-estado="@Model.Estado" asp-route-decision="@Model.Decision" asp-route-sector="@Model.Sector"
                           asp-route-needsReview="@Model.NeedsReview" asp-route-otherComuna="@Model.OtherComuna"
-                          asp-route-search="@Model.Search" asp-route-p="@Model.PageNumber">
+                          asp-route-search="@Model.Search" asp-route-p="@Model.PageNumber"
+                          asp-route-size="@Model.PageSize" asp-route-sort="@Model.Sort" asp-route-desc="@Model.Descending">
                         <input type="hidden" name="id" value="@item.Id" />
                     </form>
                     <input type="text" name="citacion" form="case-form-@item.Id" class="input-inline" size="15"
@@ -363,14 +381,14 @@
                 <td>
                     <input type="text" name="folioLicencia" form="case-form-@item.Id" class="input-inline"
                            size="@Math.Max(10, (item.FolioLicencia?.Length ?? 0) + 2)" value="@item.FolioLicencia"
-                           placeholder="—" />
+                           />
                 </td>
                 <td>
                     @* Solo la escribe el sistema al marcar un estado de "ya subida" (fillUploadDateIfMissing) —
                        readonly, no disabled, para que el valor siga viajando al guardar. *@
                     <input type="text" name="subida" form="case-form-@item.Id" class="input-inline" size="15"
                            value="@LicenciasCarpetas.Dashboard.Pages.IndexModel.FormatDate(item.FolderUploadedDate)"
-                           placeholder="—" readonly title="Se completa sola al marcar un estado de subida" />
+                           readonly title="Se completa sola al marcar un estado de subida" />
                 </td>
                 <td>
                     <input type="text" name="ultimaCarpeta" form="case-form-@item.Id" class="input-inline"
@@ -381,7 +399,7 @@
                 <td>
                     <input type="text" name="codigoF8" form="case-form-@item.Id" class="input-inline"
                            size="@Math.Max(12, (item.CodigoF8?.Length ?? 0) + 2)" value="@item.CodigoF8"
-                           placeholder="—" />
+                           />
                 </td>
                 <td>
                     <input type="text" name="penultima" form="case-form-@item.Id" class="input-inline" size="15"
@@ -456,6 +474,9 @@
                     <form method="post" asp-page-handler="Delete"
                           onsubmit="return confirm('El caso se mueve a la Papelera y se puede restaurar desde ahí. ¿Confirmar?');">
                         <input type="hidden" name="id" value="@item.Id" />
+                        <input type="hidden" name="size" value="@Model.PageSize" />
+                        <input type="hidden" name="sort" value="@Model.Sort" />
+                        <input type="hidden" name="desc" value="@Model.Descending" />
                         <button type="submit" class="btn-danger" title="Mover a la Papelera" aria-label="Mover a la Papelera">✕</button>
                     </form>
                 </td>
@@ -582,7 +603,7 @@
                 var summary = cell.querySelector('summary');
                 var selected = Array.from(cell.querySelectorAll('input[type="checkbox"]:checked'))
                     .map(function (c) { return c.value; });
-                summary.textContent = selected.length > 0 ? selected.join(', ') : '—';
+                summary.textContent = selected.length > 0 ? selected.join(', ') : '';
                 markUnsaved(checkbox);
             });
         });
@@ -670,7 +691,12 @@
             else {
                 panel.style.position = 'fixed';
                 panel.style.top = (rect.bottom + 4) + 'px';
-                panel.style.left = Math.max(rect.left, minLeft) + 'px';
+                // Sin este clamp, una columna cerca del borde derecho de la ventana (como TIPO DE
+                // LICENCIA, lejos de las columnas fijas) abre el panel más allá de lo visible —
+                // técnicamente "abierto" pero invisible, indistinguible de que no pasó nada.
+                var anchoPanel = panel.offsetWidth || 150;
+                var maxLeft = window.innerWidth - anchoPanel - 6;
+                panel.style.left = Math.max(Math.min(rect.left, maxLeft), minLeft) + 'px';
             }
         });
     });
@@ -709,16 +735,21 @@
 </script>
 <script>
     // Checkbox toggles go through fetch() so ticking several rows quickly cannot cancel each other
-    // the way competing full-page navigations do.
-    function submitCheckboxToggle(checkbox, fieldName) {
-        var form = checkbox.form;
-        var id = form.querySelector('input[name="id"]').value;
-        var token = form.querySelector('input[name="__RequestVerificationToken"]').value;
+    // the way competing full-page navigations do. The checkbox belongs to bulk-delete-form (via
+    // its own form= attribute), so the marked-form that actually persists Marked is passed in
+    // explicitly rather than read off checkbox.form.
+    function toggleRowMark(checkbox, markedForm) {
+        var row = checkbox.closest('tr');
+        if (row) {
+            row.classList.toggle('row-selected', checkbox.checked);
+        }
+        var id = markedForm.querySelector('input[name="id"]').value;
+        var token = markedForm.querySelector('input[name="__RequestVerificationToken"]').value;
         var body = '__RequestVerificationToken=' + encodeURIComponent(token) + '&id=' + encodeURIComponent(id);
         if (checkbox.checked) {
-            body += '&' + fieldName + '=true';
+            body += '&markedValue=true';
         }
-        fetch(form.action, {
+        fetch(markedForm.action, {
             method: 'POST',
             headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
             body: body
@@ -747,7 +778,19 @@
         rowCheckboxes.forEach(function (cb) { cb.addEventListener('change', updateState); });
         if (selectAll) {
             selectAll.addEventListener('change', function () {
-                rowCheckboxes.forEach(function (cb) { cb.checked = selectAll.checked; });
+                // Same checkbox drives Marcar, so flipping every row here has to fire each row's
+                // own change handler too — that persists the mark and paints the row. Capture the
+                // target state up front: updateState() (fired by each row's own change handler)
+                // rewrites selectAll.checked mid-loop, so reading selectAll.checked fresh on every
+                // iteration would stop after the first row once the running count no longer equals
+                // the total.
+                var targetChecked = selectAll.checked;
+                rowCheckboxes.forEach(function (cb) {
+                    if (cb.checked !== targetChecked) {
+                        cb.checked = targetChecked;
+                        cb.dispatchEvent(new Event('change'));
+                    }
+                });
                 updateState();
             });
         }

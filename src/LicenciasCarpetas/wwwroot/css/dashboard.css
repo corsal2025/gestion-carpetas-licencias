@@ -23,6 +23,7 @@
     --color-confirmed-bg: #e3f6e9;
     --color-review: #a11d33;
     --color-review-bg: #fbe4e8;
+    --color-selected-bg: #d6e8fb;
     /* Card/button/input corner radius shared across the whole dashboard — bumped from 6px to
        align with the light-theme mockups (10-12px on cards). Every rule that already reads
        var(--radius) picks this up automatically instead of needing a second radius scale. */
@@ -1099,6 +1100,12 @@ table.cases-index tbody tr.row-needs-review:hover {
     background: #f6d0d8 !important;
 }
 
+/* Marcado con el checkbox de "Marcar" — pinta la fila entera para que se note de un vistazo
+   qué está tildado, encima de cualquier otro color de fila. */
+table.cases-index tbody tr.row-selected {
+    background: var(--color-selected-bg) !important;
+}
+
 /* Pendiente Carpeta and F8 pending backgrounds are driven ONLY by the live :has() rules above/below
    — no server-rendered class version. A class-based rule (tr.row-pendiente-carpeta / .row-f8-pending)
    is baked into the HTML at render time and never removed by fetch()-based toggling (see
@@ -1859,7 +1866,17 @@ table.cases-index tbody td select {
     position: relative;
 }
 
+/* position+z-index por encima de las columnas sticky (Nombre/RUT, z-index:1 en tbody): sin esto,
+   cuando la tabla se desplaza en horizontal y esta celda queda bajo la franja fija de Nombre/RUT
+   (fondo opaco), ese sticky pinta encima y se traga el clic — el resumen no reacciona aunque se
+   vea "encima" a simple vista, porque en realidad no lo está. */
+/* position+z-index por encima de las columnas sticky (Nombre/RUT, z-index:1 en tbody): sin esto,
+   cuando la tabla se desplaza en horizontal y esta celda queda bajo la franja fija de Nombre/RUT
+   (fondo opaco), ese sticky pinta encima y se traga el clic — el resumen no reacciona aunque se
+   vea "encima" a simple vista, porque en realidad no lo está. */
 .popover-celda summary {
+    position: relative;
+    z-index: 2;
     cursor: pointer;
     list-style: none;
     padding: 3px 6px;
@@ -1870,7 +1887,24 @@ table.cases-index tbody td select {
     font-weight: 700;
 }
 
-.licencias-celda summary { min-width: 74px; }
+.licencias-celda summary {
+    position: relative;
+    min-width: 74px;
+    min-height: 18px;
+    padding-right: 20px;
+}
+
+/* Sin texto de resumen fijo ("—" u otro) cuando no hay clases elegidas, esta flecha es la única
+   pista de que el casillero abre un selector — decorativa, no forma parte del contenido. */
+.licencias-celda summary::after {
+    content: "▾";
+    position: absolute;
+    right: 6px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--color-text-muted);
+    pointer-events: none;
+}
 
 .popover-celda summary::-webkit-details-marker { display: none; }
 
