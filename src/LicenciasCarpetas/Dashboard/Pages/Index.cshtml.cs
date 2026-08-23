@@ -3,6 +3,7 @@ using LicenciasCarpetas.CambioDomicilio.Data;
 using LicenciasCarpetas.CambioDomicilio.Solicitar;
 using LicenciasCarpetas.Configuration;
 using LicenciasCarpetas.Domain;
+using LicenciasCarpetas.F8.Data;
 using LicenciasCarpetas.Persistence;
 using LicenciasCarpetas.Reporting;
 using Microsoft.AspNetCore.Authorization;
@@ -10,13 +11,23 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using OutboundAddressChangeRequest = LicenciasCarpetas.CambioDomicilio.Domain.OutboundAddressChangeRequest;
 using OutboundRequestStatus = LicenciasCarpetas.CambioDomicilio.Domain.OutboundRequestStatus;
+using UrgentRequest = LicenciasCarpetas.F8.Domain.UrgentRequest;
 
 namespace LicenciasCarpetas.Dashboard.Pages;
 
 [Authorize]
 public class IndexModel(IFolderCaseRepository cases, IExcelCaseExporter exporter, CarpetasOptions options,
-    IOutboundAddressChangeRequestRepository outboundRequests, OutboundRequestSender sender) : PageModel
+    IOutboundAddressChangeRequestRepository outboundRequests, OutboundRequestSender sender,
+    IUrgentRequestRepository urgentRequests) : PageModel
 {
+    // Autoguardado dispara OnPostSave en cada cambio de celda — dos filas distintas con el mismo
+    // RUT (el propio DuplicateRuts de esta pantalla dice que eso pasa) puestas en "NO EXISTE
+    // CARPETA" casi al mismo tiempo podían pasar las dos el FindByRut antes de que la primera
+    // terminara de insertar, y crear dos filas en F8 para la misma persona. Un solo semáforo
+    // estático alcanza: la app corre en un único proceso Kestrel, y el bloque es rápido (una
+    // consulta + un insert en SQLite).
+    private static readonly SemaphoreSlim UrgentRequestGuard = new(1, 1);
+
     public IReadOnlyList<FolderCase> Cases { get; private set; } = [];
     public int TotalCount { get; private set; }
     public int NeedsReviewCount { get; private set; }
@@ -143,6 +154,47 @@ public class IndexModel(IFolderCaseRepository cases, IExcelCaseExporter exporter
         cases.UpdateCaseDetails(id, codigoF8, ParseDate(penultima),
             LicenceClassCatalog.Serialize(licencias ?? []), folioLicencia);
         cases.UpdateObservations(id, observaciones);
+
+        // Elegir "NO EXISTE CARPETA" en Casos crea automáticamente la fila en F8 Urgentes — mismo
+        // dato que hoy carga el Excel de la matriz (MatrizSyncService), pero disparado por el
+        // desplegable en vez de por Sincronizar. El caso sigue apareciendo en Casos también: esto
+        // no es un traspaso (a diferencia de CambioDomicilio.OnPostTransferToF8), solo una copia.
+        // FindByRut evita crear una segunda fila cada vez que se autoguarda otro campo de la misma
+        // fila sin haber cambiado el estado — el autoguardado reenvía el form entero en cada cambio.
+        // El chequeo+insert va bajo el semáforo: sin él, dos filas con el mismo RUT (ver
+        // DuplicateRuts más arriba) guardadas casi al mismo tiempo podían pasar las dos el
+        // FindByRut antes de que la primera terminara de insertar.
+        if (estado == FolderState.NoExisteCarpeta && normalizedRut is not null)
+        {
+            UrgentRequestGuard.Wait();
+            try
+            {
+                if (urgentRequests.FindByRut(normalizedRut) is null)
+                {
+                    urgentRequests.Insert(new UrgentRequest
+                    {
+                        NombreCompleto = fullName,
+                        Rut = normalizedRut,
+                        RutRaw = rut?.Trim(),
+                        FechaPeticion = citationDate,
+                        FechaUltimaCarpeta = lastFolderDate,
+                        CodigoF8 = codigoF8,
+                        FechaPenultimaCarpeta = ParseDate(penultima),
+                        Estado = FolderStateCatalog.Display(estado.Value),
+                        Origin = "Casos",
+                        // Mismo criterio que needsReview de más abajo (nombre o RUT o fecha de
+                        // citación faltantes) — sin esto una fila incompleta se creaba en F8 sin
+                        // el resaltado row-needs-review que el operador usa para detectarlas.
+                        NeedsReview = needsReview,
+                        CreatedAt = DateTimeOffset.UtcNow
+                    });
+                }
+            }
+            finally
+            {
+                UrgentRequestGuard.Release();
+            }
+        }
 
         var invalidRut = normalizedRut is null && !string.IsNullOrWhiteSpace(rut);
         var message = invalidRut

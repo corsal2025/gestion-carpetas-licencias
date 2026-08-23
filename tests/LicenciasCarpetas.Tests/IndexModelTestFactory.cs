@@ -19,10 +19,17 @@ internal static class IndexModelTestFactory
             => Task.CompletedTask;
     }
 
-    public static IndexModel Create(SqliteTestDatabase db, IExcelCaseExporter exporter, CarpetasOptions options)
+    public static IndexModel Create(SqliteTestDatabase db, IExcelCaseExporter exporter, CarpetasOptions options) =>
+        CreateWithUrgentRequests(db, exporter, options, out _);
+
+    /// <summary>For tests that need to assert on the F8 Urgentes rows OnPostSave auto-creates when
+    /// "NO EXISTE CARPETA" is chosen — see IndexModel.OnPostSave.</summary>
+    public static IndexModel CreateWithUrgentRequests(SqliteTestDatabase db, IExcelCaseExporter exporter,
+        CarpetasOptions options, out FakeUrgentRequestRepositoryForCasos urgentRequests)
     {
         var outboundRequests = new FakeOutboundAddressChangeRequestRepository();
         var sender = new OutboundRequestSender(outboundRequests, db.Contacts, new NoopEmailSender());
-        return new(db.Cases, exporter, options, outboundRequests, sender);
+        urgentRequests = new FakeUrgentRequestRepositoryForCasos();
+        return new(db.Cases, exporter, options, outboundRequests, sender, urgentRequests);
     }
 }

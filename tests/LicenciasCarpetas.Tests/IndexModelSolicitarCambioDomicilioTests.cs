@@ -95,7 +95,7 @@ public class IndexModelSolicitarCambioDomicilioTests
         };
 
         var model = new IndexModel(db.Cases, new NoopExporter(), new CarpetasOptions(),
-            outboundRequests, sender)
+            outboundRequests, sender, new FakeUrgentRequestRepositoryForCasos())
         {
             PageContext = new PageContext(new ActionContext(httpContext, new RouteData(), new PageActionDescriptor())),
             TempData = new TempDataDictionary(httpContext, new InMemoryTempDataProvider())
