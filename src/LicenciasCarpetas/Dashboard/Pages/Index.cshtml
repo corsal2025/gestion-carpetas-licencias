@@ -735,17 +735,31 @@
                 // Al lado del RUT, no debajo: "debajo" en una fila cerca del borde inferior de la
                 // ventana empuja el panel fuera de lo visible. A la derecha, la fila siempre está
                 // a la vista porque es la misma fila que el operador ya está mirando.
-                var ancho = 260; // igual al width fijo de .observaciones-panel en dashboard.css
-                var cabeADerecha = rect.right + 6 + ancho <= window.innerWidth;
+                var posicionarJuntoAlIcono = function () {
+                    var freshRect = cell.querySelector('summary').getBoundingClientRect();
+                    var ancho = 260; // igual al width fijo de .observaciones-panel en dashboard.css
+                    var cabeADerecha = freshRect.right + 6 + ancho <= window.innerWidth;
+                    panel.style.top = freshRect.top + 'px';
+                    panel.style.left = cabeADerecha
+                        ? (freshRect.right + 6) + 'px'
+                        : Math.max(freshRect.left - ancho - 6, minLeft) + 'px';
+                };
                 panel.style.position = 'fixed';
-                panel.style.top = rect.top + 'px';
-                panel.style.left = cabeADerecha
-                    ? (rect.right + 6) + 'px'
-                    : Math.max(rect.left - ancho - 6, minLeft) + 'px';
+                posicionarJuntoAlIcono();
                 // preventScroll: sin esto, el foco fuerza un scroll de .table-card para centrar
                 // el textarea — y ese scroll dispara el listener de abajo que cierra el panel
                 // recién abierto, dando la sensación de que "salta y se cierra solo".
                 panel.querySelector('textarea').focus({ preventScroll: true });
+                // En el celular, enfocar el textarea abre el teclado y ESO reacomoda el visual
+                // viewport (empuja el contenido hacia arriba) — la posición calculada ANTES de
+                // que el teclado terminara de abrirse quedaba desactualizada, y el panel aparecía
+                // lejos del ícono en vez de al lado. Se recalcula un par de frames después (layout
+                // inmediato) y de nuevo cuando el visualViewport avisa que terminó de acomodarse
+                // (la animación del teclado en sí, que tarda más que un par de frames).
+                requestAnimationFrame(function () { requestAnimationFrame(posicionarJuntoAlIcono); });
+                if (window.visualViewport) {
+                    window.visualViewport.addEventListener('resize', posicionarJuntoAlIcono, { once: true });
+                }
             }
             else {
                 panel.style.position = 'fixed';
