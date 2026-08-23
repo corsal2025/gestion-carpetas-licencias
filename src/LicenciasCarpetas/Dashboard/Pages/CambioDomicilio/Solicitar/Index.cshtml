@@ -23,7 +23,6 @@
                 <th>RUT</th>
                 <th>Comuna</th>
                 <th>Recibido</th>
-                <th>Plazo (15 días hábiles)</th>
                 <th>Estado</th>
                 <th>Acción</th>
             </tr>
@@ -32,13 +31,12 @@
         @foreach (var item in Model.Requests)
         {
             <tr>
-                @* Marcar/Recibido/Plazo no tienen dato real en una solicitud saliente (no hay
-                   carpeta física propia acá) — se muestran inertes. *@
+                @* Marcar/Recibido no tienen dato real en una solicitud saliente (no hay carpeta
+                   física propia acá) — se muestran inertes. *@
                 <td><input type="checkbox" disabled /></td>
                 <td>@item.FullName</td>
                 <td>@item.Rut</td>
                 <td>@item.DestinationComuna</td>
-                <td>—</td>
                 <td>—</td>
                 <td>
                     @{
