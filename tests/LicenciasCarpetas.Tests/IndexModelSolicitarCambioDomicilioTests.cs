@@ -56,6 +56,7 @@ public class IndexModelSolicitarCambioDomicilioTests
     private sealed class RecordingEmailSender : IEmailSender
     {
         public string? To { get; private set; }
+        public string? Body { get; private set; }
         public int CallCount { get; private set; }
 
         public Task SendAsync(string to, string subject, string body,
@@ -63,6 +64,7 @@ public class IndexModelSolicitarCambioDomicilioTests
         {
             CallCount++;
             To = to;
+            Body = body;
             return Task.CompletedTask;
         }
     }
@@ -134,6 +136,13 @@ public class IndexModelSolicitarCambioDomicilioTests
         Assert.Equal("Quillota", stored.DestinationComuna);
         Assert.Equal(OutboundRequestStatus.Enviada, stored.Status);
         Assert.Equal(UserId, stored.SentByUserId);
+
+        // Texto fijo pedido por el operador (cita del artículo 14 del Decreto 170) — Nombre y RUT
+        // son los únicos datos que cambian según de quién se pida la carpeta.
+        Assert.NotNull(fixture.EmailSender.Body);
+        Assert.Contains("artículo 14 del Decreto N.º 170", fixture.EmailSender.Body);
+        Assert.Contains("Nombre: GUSTAVO PEÑA CASTRO", fixture.EmailSender.Body);
+        Assert.Contains("RUT: 18.785.387-7", fixture.EmailSender.Body);
     }
 
     [Fact]

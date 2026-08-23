@@ -70,44 +70,32 @@ public sealed class OutboundRequestSender(
             request.DestinationComuna);
     }
 
-    /// <summary>Builds the outbound email body. The "Nuevo domicilio" line is only included when
-    /// there's an actual street or number to show — Casos never has them (they're skipped
-    /// entirely there), and a Nueva request can also be sent with both blank, which previously
-    /// produced a garbled "Nuevo domicilio:  " line instead of omitting it.</summary>
+    /// <summary>Texto fijo pedido por el operador, con cita legal del artículo 14 del Decreto 170
+    /// (MTT) — Nombre y RUT son los únicos datos que cambian según de quién se esté pidiendo la
+    /// carpeta. Calle/Número/Depto ya no se piden en ningún formulario de esta pantalla (se sacaron
+    /// de Nueva.cshtml), así que el cuerpo no los necesita.</summary>
     private static string BuildBody(OutboundAddressChangeRequest request)
     {
         var lines = new List<string>
         {
             "Estimados,",
             "",
-            "Se solicita gestionar el cambio de domicilio para el siguiente contribuyente:",
+            "Junto con saludar, y conforme a lo establecido en el artículo 14 del Decreto N.º 170 del " +
+                "Ministerio de Transportes y Telecomunicaciones, \"Reglamento para el Otorgamiento de " +
+                "Licencias de Conducir\", solicito a ustedes tengan a bien remitir, a través de la " +
+                "Plataforma SGL, la carpeta con los antecedentes del siguiente conductor, para la " +
+                "correspondiente emisión de su licencia de conducir:",
             "",
             $"Nombre: {request.FullName}",
-            $"RUT: {request.Rut}"
+            $"RUT: {request.Rut}",
+            "",
+            "Quedamos atentos a su respuesta.",
+            "",
+            "Saludos cordiales,",
+            "Departamento de Licencias de Conducir",
+            "Municipalidad de Valparaíso"
         };
 
-        var direccion = BuildDireccion(request.Street, request.Number, request.Unit);
-        if (direccion is not null)
-        {
-            lines.Add($"Nuevo domicilio: {direccion}");
-        }
-
-        lines.Add($"Comuna: {request.DestinationComuna}");
-        lines.Add("");
-        lines.Add("Saludos,");
-        lines.Add("Cambio de Domicilio");
-
         return string.Join("\n", lines);
-    }
-
-    private static string? BuildDireccion(string? street, string? number, string? unit)
-    {
-        if (string.IsNullOrWhiteSpace(street) && string.IsNullOrWhiteSpace(number))
-        {
-            return null;
-        }
-
-        var direccion = $"{street} {number}".Trim();
-        return string.IsNullOrWhiteSpace(unit) ? direccion : $"{direccion}, {unit}";
     }
 }

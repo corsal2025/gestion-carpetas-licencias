@@ -481,15 +481,10 @@
                     @* El botón "Guardar" se sacó: con autoguardado (ver autoSaveCaseForm en
                        Scripts) cada cambio de celda ya se manda solo, no hace falta un botón
                        aparte por fila. El form case-form-@item.Id sigue existiendo igual —
-                       autoguardado y "Solicitar" lo usan — solo se sacó el botón visible. *@
-                    <form method="post" asp-page-handler="Delete"
-                          onsubmit="return confirm('El caso se mueve a la Papelera y se puede restaurar desde ahí. ¿Confirmar?');">
-                        <input type="hidden" name="id" value="@item.Id" />
-                        <input type="hidden" name="size" value="@Model.PageSize" />
-                        <input type="hidden" name="sort" value="@Model.Sort" />
-                        <input type="hidden" name="desc" value="@Model.Descending" />
-                        <button type="submit" class="btn-danger" title="Mover a la Papelera" aria-label="Mover a la Papelera">✕</button>
-                    </form>
+                       autoguardado y "Solicitar" lo usan — solo se sacó el botón visible.
+                       El botón individual de eliminar (✕) también se sacó de esta columna, a
+                       pedido — para borrar un caso queda el checkbox de Marcar + "Eliminar
+                       seleccionados" (borrado masivo), que sigue intacto. *@
                     @if (puedeCambioDomicilio)
                     {
                         @* Crea-y-manda en un clic: arma una solicitud en "Solicitar Cambios de
