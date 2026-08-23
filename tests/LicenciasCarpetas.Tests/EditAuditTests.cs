@@ -149,7 +149,10 @@ public class EditAuditTests
 
         var created = Assert.Single(urgentRequests.GetAll());
         Assert.Equal("JUAN PEREZ", created.NombreCompleto);
-        Assert.Equal("13.025.150-1", created.Rut);
+        // Sin puntos — mismo formato que F8.Domain.Rut.ToString() usa en todos los demás caminos
+        // que crean una fila (edición manual, importación de la matriz); guardarlo con puntos acá
+        // haría que nunca se encuentre por RUT desde el resto de F8.
+        Assert.Equal("13025150-1", created.Rut);
         Assert.Equal("Casos", created.Origin);
         Assert.False(created.NeedsReview);
     }
@@ -168,6 +171,26 @@ public class EditAuditTests
             FolderState.NoExisteCarpeta, null, null, null);
 
         Assert.True(Assert.Single(urgentRequests.GetAll()).NeedsReview);
+    }
+
+    /// <summary>Código F8 y Fecha penúltima carpeta se siguen copiando a la fila de F8 ya creada en
+    /// cada autoguardado posterior, no solo al crearla — si el operador los completa recién
+    /// después de elegir "NO EXISTE CARPETA", F8 tiene que terminar viéndolos también.</summary>
+    [Fact]
+    public void CodigoF8_and_penultima_typed_after_the_row_already_exists_still_sync_to_it()
+    {
+        using var db = new SqliteTestDatabase();
+        var id = Insert(db);
+        var model = IndexModelTestFactory.CreateWithUrgentRequests(db, new NullExporter(), new CarpetasOptions(), out var urgentRequests);
+
+        model.OnPostSave(id, "JUAN PEREZ", "13.025.150-1", "02-01-2026", null, null,
+            FolderState.NoExisteCarpeta, null, null, null);
+        model.OnPostSave(id, "JUAN PEREZ", "13.025.150-1", "02-01-2026", null, null,
+            FolderState.NoExisteCarpeta, null, null, null, penultima: "15-03-2024", codigoF8: "257867");
+
+        var updated = Assert.Single(urgentRequests.GetAll());
+        Assert.Equal("257867", updated.CodigoF8);
+        Assert.Equal(new DateOnly(2024, 3, 15), updated.FechaPenultimaCarpeta);
     }
 
     /// <summary>Documenta el comportamiento actual (compartido con MatrizSyncService): el dedup es

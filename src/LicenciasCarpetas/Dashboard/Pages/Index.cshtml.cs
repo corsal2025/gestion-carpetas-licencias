@@ -159,27 +159,38 @@ public class IndexModel(IFolderCaseRepository cases, IExcelCaseExporter exporter
         // dato que hoy carga el Excel de la matriz (MatrizSyncService), pero disparado por el
         // desplegable en vez de por Sincronizar. El caso sigue apareciendo en Casos también: esto
         // no es un traspaso (a diferencia de CambioDomicilio.OnPostTransferToF8), solo una copia.
-        // FindByRut evita crear una segunda fila cada vez que se autoguarda otro campo de la misma
-        // fila sin haber cambiado el estado — el autoguardado reenvía el form entero en cada cambio.
-        // El chequeo+insert va bajo el semáforo: sin él, dos filas con el mismo RUT (ver
+        // Mientras el caso siga en NO EXISTE CARPETA, Código F8 y Fecha penúltima carpeta se
+        // siguen copiando a la fila de F8 en cada autoguardado posterior (no solo al crearla) —
+        // si el operador los completa después de elegir el estado, F8 tiene que verlos también.
+        // El chequeo+insert/update va bajo el semáforo: sin él, dos filas con el mismo RUT (ver
         // DuplicateRuts más arriba) guardadas casi al mismo tiempo podían pasar las dos el
         // FindByRut antes de que la primera terminara de insertar.
         if (estado == FolderState.NoExisteCarpeta && normalizedRut is not null)
         {
+            // UrgentRequest.Rut se guarda SIN puntos (F8.Domain.Rut.ToString()) en todos los demás
+            // caminos que lo crean (edición manual, importación de la matriz) — guardarlo acá con
+            // puntos (el formato de Casos) haría que esta fila nunca se encuentre por RUT desde F8
+            // ni se detecte como duplicada de una ya existente por matriz.
+            var f8Rut = LicenciasCarpetas.F8.Domain.Rut.TryParse(normalizedRut, out var parsedF8Rut)
+                ? parsedF8Rut.ToString()
+                : normalizedRut;
+            var penultimaDate = ParseDate(penultima);
+
             UrgentRequestGuard.Wait();
             try
             {
-                if (urgentRequests.FindByRut(normalizedRut) is null)
+                var existingUrgentRequest = urgentRequests.FindByRut(f8Rut);
+                if (existingUrgentRequest is null)
                 {
                     urgentRequests.Insert(new UrgentRequest
                     {
                         NombreCompleto = fullName,
-                        Rut = normalizedRut,
+                        Rut = f8Rut,
                         RutRaw = rut?.Trim(),
                         FechaPeticion = citationDate,
                         FechaUltimaCarpeta = lastFolderDate,
                         CodigoF8 = codigoF8,
-                        FechaPenultimaCarpeta = ParseDate(penultima),
+                        FechaPenultimaCarpeta = penultimaDate,
                         Estado = FolderStateCatalog.Display(estado.Value),
                         Origin = "Casos",
                         // Mismo criterio que needsReview de más abajo (nombre o RUT o fecha de
@@ -188,6 +199,12 @@ public class IndexModel(IFolderCaseRepository cases, IExcelCaseExporter exporter
                         NeedsReview = needsReview,
                         CreatedAt = DateTimeOffset.UtcNow
                     });
+                }
+                else if (existingUrgentRequest.CodigoF8 != codigoF8 || existingUrgentRequest.FechaPenultimaCarpeta != penultimaDate)
+                {
+                    existingUrgentRequest.CodigoF8 = codigoF8;
+                    existingUrgentRequest.FechaPenultimaCarpeta = penultimaDate;
+                    urgentRequests.Update(existingUrgentRequest);
                 }
             }
             finally
