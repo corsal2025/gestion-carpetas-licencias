@@ -140,7 +140,6 @@
                 <th class="th-wrap">Fecha de<br />citación</th>
                 <th>Nombre contribuyente</th>
                 <th>RUT</th>
-                <th>Sector oficina</th>
                 <th>Estado</th>
                 <th>Estado actual</th>
                 <th>Código F8</th>
@@ -177,7 +176,6 @@
                             <input type="hidden" name="id" value="@request.Id" />
                         </form>
                     </td>
-                    <td class="text-cell">@(request.MatrizSector ?? "—")</td>
                     <td class="text-cell">
                         <select class="input-inline estado-select" form="estado-@request.Id" name="estado">
                             <option value="" selected="@string.IsNullOrEmpty(request.Estado)"></option>
