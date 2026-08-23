@@ -12,7 +12,13 @@
 
 @if (Model.Message is not null)
 {
-    <p class="message-banner @(Model.MessageIsError ? "message-error" : "")">@Model.Message</p>
+    <p id="page-message-banner" class="message-banner @(Model.MessageIsError ? "message-error" : "")">@Model.Message</p>
+    @* La tabla se desplaza mucho en horizontal (13+ columnas) — sin esto, un error como "Ingrese
+       la comuna antes de solicitar" queda arriba de la página mientras el operador sigue mirando
+       la columna Acción a la derecha, y parece que apretar el botón no hizo nada. *@
+    <script>
+        document.getElementById('page-message-banner').scrollIntoView({ behavior: 'smooth', block: 'center' });
+    </script>
 }
 
 <div class="card" style="padding:5px 12px; margin-bottom:8px;">
@@ -472,13 +478,10 @@
                     </select>
                 </td>
                 <td style="display:flex; gap:6px; align-items:center;">
-                    @* Quién tocó el caso por última vez: con varias cuentas en la misma agenda,
-                       "lo cambió alguien" no sirve para nada. *@
-                    <button type="submit" form="case-form-@item.Id" class="btn-primary text-sm"
-                            style="padding:4px 10px;"
-                            title="@(item.UpdatedBy is { } autor
-                                     ? $"Última edición: {autor} — {item.UpdatedAt.LocalDateTime:dd-MM-yyyy HH:mm}"
-                                     : "Sin ediciones desde el dashboard")">Guardar</button>
+                    @* El botón "Guardar" se sacó: con autoguardado (ver autoSaveCaseForm en
+                       Scripts) cada cambio de celda ya se manda solo, no hace falta un botón
+                       aparte por fila. El form case-form-@item.Id sigue existiendo igual —
+                       autoguardado y "Solicitar" lo usan — solo se sacó el botón visible. *@
                     <form method="post" asp-page-handler="Delete"
                           onsubmit="return confirm('El caso se mueve a la Papelera y se puede restaurar desde ahí. ¿Confirmar?');">
                         <input type="hidden" name="id" value="@item.Id" />
