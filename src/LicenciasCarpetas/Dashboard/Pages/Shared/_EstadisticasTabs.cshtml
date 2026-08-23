@@ -1,0 +1,22 @@
+@{
+    // Viñetas para saltar entre las Estadísticas de cada módulo sin pasar por el sidebar — misma
+    // lógica de permisos que _Layout.cshtml para decidir qué módulos tiene esta cuenta.
+    var nav = LicenciasCarpetas.Dashboard.Pages.Shared.BrandNavigation.Resolve(Context.Request.Path);
+    var puedeVerReportesYReferencia = User.IsInRole("Administrador") || User.IsInRole("Jefatura") || User.IsInRole("Coordinador");
+    var puedeCambioDomicilio = User.HasClaim("mod:cambio-domicilio", "true");
+    var puedeF8 = User.HasClaim("mod:f8-urgentes", "true");
+}
+<div class="card cd-filter-bar" style="padding:8px 14px; margin-bottom:10px; display:flex; gap:6px; flex-wrap:wrap;">
+    @if (puedeVerReportesYReferencia)
+    {
+        <a asp-page="/Estadisticas" class="@(nav.EnGestionLicencias ? "active" : "")">🪪 Gestión de Licencias</a>
+    }
+    @if (puedeCambioDomicilio)
+    {
+        <a asp-page="/CambioDomicilio/Estadisticas" class="@(nav.EnCambioDomicilio ? "active" : "")">📥 Cambio de Domicilio</a>
+    }
+    @if (puedeF8)
+    {
+        <a asp-page="/F8/Estadisticas" class="@(nav.EnF8 ? "active" : "")">🚨 F8 Urgentes</a>
+    }
+</div>

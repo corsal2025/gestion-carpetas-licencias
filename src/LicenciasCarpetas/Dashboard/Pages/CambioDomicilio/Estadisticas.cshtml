@@ -7,6 +7,8 @@
     var sectorPct = sectorTotal > 0 ? Model.SectorDistribution.Archivo * 100.0 / sectorTotal : 0;
 }
 
+<partial name="Shared/_EstadisticasTabs" />
+
 @* Antes esta pantalla dependía de un chart.umd.js/estadisticas.js que nunca llegaron a existir en
    el repo — quedaba completamente en blanco, sin ningún dato de los que el modelo ya calculaba.
    Reescrita con el mismo patrón CSS puro que F8 (dashboard.css, compartido entre los dos ahora):
