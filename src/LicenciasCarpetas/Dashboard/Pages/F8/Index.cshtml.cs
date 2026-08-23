@@ -1,17 +1,33 @@
 using Microsoft.AspNetCore.Authorization;
+using LicenciasCarpetas.Domain;
 using LicenciasCarpetas.F8;
 using LicenciasCarpetas.F8.Data;
 using LicenciasCarpetas.F8.Domain;
 using LicenciasCarpetas.F8.Matriz;
 using LicenciasCarpetas.F8.Services;
+using LicenciasCarpetas.Persistence;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 
 namespace LicenciasCarpetas.Dashboard.Pages.F8;
 
 [Authorize(Policy = "F8Access")]
-public sealed class IndexModel(IUrgentRequestRepository repository, IEmailSender emailSender, F8Options? options = null) : PageModel
+public sealed class IndexModel(IUrgentRequestRepository repository, IEmailSender emailSender,
+    IFolderCaseRepository cases, F8Options? options = null) : PageModel
 {
+    /// <summary>Solo los valores de EstadoCatalog.KnownEstados que tienen un equivalente directo y
+    /// no ambiguo en FolderState — "PENDIENTE", "CARPETA SUBIDA" y "DENEGADA" no tienen una
+    /// correspondencia clara (¿"CARPETA SUBIDA" es SubidaAConaset? ¿SubidaConF8? ¿SubidaConOficio?
+    /// no hay forma de saberlo del texto solo) y se dejan sin propagar a propósito, en vez de
+    /// adivinar y escribir un estado equivocado en Casos.</summary>
+    private static readonly Dictionary<string, FolderState> EstadoToFolderState = new()
+    {
+        ["SUBIR CON F8"] = FolderState.SubidaConF8,
+        ["CREAR CERTIFICADO"] = FolderState.CrearCertificado,
+        ["PRIMERA LICENCIA"] = FolderState.PrimeraLicencia,
+        ["CAMBIO DE DOMICILIO"] = FolderState.CambioDomicilio,
+    };
+
     private const string EstadoActualSubida = "SUBIDA A CONASET";
     private const string EstadoActualCertificado = "CREAR CERTIFICADO";
     private const string CertificadoRecipient = "matias.villalobos@munivalpo.cl";
@@ -107,8 +123,46 @@ public sealed class IndexModel(IUrgentRequestRepository repository, IEmailSender
                 repository.Update(request);
                 repository.ClearFlags(id);
             }
+
+            PropagateToCasos(request, normalized);
         }
         return RedirectToPage();
+    }
+
+    /// <summary>Igual que el desplegable de Estado en "Solicitar Cambios de Domicilio" propaga a
+    /// Casos cuando la solicitud tiene un caso de origen: acá no hay un id guardado que ligue esta
+    /// fila de F8 con su FolderCase (esta pantalla también recibe filas del Excel de la matriz, que
+    /// nunca tuvieron un caso de Casos), así que se busca por RUT — coincidencia exacta nada más,
+    /// para no tocar el caso equivocado si el RUT está repetido (la propia pantalla de Casos ya
+    /// sabe que eso pasa, ver DuplicateRuts).</summary>
+    private void PropagateToCasos(UrgentRequest request, string? normalizedEstado)
+    {
+        if (normalizedEstado is null || !EstadoToFolderState.TryGetValue(normalizedEstado, out var folderState)
+            || string.IsNullOrWhiteSpace(request.Rut))
+        {
+            return;
+        }
+
+        // UrgentRequest.Rut sale de F8.Domain.Rut.ToString() — SIN puntos ("18785387-7").
+        // FolderCase.Rut se normaliza con RutValidator.NormalizeAndValidate — CON puntos
+        // ("18.785.387-7"). Comparar los dos strings tal cual nunca matcheaba con datos reales
+        // (siempre distinto formato); hay que pasar el de F8 por el mismo normalizador antes de
+        // comparar.
+        var normalizedRut = RutValidator.NormalizeAndValidate(request.Rut);
+        if (normalizedRut is null)
+        {
+            return;
+        }
+
+        var matches = cases.QueryAll(new CaseFilter { Search = normalizedRut })
+            .Where(c => c.Rut == normalizedRut);
+        foreach (var folderCase in matches)
+        {
+            cases.UpdateEditableFields(folderCase.Id, folderCase.FullName, folderCase.Rut, folderCase.CitationDate,
+                folderCase.FolderUploadedDate, folderCase.LastFolderDate, folderCase.LastFolderComuna,
+                folderState, folderCase.FinalDecision, folderCase.MoralIdoneity,
+                folderCase.AttentionNote, folderCase.NeedsReview, cambioDomicilioComuna: folderCase.CambioDomicilioComuna);
+        }
     }
 
     public IActionResult OnPostSetEstadoActual(long id, string estadoActual)
