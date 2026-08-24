@@ -1656,6 +1656,10 @@ table.cases.solicitar-compact td {
     padding: 6px 8px;
     font-size: var(--font-xs);
     font-weight: 700;
+    /* El header ya viene centrado (table.cases th), pero el contenido de las celdas (texto de
+       Nombre/RUT/Comuna) por defecto queda a la izquierda — centrarlo también alinea cada celda
+       bajo su título en vez de quedar corrida. */
+    text-align: center;
 }
 
 /* RUT repetido: el libro lo pinta violeta con un COUNTIF. Marca a la misma persona citada dos
