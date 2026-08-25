@@ -9,6 +9,7 @@ using LicenciasCarpetas.CambioDomicilio.Routing;
 using LicenciasCarpetas.CambioDomicilio.Statistics;
 using LicenciasCarpetas.Configuration;
 using LicenciasCarpetas.Dashboard.Auth;
+using LicenciasCarpetas.Domain;
 using LicenciasCarpetas.F8;
 using LicenciasCarpetas.F8.Data;
 using LicenciasCarpetas.F8.Services;
@@ -54,7 +55,8 @@ var connectionString = $"Data Source={databasePath}";
 builder.Services.AddSingleton(new DatabaseBackup(
     databasePath,
     Path.Combine(Path.GetDirectoryName(databasePath)!, "backups"),
-    options.BackupsToKeep));
+    options.BackupsToKeep,
+    options.SecondaryBackupDirectory));
 builder.Services.AddSingleton<IFolderCaseRepository>(_ => new FolderCaseRepository(connectionString));
 builder.Services.AddSingleton<IDailyCounterRepository>(_ => new DailyCounterRepository(connectionString));
 builder.Services.AddSingleton<IComunaContactRepository>(_ => new ComunaContactRepository(connectionString));
@@ -64,6 +66,7 @@ builder.Services.AddSingleton<UserProvisioning>();
 builder.Services.AddSingleton<IExcelWorkbookImporter, ExcelWorkbookImporter>();
 builder.Services.AddSingleton<IExcelCaseExporter, ExcelCaseExporter>();
 builder.Services.AddSingleton<StatisticsService>();
+builder.Services.AddSingleton<IGlobalSearchService>(_ => new GlobalSearchService(connectionString));
 
 // Módulo F8 Urgentes: vive en la misma carpetas.db (tabla propia, UrgentRequest) y detrás del
 // mismo login — ya no es una app aparte. Solo trae sus propias rutas de Excel de config.
@@ -283,6 +286,16 @@ app.UseStaticFiles();
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapRazorPages();
+
+app.MapGet("/api/global-search", (string? q, IGlobalSearchService searchService) =>
+{
+    if (string.IsNullOrWhiteSpace(q))
+    {
+        return Results.Ok(Array.Empty<GlobalSearchResult>());
+    }
+    var results = searchService.Search(q, limit: 15);
+    return Results.Ok(results);
+}).RequireAuthorization();
 
 app.Run();
 

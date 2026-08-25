@@ -46,6 +46,10 @@
             }
             <nav class="sidebar-nav">
                 <a asp-page="/Inicio" class="sidebar-link sidebar-link-home">🏠 Panel de Control</a>
+                <button type="button" class="sidebar-link sidebar-link-home" onclick="openGlobalSearch()" style="width:100%; text-align:left; background:none; border:none; cursor:pointer; font:inherit; color:inherit; display:flex; align-items:center;">
+                    <span>🔍 Buscar</span>
+                    <kbd style="margin-left:auto; font-size:var(--font-xs); background:var(--color-bg); padding:1px 5px; border-radius:4px; border:1px solid var(--color-border);">Ctrl+K</kbd>
+                </button>
 
                 <details open="@(enGestionLicencias || enCambioDomicilio || enF8 ? "open" : null)" class="sidebar-section sidebar-modules-collapsible">
                     <summary class="sidebar-link sidebar-link-home">📦 Módulos</summary>
@@ -107,6 +111,121 @@
     </div>
 
     <script src="~/js/scroll-preserve.js" asp-append-version="true"></script>
+
+    <!-- Global Search Modal (Ctrl+K) -->
+    <div id="global-search-backdrop" class="global-search-backdrop" onclick="if (event.target === this) closeGlobalSearch();">
+        <div class="global-search-modal">
+            <div class="global-search-header">
+                <span style="font-size:18px;">🔍</span>
+                <input type="text" id="global-search-input" class="global-search-input" placeholder="Buscar por RUT o nombre en todos los módulos..." autocomplete="off" />
+                <button type="button" onclick="closeGlobalSearch()" style="background:none; border:none; font-size:18px; cursor:pointer; color:var(--color-text-muted);">✕</button>
+            </div>
+            <div id="global-search-results" class="global-search-results">
+                <p style="padding:16px; color:var(--color-text-muted); margin:0; text-align:center; font-size:var(--font-sm);">Escribe un RUT (ej: 13.025.150-1) o nombre para buscar en Casos, F8 y Cambio de Domicilio.</p>
+            </div>
+            <div class="global-search-footer">
+                <span>Presiona <kbd style="background:#e2e8f0; padding:1px 4px; border-radius:3px;">ESC</kbd> para cerrar</span>
+                <span>Navegación unificada</span>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function openGlobalSearch() {
+            var backdrop = document.getElementById('global-search-backdrop');
+            var input = document.getElementById('global-search-input');
+            if (!backdrop || !input) return;
+            backdrop.classList.add('open');
+            input.value = '';
+            input.focus();
+            renderGlobalSearchResults([]);
+        }
+
+        function closeGlobalSearch() {
+            var backdrop = document.getElementById('global-search-backdrop');
+            if (backdrop) backdrop.classList.remove('open');
+        }
+
+        document.addEventListener('keydown', function (e) {
+            if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
+                e.preventDefault();
+                var backdrop = document.getElementById('global-search-backdrop');
+                if (backdrop && backdrop.classList.contains('open')) {
+                    closeGlobalSearch();
+                } else {
+                    openGlobalSearch();
+                }
+            } else if (e.key === 'Escape') {
+                closeGlobalSearch();
+            }
+        });
+
+        var searchDebounceTimer = null;
+        var searchInput = document.getElementById('global-search-input');
+        if (searchInput) {
+            searchInput.addEventListener('input', function () {
+                var query = this.value.trim();
+                clearTimeout(searchDebounceTimer);
+                if (query.length < 2) {
+                    renderGlobalSearchResults([]);
+                    return;
+                }
+                searchDebounceTimer = setTimeout(function () {
+                    fetch('/api/global-search?q=' + encodeURIComponent(query))
+                        .then(function (res) { return res.json(); })
+                        .then(function (data) { renderGlobalSearchResults(data, query); })
+                        .catch(function () { renderGlobalSearchResults([], query, true); });
+                }, 200);
+            });
+        }
+
+        function renderGlobalSearchResults(items, query, isError) {
+            var container = document.getElementById('global-search-results');
+            if (!container) return;
+
+            if (isError) {
+                container.innerHTML = '<p style="padding:16px; color:#b91c1c; margin:0; text-align:center; font-size:var(--font-sm);">Error al buscar resultados.</p>';
+                return;
+            }
+
+            if (!query || query.length < 2) {
+                container.innerHTML = '<p style="padding:16px; color:var(--color-text-muted); margin:0; text-align:center; font-size:var(--font-sm);">Escribe un RUT o nombre para buscar en todos los módulos.</p>';
+                return;
+            }
+
+            if (!items || items.length === 0) {
+                container.innerHTML = '<p style="padding:16px; color:var(--color-text-muted); margin:0; text-align:center; font-size:var(--font-sm);">No se encontraron coincidencias para "<strong>' + escapeHtml(query) + '</strong>".</p>';
+                return;
+            }
+
+            var html = '';
+            var currentModule = '';
+            items.forEach(function (item) {
+                if (item.module !== currentModule) {
+                    currentModule = item.module;
+                    html += '<div class="global-search-group">' + escapeHtml(currentModule) + '</div>';
+                }
+                html += '<a href="' + item.url + '" class="global-search-item">';
+                html += '  <div>';
+                html += '    <div style="font-weight:600;">' + escapeHtml(item.title) + (item.rut ? ' <span style="font-weight:normal; color:var(--color-text-muted);">(' + escapeHtml(item.rut) + ')</span>' : '') + '</div>';
+                if (item.detail) {
+                    html += '    <div style="font-size:var(--font-xs); color:var(--color-text-muted);">' + escapeHtml(item.detail) + '</div>';
+                }
+                html += '  </div>';
+                if (item.status) {
+                    html += '  <span class="badge-sla badge-sla-normal" style="font-size:var(--font-xs);">' + escapeHtml(item.status) + '</span>';
+                }
+                html += '</a>';
+            });
+            container.innerHTML = html;
+        }
+
+        function escapeHtml(str) {
+            if (!str) return '';
+            return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+        }
+    </script>
+
     @await RenderSectionAsync("Scripts", required: false)
 </body>
 </html>

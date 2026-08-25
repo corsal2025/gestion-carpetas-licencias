@@ -63,6 +63,9 @@ public class IndexModel(IFolderCaseRepository cases, IExcelCaseExporter exporter
     public bool OtherComuna { get; set; }
 
     [BindProperty(SupportsGet = true)]
+    public bool Overdue { get; set; }
+
+    [BindProperty(SupportsGet = true)]
     public string? Search { get; set; }
 
     [BindProperty(SupportsGet = true, Name = "p")]
@@ -98,6 +101,21 @@ public class IndexModel(IFolderCaseRepository cases, IExcelCaseExporter exporter
         var bytes = exporter.Export(exportable, "Casos");
         var fileName = $"casos-{DateTime.Now:yyyyMMdd-HHmm}.xlsx";
         return File(bytes, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", fileName);
+    }
+
+    public IActionResult OnGetAuditLog(long id)
+    {
+        var logs = cases.GetAuditLog(id);
+        return new JsonResult(logs.Select(l => new
+        {
+            id = l.Id,
+            caseId = l.FolderCaseId,
+            changedBy = l.ChangedBy,
+            changedAt = l.ChangedAt.ToLocalTime().ToString("dd/MM/yyyy HH:mm:ss"),
+            fieldName = l.FieldName,
+            oldValue = l.OldValue,
+            newValue = l.NewValue
+        }));
     }
 
     public IActionResult OnPostSave(long id, string? nombre, string? rut, string? citacion, string? subida,
@@ -152,8 +170,8 @@ public class IndexModel(IFolderCaseRepository cases, IExcelCaseExporter exporter
 
         // Los campos que el Excel no trae van por separado, para que una reimportación no los pise.
         cases.UpdateCaseDetails(id, codigoF8, ParseDate(penultima),
-            LicenceClassCatalog.Serialize(licencias ?? []), folioLicencia);
-        cases.UpdateObservations(id, observaciones);
+            LicenceClassCatalog.Serialize(licencias ?? []), folioLicencia, editedBy: User?.Identity?.Name);
+        cases.UpdateObservations(id, observaciones, editedBy: User?.Identity?.Name);
 
         // Elegir "NO EXISTE CARPETA" en Casos crea automáticamente la fila en F8 Urgentes — mismo
         // dato que hoy carga el Excel de la matriz (MatrizSyncService), pero disparado por el
@@ -416,6 +434,7 @@ public class IndexModel(IFolderCaseRepository cases, IExcelCaseExporter exporter
         Sector = Sector,
         OnlyNeedsReview = NeedsReview,
         OnlyOtherComuna = OtherComuna,
+        OnlyOverdue = Overdue,
         Search = Search,
         Sort = Sort,
         Descending = Descending
@@ -454,6 +473,7 @@ public class IndexModel(IFolderCaseRepository cases, IExcelCaseExporter exporter
             sector = Sector,
             needsReview = NeedsReview,
             otherComuna = OtherComuna,
+            overdue = Overdue,
             search = Search,
             p = RequestedPage,
             size = PageSize,
@@ -469,6 +489,7 @@ public class IndexModel(IFolderCaseRepository cases, IExcelCaseExporter exporter
         {
             ["needsReview"] = NeedsReview.ToString(),
             ["otherComuna"] = OtherComuna.ToString(),
+            ["overdue"] = Overdue.ToString(),
             ["p"] = page.ToString()
         };
 

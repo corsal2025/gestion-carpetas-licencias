@@ -55,14 +55,17 @@ public interface IFolderCaseRepository
 
     /// <summary>Whether the person showed up. Ticked from the cases screen and counted on the
     /// statistics screen; independent of the ATENCIÓN note.</summary>
-    void SetAttended(long id, bool attended);
+    void SetAttended(long id, bool attended, string? editedBy = null);
 
     /// <summary>Los campos que el libro no trae: código F8, penúltima carpeta y clases de licencia.</summary>
-    void UpdateCaseDetails(long id, string? codigoF8, DateOnly? penultimateFolderDate, string? licenceClasses = null, string? folioLicencia = null);
+    void UpdateCaseDetails(long id, string? codigoF8, DateOnly? penultimateFolderDate, string? licenceClasses = null, string? folioLicencia = null, string? editedBy = null);
 
     /// <summary>Nota libre sobre la persona, agregada aparte de guardar la fila — se abre bajo
     /// demanda desde el RUT, no ocupa una columna fija.</summary>
-    void UpdateObservations(long id, string? observations);
+    void UpdateObservations(long id, string? observations, string? editedBy = null);
+
+    /// <summary>Retrieves complete audit trail of modifications for a specific case.</summary>
+    IReadOnlyList<CaseAuditEntry> GetAuditLog(long caseId);
 
     /// <summary>Cuántos casos hay por clase de licencia en el período. Un caso con varias clases
     /// suma en cada una: la pregunta es cuántas licencias se tramitan, no cuántas personas.</summary>
@@ -136,6 +139,22 @@ public sealed class FolderCaseRepository(string connectionString) : IFolderCaseR
         AddColumnIfMissing(connection, "Observations");
         AddColumnIfMissing(connection, "CambioDomicilioComuna");
         BackfillFullNameSort(connection);
+
+        using var auditCommand = connection.CreateCommand();
+        auditCommand.CommandText = """
+            CREATE TABLE IF NOT EXISTS CaseAuditLog (
+                Id INTEGER PRIMARY KEY AUTOINCREMENT,
+                FolderCaseId INTEGER NOT NULL,
+                ChangedBy TEXT NOT NULL,
+                ChangedAt TEXT NOT NULL,
+                FieldName TEXT NOT NULL,
+                OldValue TEXT NULL,
+                NewValue TEXT NULL
+            );
+
+            CREATE INDEX IF NOT EXISTS IX_CaseAuditLog_FolderCaseId ON CaseAuditLog (FolderCaseId, ChangedAt DESC);
+            """;
+        auditCommand.ExecuteNonQuery();
     }
 
     /// <summary>Additive migration for databases created before a column existed — SQLite has no
@@ -413,7 +432,13 @@ public sealed class FolderCaseRepository(string connectionString) : IFolderCaseR
     public FolderCase? FindById(long id)
     {
         using var connection = Open();
+        return FindByIdInternal(connection, null, id);
+    }
+
+    private static FolderCase? FindByIdInternal(SqliteConnection connection, SqliteTransaction? transaction, long id)
+    {
         using var command = connection.CreateCommand();
+        if (transaction is not null) command.Transaction = transaction;
         command.CommandText = "SELECT * FROM FolderCase WHERE Id = $id LIMIT 1";
         command.Parameters.AddWithValue("$id", id);
         using var reader = command.ExecuteReader();
@@ -730,7 +755,29 @@ public sealed class FolderCaseRepository(string connectionString) : IFolderCaseR
         string? attentionNote, bool needsReview, string? editedBy = null, string? cambioDomicilioComuna = null)
     {
         using var connection = Open();
+        using var transaction = connection.BeginTransaction();
+
+        if (!string.IsNullOrWhiteSpace(editedBy))
+        {
+            var current = FindByIdInternal(connection, transaction, id);
+            if (current is not null)
+            {
+                RecordAuditLog(connection, transaction, id, editedBy, "Nombre", current.FullName, fullName);
+                RecordAuditLog(connection, transaction, id, editedBy, "RUT", current.Rut, rut);
+                RecordAuditLog(connection, transaction, id, editedBy, "Fecha citación", current.CitationDate?.ToString("yyyy-MM-dd"), citationDate?.ToString("yyyy-MM-dd"));
+                RecordAuditLog(connection, transaction, id, editedBy, "Fecha subida", current.FolderUploadedDate?.ToString("yyyy-MM-dd"), folderUploadedDate?.ToString("yyyy-MM-dd"));
+                RecordAuditLog(connection, transaction, id, editedBy, "Fecha última carpeta", current.LastFolderDate?.ToString("yyyy-MM-dd"), lastFolderDate?.ToString("yyyy-MM-dd"));
+                RecordAuditLog(connection, transaction, id, editedBy, "Comuna última carpeta", current.LastFolderComuna, lastFolderComuna);
+                RecordAuditLog(connection, transaction, id, editedBy, "Estado carpeta", current.FolderState?.ToString(), folderState?.ToString());
+                RecordAuditLog(connection, transaction, id, editedBy, "Decisión final", current.FinalDecision?.ToString(), finalDecision?.ToString());
+                RecordAuditLog(connection, transaction, id, editedBy, "Idoneidad moral", current.MoralIdoneity?.ToString(), moralIdoneity?.ToString());
+                RecordAuditLog(connection, transaction, id, editedBy, "Atención", current.AttentionNote, attentionNote);
+                RecordAuditLog(connection, transaction, id, editedBy, "Comuna cambio domicilio", current.CambioDomicilioComuna, cambioDomicilioComuna);
+            }
+        }
+
         using var command = connection.CreateCommand();
+        command.Transaction = transaction;
         command.CommandText = """
             UPDATE FolderCase SET
                 FullName = $fullName,
@@ -772,17 +819,35 @@ public sealed class FolderCaseRepository(string connectionString) : IFolderCaseR
         command.Parameters.AddWithValue("$cambioDomicilioComuna", Nullable(cambioDomicilioComuna));
         command.Parameters.AddWithValue("$id", id);
         command.ExecuteNonQuery();
+
+        transaction.Commit();
     }
 
     public void UpdateCaseDetails(long id, string? codigoF8, DateOnly? penultimateFolderDate,
-        string? licenceClasses = null, string? folioLicencia = null)
+        string? licenceClasses = null, string? folioLicencia = null, string? editedBy = null)
     {
         using var connection = Open();
+        using var transaction = connection.BeginTransaction();
+
+        if (!string.IsNullOrWhiteSpace(editedBy))
+        {
+            var current = FindByIdInternal(connection, transaction, id);
+            if (current is not null)
+            {
+                RecordAuditLog(connection, transaction, id, editedBy, "Código F8", current.CodigoF8, codigoF8);
+                RecordAuditLog(connection, transaction, id, editedBy, "Penúltima carpeta", current.PenultimateFolderDate?.ToString("yyyy-MM-dd"), penultimateFolderDate?.ToString("yyyy-MM-dd"));
+                RecordAuditLog(connection, transaction, id, editedBy, "Clases licencia", current.LicenceClasses, licenceClasses);
+                RecordAuditLog(connection, transaction, id, editedBy, "Folio licencia", current.FolioLicencia, folioLicencia);
+            }
+        }
+
         using var command = connection.CreateCommand();
+        command.Transaction = transaction;
         command.CommandText = """
             UPDATE FolderCase
             SET CodigoF8 = $codigo, PenultimateFolderDate = $penultimate,
-                LicenceClasses = $licences, FolioLicencia = $folio, UpdatedAt = $updatedAt
+                LicenceClasses = $licences, FolioLicencia = $folio, UpdatedAt = $updatedAt,
+                UpdatedBy = COALESCE($editedBy, UpdatedBy)
             WHERE Id = $id
             """;
         command.Parameters.AddWithValue("$licences", Nullable(licenceClasses));
@@ -790,23 +855,98 @@ public sealed class FolderCaseRepository(string connectionString) : IFolderCaseR
         command.Parameters.AddWithValue("$penultimate", Nullable(Text(penultimateFolderDate)));
         command.Parameters.AddWithValue("$folio", Nullable(string.IsNullOrWhiteSpace(folioLicencia) ? null : folioLicencia.Trim()));
         command.Parameters.AddWithValue("$updatedAt", DateTimeOffset.UtcNow.ToString("O"));
+        command.Parameters.AddWithValue("$editedBy", Nullable(editedBy));
         command.Parameters.AddWithValue("$id", id);
         command.ExecuteNonQuery();
+
+        transaction.Commit();
     }
 
-    public void UpdateObservations(long id, string? observations)
+    public void UpdateObservations(long id, string? observations, string? editedBy = null)
+    {
+        using var connection = Open();
+        using var transaction = connection.BeginTransaction();
+
+        var trimmed = string.IsNullOrWhiteSpace(observations) ? null : observations.Trim();
+        if (!string.IsNullOrWhiteSpace(editedBy))
+        {
+            var current = FindByIdInternal(connection, transaction, id);
+            if (current is not null)
+            {
+                RecordAuditLog(connection, transaction, id, editedBy, "Observaciones", current.Observations, trimmed);
+            }
+        }
+
+        using var command = connection.CreateCommand();
+        command.Transaction = transaction;
+        command.CommandText = """
+            UPDATE FolderCase
+            SET Observations = $observations, UpdatedAt = $updatedAt,
+                UpdatedBy = COALESCE($editedBy, UpdatedBy)
+            WHERE Id = $id
+            """;
+        command.Parameters.AddWithValue("$observations", Nullable(trimmed));
+        command.Parameters.AddWithValue("$updatedAt", DateTimeOffset.UtcNow.ToString("O"));
+        command.Parameters.AddWithValue("$editedBy", Nullable(editedBy));
+        command.Parameters.AddWithValue("$id", id);
+        command.ExecuteNonQuery();
+
+        transaction.Commit();
+    }
+
+    public IReadOnlyList<CaseAuditEntry> GetAuditLog(long caseId)
     {
         using var connection = Open();
         using var command = connection.CreateCommand();
         command.CommandText = """
-            UPDATE FolderCase
-            SET Observations = $observations, UpdatedAt = $updatedAt
-            WHERE Id = $id
+            SELECT Id, FolderCaseId, ChangedBy, ChangedAt, FieldName, OldValue, NewValue
+            FROM CaseAuditLog
+            WHERE FolderCaseId = $caseId
+            ORDER BY ChangedAt DESC, Id DESC
             """;
-        command.Parameters.AddWithValue("$observations",
-            Nullable(string.IsNullOrWhiteSpace(observations) ? null : observations.Trim()));
-        command.Parameters.AddWithValue("$updatedAt", DateTimeOffset.UtcNow.ToString("O"));
-        command.Parameters.AddWithValue("$id", id);
+        command.Parameters.AddWithValue("$caseId", caseId);
+
+        var entries = new List<CaseAuditEntry>();
+        using var reader = command.ExecuteReader();
+        while (reader.Read())
+        {
+            entries.Add(new CaseAuditEntry
+            {
+                Id = reader.GetInt64(0),
+                FolderCaseId = reader.GetInt64(1),
+                ChangedBy = reader.GetString(2),
+                ChangedAt = DateTimeOffset.Parse(reader.GetString(3)),
+                FieldName = reader.GetString(4),
+                OldValue = reader.IsDBNull(5) ? null : reader.GetString(5),
+                NewValue = reader.IsDBNull(6) ? null : reader.GetString(6)
+            });
+        }
+        return entries;
+    }
+
+    private static void RecordAuditLog(SqliteConnection connection, SqliteTransaction? transaction,
+        long folderCaseId, string changedBy, string fieldName, string? oldValue, string? newValue)
+    {
+        var oldNormalized = string.IsNullOrWhiteSpace(oldValue) ? null : oldValue.Trim();
+        var newNormalized = string.IsNullOrWhiteSpace(newValue) ? null : newValue.Trim();
+
+        if (string.Equals(oldNormalized, newNormalized, StringComparison.Ordinal))
+        {
+            return;
+        }
+
+        using var command = connection.CreateCommand();
+        if (transaction is not null) command.Transaction = transaction;
+        command.CommandText = """
+            INSERT INTO CaseAuditLog (FolderCaseId, ChangedBy, ChangedAt, FieldName, OldValue, NewValue)
+            VALUES ($caseId, $changedBy, $changedAt, $fieldName, $oldValue, $newValue)
+            """;
+        command.Parameters.AddWithValue("$caseId", folderCaseId);
+        command.Parameters.AddWithValue("$changedBy", changedBy);
+        command.Parameters.AddWithValue("$changedAt", DateTimeOffset.UtcNow.ToString("O"));
+        command.Parameters.AddWithValue("$fieldName", fieldName);
+        command.Parameters.AddWithValue("$oldValue", (object?)oldNormalized ?? DBNull.Value);
+        command.Parameters.AddWithValue("$newValue", (object?)newNormalized ?? DBNull.Value);
         command.ExecuteNonQuery();
     }
 
@@ -843,15 +983,35 @@ public sealed class FolderCaseRepository(string connectionString) : IFolderCaseR
         command.ExecuteNonQuery();
     }
 
-    public void SetAttended(long id, bool attended)
+    public void SetAttended(long id, bool attended, string? editedBy = null)
     {
         using var connection = Open();
+        using var transaction = connection.BeginTransaction();
+
+        if (!string.IsNullOrWhiteSpace(editedBy))
+        {
+            var current = FindByIdInternal(connection, transaction, id);
+            if (current is not null && current.Attended != attended)
+            {
+                RecordAuditLog(connection, transaction, id, editedBy, "Asistencia", current.Attended ? "Presente" : "Ausente", attended ? "Presente" : "Ausente");
+            }
+        }
+
         using var command = connection.CreateCommand();
-        command.CommandText = "UPDATE FolderCase SET Attended = $attended, UpdatedAt = $updatedAt WHERE Id = $id";
+        command.Transaction = transaction;
+        command.CommandText = """
+            UPDATE FolderCase
+            SET Attended = $attended, UpdatedAt = $updatedAt,
+                UpdatedBy = COALESCE($editedBy, UpdatedBy)
+            WHERE Id = $id
+            """;
         command.Parameters.AddWithValue("$attended", attended ? 1 : 0);
         command.Parameters.AddWithValue("$updatedAt", DateTimeOffset.UtcNow.ToString("O"));
+        command.Parameters.AddWithValue("$editedBy", Nullable(editedBy));
         command.Parameters.AddWithValue("$id", id);
         command.ExecuteNonQuery();
+
+        transaction.Commit();
     }
 
     public void SetMarked(long id, bool marked)
@@ -1004,6 +1164,17 @@ public sealed class FolderCaseRepository(string connectionString) : IFolderCaseR
         if (filter.OnlyOtherComuna)
         {
             clauses.Add("LastFolderComuna IS NOT NULL");
+        }
+
+        if (filter.OnlyOverdue)
+        {
+            var fifteenDaysAgo = DateOnly.FromDateTime(DateTime.Today.AddDays(-15)).ToString("yyyy-MM-dd");
+            clauses.Add("""
+                (CitationDate <= $overdueCutoff
+                 AND FolderUploadedDate IS NULL
+                 AND (FolderState IS NULL OR FolderState NOT IN (0, 1, 2, 3, 4, 5, 11)))
+                """);
+            command.Parameters.AddWithValue("$overdueCutoff", fifteenDaysAgo);
         }
 
         if (!string.IsNullOrWhiteSpace(filter.Search))

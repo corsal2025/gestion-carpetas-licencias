@@ -134,4 +134,36 @@ public class DatabaseBackupTests : IDisposable
         Assert.Null(result);
         Assert.Empty(Backups());
     }
+
+    [Fact]
+    public void Copies_backup_to_secondary_directory_when_configured()
+    {
+        var databasePath = WriteDatabase();
+        var secondaryDirectory = Path.Combine(_root, "secondary-backups");
+        var backup = new DatabaseBackup(databasePath, BackupDirectory, keep: 3, secondaryDirectory);
+
+        var created = backup.Run(new DateTimeOffset(2026, 8, 14, 9, 30, 0, TimeSpan.Zero));
+
+        Assert.NotNull(created);
+        Assert.True(File.Exists(created));
+        Assert.True(Directory.Exists(secondaryDirectory));
+        var secondaryFiles = Directory.GetFiles(secondaryDirectory);
+        Assert.Single(secondaryFiles);
+        Assert.Equal("datos-de-prueba", ReadMarker(secondaryFiles[0]));
+    }
+
+    [Fact]
+    public void Unreachable_secondary_directory_does_not_fail_primary_backup()
+    {
+        var databasePath = WriteDatabase();
+        // Point secondary to an invalid path that cannot be created (e.g. invalid character or file in place)
+        var invalidSecondary = Path.Combine(_root, "invalid-secondary");
+        File.WriteAllText(invalidSecondary, "file instead of dir");
+        var backup = new DatabaseBackup(databasePath, BackupDirectory, keep: 3, invalidSecondary);
+
+        var created = backup.Run(new DateTimeOffset(2026, 8, 14, 9, 30, 0, TimeSpan.Zero));
+
+        Assert.NotNull(created);
+        Assert.True(File.Exists(created));
+    }
 }

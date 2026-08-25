@@ -249,4 +249,37 @@ public class EditAuditTests
 
         Assert.Empty(urgentRequests.GetAll());
     }
+
+    [Fact]
+    public void Editing_fields_creates_detailed_audit_log_entries()
+    {
+        using var db = new SqliteTestDatabase();
+        var id = Insert(db);
+
+        db.Cases.UpdateEditableFields(id, "JUAN PEREZ SOTO", "13.025.150-1", new DateOnly(2026, 1, 2),
+            null, null, null, FolderState.SubidaAConaset, null, null, "Atendido ok",
+            needsReview: false, editedBy: "operador");
+
+        var logs = db.Cases.GetAuditLog(id);
+        Assert.NotEmpty(logs);
+        Assert.Contains(logs, l => l.FieldName == "Nombre" && l.OldValue == "JUAN PEREZ" && l.NewValue == "JUAN PEREZ SOTO" && l.ChangedBy == "operador");
+        Assert.Contains(logs, l => l.FieldName == "Estado carpeta" && l.NewValue == "SubidaAConaset");
+        Assert.Contains(logs, l => l.FieldName == "Atención" && l.NewValue == "Atendido ok");
+    }
+
+    [Fact]
+    public void Setting_attended_records_audit_entry()
+    {
+        using var db = new SqliteTestDatabase();
+        var id = Insert(db);
+
+        db.Cases.SetAttended(id, true, editedBy: "supervisor");
+
+        var logs = db.Cases.GetAuditLog(id);
+        Assert.Single(logs);
+        Assert.Equal("Asistencia", logs[0].FieldName);
+        Assert.Equal("Ausente", logs[0].OldValue);
+        Assert.Equal("Presente", logs[0].NewValue);
+        Assert.Equal("supervisor", logs[0].ChangedBy);
+    }
 }

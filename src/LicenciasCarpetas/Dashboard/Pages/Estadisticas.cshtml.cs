@@ -49,7 +49,7 @@ public class EstadisticasModel(
         foreach (var dayCase in dayCases)
         {
             var attended = attendedSet.Contains(dayCase.Id);
-            cases.SetAttended(dayCase.Id, attended);
+            cases.SetAttended(dayCase.Id, attended, editedBy: User?.Identity?.Name);
             if (attended) attendedCount++;
         }
 

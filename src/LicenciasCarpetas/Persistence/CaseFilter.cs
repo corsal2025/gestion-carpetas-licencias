@@ -44,6 +44,9 @@ public sealed record CaseFilter
     /// <summary>Only rows whose última carpeta cell holds a comuna — the folder lives elsewhere.</summary>
     public bool OnlyOtherComuna { get; init; }
 
+    /// <summary>Only pending cases whose citation date is older than 15 days.</summary>
+    public bool OnlyOverdue { get; init; }
+
     /// <summary>Free text matched against full name and RUT.</summary>
     public string? Search { get; init; }
 

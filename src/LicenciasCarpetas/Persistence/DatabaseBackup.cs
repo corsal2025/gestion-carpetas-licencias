@@ -7,10 +7,10 @@ namespace LicenciasCarpetas.Persistence;
 /// agenda — cases, edits and users — is that one file; a copy costs a few megabytes and a moment,
 /// and losing it costs a year of retyping.
 /// </summary>
-public sealed class DatabaseBackup(string databasePath, string backupDirectory, int keep)
+public sealed class DatabaseBackup(string databasePath, string backupDirectory, int keep, string? secondaryBackupDirectory = null)
 {
     /// <summary>
-    /// Returns the path of the copy, or null when there was nothing to copy or the copy failed —
+    /// Returns the path of the primary copy, or null when there was nothing to copy or the copy failed —
     /// a backup problem is never a reason to stop the operator from working.
     /// </summary>
     public string? Run(DateTimeOffset now)
@@ -41,12 +41,43 @@ public sealed class DatabaseBackup(string databasePath, string backupDirectory, 
                 return null;
             }
 
-            RemoveOldCopies();
+            RemoveOldCopies(backupDirectory);
+
+            if (!string.IsNullOrWhiteSpace(secondaryBackupDirectory))
+            {
+                CopyToSecondary(destination, name);
+            }
+
             return destination;
         }
         catch (Exception)
         {
             return null;
+        }
+    }
+
+    private void CopyToSecondary(string verifiedSourcePath, string fileName)
+    {
+        try
+        {
+            if (string.IsNullOrWhiteSpace(secondaryBackupDirectory))
+            {
+                return;
+            }
+
+            Directory.CreateDirectory(secondaryBackupDirectory);
+            var secondaryDestination = Path.Combine(secondaryBackupDirectory, fileName);
+            if (!File.Exists(secondaryDestination))
+            {
+                File.Copy(verifiedSourcePath, secondaryDestination, overwrite: true);
+            }
+
+            RemoveOldCopies(secondaryBackupDirectory);
+        }
+        catch (Exception)
+        {
+            // Network share unreachable or permissions issue: secondary backup failure must
+            // never impact the primary app flow or cause a crash.
         }
     }
 
@@ -67,23 +98,35 @@ public sealed class DatabaseBackup(string databasePath, string backupDirectory, 
         }
     }
 
-    private void RemoveOldCopies()
+    private void RemoveOldCopies(string targetDirectory)
     {
-        var copies = Directory.GetFiles(backupDirectory, "*.db")
-            .OrderByDescending(path => path, StringComparer.Ordinal) // the timestamp sorts as text
-            .Skip(Math.Max(keep, 1))
-            .ToList();
-
-        foreach (var old in copies)
+        try
         {
-            try
+            if (!Directory.Exists(targetDirectory))
             {
-                File.Delete(old);
+                return;
             }
-            catch (IOException)
+
+            var copies = Directory.GetFiles(targetDirectory, "*.db")
+                .OrderByDescending(path => path, StringComparer.Ordinal) // the timestamp sorts as text
+                .Skip(Math.Max(keep, 1))
+                .ToList();
+
+            foreach (var old in copies)
             {
-                // Locked or already gone: the next start will try again.
+                try
+                {
+                    File.Delete(old);
+                }
+                catch (IOException)
+                {
+                    // Locked or already gone: the next start will try again.
+                }
             }
+        }
+        catch (Exception)
+        {
+            // Directory inaccessible
         }
     }
 }

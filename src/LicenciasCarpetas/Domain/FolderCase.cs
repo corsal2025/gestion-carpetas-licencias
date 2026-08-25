@@ -9,6 +9,14 @@ public enum FolderSector
     Oficina43
 }
 
+public enum CaseAgingAlert
+{
+    None,
+    Normal,
+    Warning,
+    Overdue
+}
+
 public static class FolderSectorCatalog
 {
     /// <summary>The office is called "Oficina 43" everywhere in the department — the enum name
@@ -153,4 +161,31 @@ public sealed class FolderCase
     public string FinalDecisionText => FinalDecision is { } decision
         ? FinalDecisionCatalog.Display(decision)
         : FinalDecisionRaw ?? string.Empty;
+
+    /// <summary>
+    /// Days elapsed since citation date for active tracking.
+    /// </summary>
+    public int? DaysSinceCitation => CitationDate is { } date
+        ? Math.Max(0, (DateOnly.FromDateTime(DateTime.Today).DayNumber - date.DayNumber))
+        : null;
+
+    /// <summary>
+    /// SLA aging alert: Green (&lt; 7d), Yellow (7-14d), Red (&gt;= 15d) for pending cases.
+    /// </summary>
+    public CaseAgingAlert AgingAlert
+    {
+        get
+        {
+            if (IsUploaded || FolderState is Domain.FolderState.NoExisteCarpeta || FolderState is Domain.FolderState.PrimeraLicencia)
+            {
+                return CaseAgingAlert.None;
+            }
+
+            var days = DaysSinceCitation;
+            if (days is null) return CaseAgingAlert.None;
+            if (days >= 15) return CaseAgingAlert.Overdue;
+            if (days >= 7) return CaseAgingAlert.Warning;
+            return CaseAgingAlert.Normal;
+        }
+    }
 }

@@ -115,6 +115,10 @@
                 <input type="checkbox" name="otherComuna" value="true" checked="@Model.OtherComuna" onchange="this.form.submit()" />
                 Carpeta en otra comuna
             </label>
+            <label class="text-md" style="display:flex; gap:6px; align-items:center; color:#b91c1c; font-weight:600;">
+                <input type="checkbox" name="overdue" value="true" checked="@Model.Overdue" onchange="this.form.submit()" />
+                ⚠️ Atrasados (+15 días)
+            </label>
             <button type="submit" class="btn-primary text-base" style="padding:3px 12px;">Filtrar</button>
             <a asp-page="/Index" class="nav-pill text-sm">Limpiar</a>
         </div>
@@ -344,8 +348,18 @@
                           asp-route-size="@Model.PageSize" asp-route-sort="@Model.Sort" asp-route-desc="@Model.Descending">
                         <input type="hidden" name="id" value="@item.Id" />
                     </form>
-                    <input type="text" name="citacion" form="case-form-@item.Id" class="input-inline" size="15"
-                           value="@LicenciasCarpetas.Dashboard.Pages.IndexModel.FormatDate(item.CitationDate)" placeholder="dd/mes/aaaa" />
+                    <div style="display:flex; align-items:center; gap:4px;">
+                        <input type="text" name="citacion" form="case-form-@item.Id" class="input-inline" size="13"
+                               value="@LicenciasCarpetas.Dashboard.Pages.IndexModel.FormatDate(item.CitationDate)" placeholder="dd/mes/aaaa" />
+                        @if (item.AgingAlert == CaseAgingAlert.Overdue)
+                        {
+                            <span class="badge-sla badge-sla-overdue" title="Trámite pendiente con @item.DaysSinceCitation días transcurridos">🔴 +@item.DaysSinceCitation d</span>
+                        }
+                        else if (item.AgingAlert == CaseAgingAlert.Warning)
+                        {
+                            <span class="badge-sla badge-sla-warning" title="Trámite pendiente con @item.DaysSinceCitation días transcurridos">🟡 @item.DaysSinceCitation d</span>
+                        }
+                    </div>
                 </td>
                 <td class="name-cell">
                     @if (item.NeedsReview)
@@ -478,13 +492,7 @@
                     </select>
                 </td>
                 <td style="display:flex; gap:6px; align-items:center;">
-                    @* El botón "Guardar" se sacó: con autoguardado (ver autoSaveCaseForm en
-                       Scripts) cada cambio de celda ya se manda solo, no hace falta un botón
-                       aparte por fila. El form case-form-@item.Id sigue existiendo igual —
-                       autoguardado y "Solicitar" lo usan — solo se sacó el botón visible.
-                       El botón individual de eliminar (✕) también se sacó de esta columna, a
-                       pedido — para borrar un caso queda el checkbox de Marcar + "Eliminar
-                       seleccionados" (borrado masivo), que sigue intacto. *@
+                    <button type="button" class="btn-audit-log" onclick="openAuditModal(@item.Id, '@(item.FullName?.Replace("'", "\\'"))')" title="Ver historial de cambios de este caso">📜</button>
                     @if (puedeCambioDomicilio)
                     {
                         @* Crea-y-manda en un clic: arma una solicitud en "Solicitar Cambios de
@@ -511,6 +519,16 @@
         </tbody>
     </table>
 </div>
+
+<dialog id="audit-modal" style="border:none; border-radius:var(--radius); box-shadow:0 20px 25px -5px rgba(0,0,0,0.2), 0 8px 10px -6px rgba(0,0,0,0.1); padding:20px; max-width:640px; width:90%; max-height:80vh; overflow-y:auto;">
+    <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid var(--color-border); padding-bottom:10px; margin-bottom:15px;">
+        <h3 id="audit-modal-title" style="margin:0; font-size:var(--font-lg);">Historial de Cambios</h3>
+        <button type="button" onclick="document.getElementById('audit-modal').close()" style="background:none; border:none; font-size:18px; cursor:pointer; color:var(--color-text-muted);">✕</button>
+    </div>
+    <div id="audit-modal-content">
+        <p style="color:var(--color-text-muted);">Cargando historial...</p>
+    </div>
+</dialog>
 
 @section Scripts {
 <script>
@@ -970,5 +988,43 @@
             });
         }
     })();
+
+    function openAuditModal(caseId, caseName) {
+        var modal = document.getElementById('audit-modal');
+        var title = document.getElementById('audit-modal-title');
+        var content = document.getElementById('audit-modal-content');
+        if (!modal || !title || !content) return;
+
+        title.textContent = 'Historial: ' + (caseName || 'Caso #' + caseId);
+        content.innerHTML = '<p style="color:var(--color-text-muted);">Cargando historial...</p>';
+        modal.showModal();
+
+        fetch('?handler=AuditLog&id=' + caseId, {
+            headers: { 'X-Requested-With': 'XMLHttpRequest' }
+        })
+        .then(function(res) { return res.json(); })
+        .then(function(logs) {
+            if (!logs || logs.length === 0) {
+                content.innerHTML = '<p style="color:var(--color-text-muted); font-style:italic; padding:10px 0;">No hay registros de cambios para este caso.</p>';
+                return;
+            }
+            var html = '<table style="width:100%; border-collapse:collapse; font-size:var(--font-sm); text-align:left;">';
+            html += '<thead><tr style="border-bottom:2px solid var(--color-border); color:var(--color-text-muted);"><th style="padding:6px;">Fecha</th><th style="padding:6px;">Usuario</th><th style="padding:6px;">Campo</th><th style="padding:6px;">Valor Anterior</th><th style="padding:6px;">Valor Nuevo</th></tr></thead><tbody>';
+            logs.forEach(function(l) {
+                html += '<tr style="border-bottom:1px solid #eee;">';
+                html += '<td style="padding:6px; white-space:nowrap; color:var(--color-text-muted);">' + l.changedAt + '</td>';
+                html += '<td style="padding:6px; font-weight:600;">' + (l.changedBy || '—') + '</td>';
+                html += '<td style="padding:6px; font-weight:500;">' + l.fieldName + '</td>';
+                html += '<td style="padding:6px; color:#b91c1c; text-decoration:line-through;">' + (l.oldValue || '—') + '</td>';
+                html += '<td style="padding:6px; color:#15803d; font-weight:600;">' + (l.newValue || '—') + '</td>';
+                html += '</tr>';
+            });
+            html += '</tbody></table>';
+            content.innerHTML = html;
+        })
+        .catch(function(err) {
+            content.innerHTML = '<p style="color:#b91c1c; padding:10px 0;">Error al cargar el historial de cambios.</p>';
+        });
+    }
 </script>
 }
