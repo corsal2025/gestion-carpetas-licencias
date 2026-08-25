@@ -329,7 +329,7 @@
             var nameSize = Math.Max(26, (item.FullName?.Length ?? 0) + 2);
             var lastFolderSize = Math.Max(12, lastFolderText.Length + 2);
             var attentionSize = Math.Max(16, (item.AttentionNote?.Length ?? 0) + 2);
-            <tr class="@rowClass @estadoClass @duplicadoClass @reviewClass @idoneidadClass @markedClass">
+            <tr class="@rowClass @estadoClass @duplicadoClass @reviewClass @idoneidadClass @markedClass" ondblclick="openCaseDrawer(@item.Id)">
                 <td class="marked-cell">
                     <form method="post" asp-page-handler="ToggleMarked" class="marked-form" id="marked-form-@item.Id">
                         <input type="hidden" name="id" value="@item.Id" />
@@ -492,6 +492,7 @@
                     </select>
                 </td>
                 <td style="display:flex; gap:6px; align-items:center;">
+                    <button type="button" class="btn-drawer-open" onclick="openCaseDrawer(@item.Id)" title="Abrir panel lateral de detalle">👁️</button>
                     <button type="button" class="btn-audit-log" onclick="openAuditModal(@item.Id, '@(item.FullName?.Replace("'", "\\'"))')" title="Ver historial de cambios de este caso">📜</button>
                     @if (puedeCambioDomicilio)
                     {
@@ -518,6 +519,118 @@
         }
         </tbody>
     </table>
+</div>
+
+<!-- Master-Detail Side Drawer -->
+<div id="drawer-backdrop" class="drawer-backdrop" onclick="closeCaseDrawer()"></div>
+<div id="case-drawer" class="case-drawer">
+    <div class="drawer-header">
+        <div>
+            <div id="drawer-title-name" class="drawer-title-name">Nombre del Ciudadano</div>
+            <div class="drawer-title-meta">
+                <span id="drawer-title-rut" style="font-weight:600;">RUT</span>
+                &bull;
+                <span id="drawer-title-office">Oficina</span>
+                &bull;
+                <span id="drawer-title-citation">Citación</span>
+                <span id="drawer-title-sla"></span>
+            </div>
+        </div>
+        <button type="button" class="drawer-close-btn" onclick="closeCaseDrawer()" title="Cerrar detalle">✕</button>
+    </div>
+    <div class="drawer-body">
+        <!-- Sección 1: Estado y Tramitación -->
+        <div class="drawer-section">
+            <div class="drawer-section-title">📊 Estado y Tramitación</div>
+            <div class="drawer-grid-2">
+                <div class="drawer-field">
+                    <label>Estado de Carpeta</label>
+                    <select id="drawer-estado" onchange="syncDrawerToRow('estado', this.value)">
+                        <option value="">—</option>
+                        @foreach (var state in FolderStateCatalog.Selectable)
+                        {
+                            <option value="@state">@FolderStateCatalog.Display(state)</option>
+                        }
+                    </select>
+                </div>
+                <div class="drawer-field">
+                    <label>Decisión Final</label>
+                    <select id="drawer-decision" onchange="syncDrawerToRow('decision', this.value)">
+                        <option value="">—</option>
+                        @foreach (var decision in FinalDecisionCatalog.All)
+                        {
+                            <option value="@decision">@FinalDecisionCatalog.Display(decision)</option>
+                        }
+                    </select>
+                </div>
+            </div>
+            <div class="drawer-grid-2" style="margin-top:12px;">
+                <div class="drawer-field">
+                    <label>Idoneidad Moral</label>
+                    <select id="drawer-idoneidad" onchange="syncDrawerToRow('idoneidad', this.value)">
+                        <option value="">—</option>
+                        @foreach (var idoneity in Enum.GetValues<MoralIdoneity>())
+                        {
+                            <option value="@idoneity">@MoralIdoneityCatalog.Display(idoneity)</option>
+                        }
+                    </select>
+                </div>
+                <div class="drawer-field">
+                    <label>Comuna Destino</label>
+                    <input type="text" id="drawer-comuna" placeholder="ej: Antofagasta" onchange="syncDrawerToRow('comuna', this.value)" />
+                </div>
+            </div>
+        </div>
+
+        <!-- Sección 2: Datos de Licencia y Documentos -->
+        <div class="drawer-section">
+            <div class="drawer-section-title">🪪 Ficha de Licencia y Archivo</div>
+            <div class="drawer-grid-2">
+                <div class="drawer-field">
+                    <label>Folio de Licencia</label>
+                    <input type="text" id="drawer-folio" placeholder="Número de folio" onchange="syncDrawerToRow('folioLicencia', this.value)" />
+                </div>
+                <div class="drawer-field">
+                    <label>Código F8</label>
+                    <input type="text" id="drawer-f8" placeholder="Código F8" onchange="syncDrawerToRow('codigoF8', this.value)" />
+                </div>
+            </div>
+            <div class="drawer-grid-2" style="margin-top:12px;">
+                <div class="drawer-field">
+                    <label>Fecha Última Carpeta</label>
+                    <input type="text" id="drawer-ultima" placeholder="dd/mes/aaaa o Comuna" onchange="syncDrawerToRow('ultimaCarpeta', this.value)" />
+                </div>
+                <div class="drawer-field">
+                    <label>Fecha Penúltima Carpeta</label>
+                    <input type="text" id="drawer-penultima" placeholder="dd/mes/aaaa" onchange="syncDrawerToRow('penultima', this.value)" />
+                </div>
+            </div>
+            <div class="drawer-field" style="margin-top:12px;">
+                <label style="margin-bottom:6px;">Clases de Licencia</label>
+                <div class="drawer-licence-chips">
+                    @foreach (var licence in LicenceClassCatalog.All)
+                    {
+                        <label class="drawer-licence-chip" id="drawer-chip-@licence">
+                            <input type="checkbox" value="@licence" onchange="toggleDrawerLicence('@licence', this.checked)" style="display:none;" />
+                            <span>@LicenceClassCatalog.Display(licence)</span>
+                        </label>
+                    }
+                </div>
+            </div>
+            <div class="drawer-field" style="margin-top:12px;">
+                <label>Observaciones del Caso</label>
+                <textarea id="drawer-observaciones" rows="3" placeholder="Notas y observaciones internas..." onchange="syncDrawerToRow('observaciones', this.value)"></textarea>
+            </div>
+        </div>
+
+        <!-- Sección 3: Historial de Cambios / Auditoría -->
+        <div class="drawer-section">
+            <div class="drawer-section-title">📜 Pista de Auditoría del Caso</div>
+            <div id="drawer-audit-content">
+                <p style="color:var(--color-text-muted); font-size:var(--font-sm); margin:0;">Selecciona un caso para cargar su historial.</p>
+            </div>
+        </div>
+    </div>
 </div>
 
 <dialog id="audit-modal" style="border:none; border-radius:var(--radius); box-shadow:0 20px 25px -5px rgba(0,0,0,0.2), 0 8px 10px -6px rgba(0,0,0,0.1); padding:20px; max-width:640px; width:90%; max-height:80vh; overflow-y:auto;">
@@ -988,6 +1101,153 @@
             });
         }
     })();
+
+    /* ── Master-Detail Drawer Controller ────────────────────────────────────────── */
+    var activeDrawerCaseId = null;
+
+    function openCaseDrawer(caseId) {
+        activeDrawerCaseId = caseId;
+        var form = document.getElementById('case-form-' + caseId);
+        var row = form ? form.closest('tr') : null;
+        if (!row) return;
+
+        // Highlight active row in table
+        document.querySelectorAll('.row-drawer-active').forEach(function (r) { r.classList.remove('row-drawer-active'); });
+        row.classList.add('row-drawer-active');
+
+        // Read form inputs from table row
+        var nameInput = row.querySelector('input[name="nombre"]');
+        var rutInput = row.querySelector('input[name="rut"]');
+        var citacionInput = row.querySelector('input[name="citacion"]');
+        var folioInput = row.querySelector('input[name="folioLicencia"]');
+        var f8Input = row.querySelector('input[name="codigoF8"]');
+        var ultimaInput = row.querySelector('input[name="ultimaCarpeta"]');
+        var penultimaInput = row.querySelector('input[name="penultima"]');
+        var estadoSelect = row.querySelector('select[name="estado"]');
+        var decisionSelect = row.querySelector('select[name="decision"]');
+        var idoneidadSelect = row.querySelector('select[name="idoneidad"]');
+        var comunaInput = row.querySelector('input[name="comuna"]') || document.getElementById('comuna-' + caseId);
+        var obsTextarea = row.querySelector('textarea[name="observaciones"]');
+
+        // Populate drawer header
+        document.getElementById('drawer-title-name').textContent = nameInput ? nameInput.value : ('Caso #' + caseId);
+        document.getElementById('drawer-title-rut').textContent = rutInput ? rutInput.value : '—';
+        document.getElementById('drawer-title-citation').textContent = citacionInput ? ('Citación: ' + citacionInput.value) : '';
+
+        var slaBadge = row.querySelector('.badge-sla');
+        var drawerSla = document.getElementById('drawer-title-sla');
+        if (drawerSla) {
+            drawerSla.innerHTML = slaBadge ? slaBadge.outerHTML : '';
+        }
+
+        // Populate drawer fields
+        if (document.getElementById('drawer-estado') && estadoSelect) document.getElementById('drawer-estado').value = estadoSelect.value;
+        if (document.getElementById('drawer-decision') && decisionSelect) document.getElementById('drawer-decision').value = decisionSelect.value;
+        if (document.getElementById('drawer-idoneidad') && idoneidadSelect) document.getElementById('drawer-idoneidad').value = idoneidadSelect.value;
+        if (document.getElementById('drawer-comuna')) document.getElementById('drawer-comuna').value = comunaInput ? comunaInput.value : '';
+        if (document.getElementById('drawer-folio')) document.getElementById('drawer-folio').value = folioInput ? folioInput.value : '';
+        if (document.getElementById('drawer-f8')) document.getElementById('drawer-f8').value = f8Input ? f8Input.value : '';
+        if (document.getElementById('drawer-ultima')) document.getElementById('drawer-ultima').value = ultimaInput ? ultimaInput.value : '';
+        if (document.getElementById('drawer-penultima')) document.getElementById('drawer-penultima').value = penultimaInput ? penultimaInput.value : '';
+        if (document.getElementById('drawer-observaciones')) document.getElementById('drawer-observaciones').value = obsTextarea ? obsTextarea.value : '';
+
+        // Populate licence chips
+        var rowLicenceCheckboxes = row.querySelectorAll('input[name="licencias"]');
+        var activeLicences = new Set();
+        rowLicenceCheckboxes.forEach(function (cb) { if (cb.checked) activeLicences.add(cb.value); });
+
+        document.querySelectorAll('.drawer-licence-chip').forEach(function (chip) {
+            var input = chip.querySelector('input');
+            if (input) {
+                input.checked = activeLicences.has(input.value);
+                if (input.checked) chip.classList.add('selected');
+                else chip.classList.remove('selected');
+            }
+        });
+
+        // Load live audit history into drawer
+        loadDrawerAuditLog(caseId);
+
+        // Open Drawer
+        document.getElementById('case-drawer').classList.add('open');
+        document.getElementById('drawer-backdrop').classList.add('open');
+    }
+
+    function closeCaseDrawer() {
+        activeDrawerCaseId = null;
+        var drawer = document.getElementById('case-drawer');
+        var backdrop = document.getElementById('drawer-backdrop');
+        if (drawer) drawer.classList.remove('open');
+        if (backdrop) backdrop.classList.remove('open');
+        document.querySelectorAll('.row-drawer-active').forEach(function (r) { r.classList.remove('row-drawer-active'); });
+    }
+
+    function syncDrawerToRow(fieldName, value) {
+        if (!activeDrawerCaseId) return;
+        var form = document.getElementById('case-form-' + activeDrawerCaseId);
+        if (!form) return;
+        var row = form.closest('tr');
+        if (!row) return;
+
+        var input = row.querySelector('[name="' + fieldName + '"]');
+        if (input) {
+            input.value = value;
+            input.dispatchEvent(new Event('change', { bubbles: true }));
+        }
+    }
+
+    function toggleDrawerLicence(licenceValue, isChecked) {
+        if (!activeDrawerCaseId) return;
+        var form = document.getElementById('case-form-' + activeDrawerCaseId);
+        if (!form) return;
+        var row = form.closest('tr');
+        if (!row) return;
+
+        var chip = document.getElementById('drawer-chip-' + licenceValue);
+        if (chip) {
+            if (isChecked) chip.classList.add('selected');
+            else chip.classList.remove('selected');
+        }
+
+        var rowCheckboxes = row.querySelectorAll('input[name="licencias"]');
+        rowCheckboxes.forEach(function (cb) {
+            if (cb.value === licenceValue) {
+                cb.checked = isChecked;
+                cb.dispatchEvent(new Event('change', { bubbles: true }));
+            }
+        });
+    }
+
+    function loadDrawerAuditLog(caseId) {
+        var container = document.getElementById('drawer-audit-content');
+        if (!container) return;
+        container.innerHTML = '<p style="color:var(--color-text-muted); font-size:var(--font-xs); margin:0;">Cargando historial...</p>';
+
+        fetch('?handler=AuditLog&id=' + caseId, {
+            headers: { 'X-Requested-With': 'XMLHttpRequest' }
+        })
+        .then(function (res) { return res.json(); })
+        .then(function (logs) {
+            if (!logs || logs.length === 0) {
+                container.innerHTML = '<p style="color:var(--color-text-muted); font-size:var(--font-xs); font-style:italic; margin:0;">Sin modificaciones registradas.</p>';
+                return;
+            }
+            var html = '<div style="display:flex; flex-direction:column; gap:8px; max-height:220px; overflow-y:auto;">';
+            logs.forEach(function (l) {
+                html += '<div style="background:#ffffff; border:1px solid var(--color-border); border-radius:6px; padding:8px; font-size:var(--font-xs);">';
+                html += '<div style="display:flex; justify-content:space-between; color:var(--color-text-muted); margin-bottom:4px;">';
+                html += '<span><strong>' + (l.changedBy || 'Sistema') + '</strong></span><span>' + l.changedAt + '</span></div>';
+                html += '<div>Modificó <strong>' + l.fieldName + '</strong>: ';
+                html += '<span style="color:#dc2626; text-decoration:line-through;">' + (l.oldValue || '—') + '</span> &rarr; ';
+                html += '<span style="color:#15803d; font-weight:600;">' + (l.newValue || '—') + '</span></div></div>';
+            });
+            html += '</div>';
+            container.innerHTML = html;
+        })
+        .catch(function () {
+            container.innerHTML = '<p style="color:#dc2626; font-size:var(--font-xs); margin:0;">Error al cargar historial.</p>';
+        });
+    }
 
     function openAuditModal(caseId, caseName) {
         var modal = document.getElementById('audit-modal');
