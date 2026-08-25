@@ -1455,55 +1455,129 @@ button.btn-outline-danger:hover { background: var(--color-review-bg); }
    clase "cases-index" pero tienen Nombre/RUT en posiciones distintas (columnas propias antes de
    estas dos difieren entre los dos módulos) — un nth-child fijo solo podía servir a una tabla a la
    vez, y quedó roto en la otra la última vez que a una de las dos se le agregó o sacó una columna. */
+/* ── Columnas Fijas (Sticky) hasta el RUT en Casos ───────────────────────────
+   Marcar, Citación, Nombre y RUT se quedan fijos al desplazar la tabla en horizontal.
+   La cabecera queda fija arriba (top:0, z-index:20/30). */
 table.cases-index thead th {
     position: sticky;
     top: 0;
-    z-index: 2;
+    z-index: 20;
     background: #eef2f6;
 }
 
-/* Nombre/RUT YA NO quedan fijos al desplazar la tabla en horizontal — position:sticky dentro de
-   una <table> (no un div) es una fuente conocida de bugs de renderizado cruzados entre
-   navegadores, sobre todo en mobile: pintaba por encima de las celdas de Tipo de licencia /
-   Observaciones cuando quedaban geométricamente bajo la franja fija, o al revés, esa misma franja
-   se tragaba el clic y el panel de Observaciones/Licencias no abría. Sacar el sticky elimina la
-   causa de raíz de las dos versiones del bug en vez de seguir ajustando z-index a ciegas. */
-table.cases-index th.name-cell,
-table.cases-index td.name-cell,
-table.cases-index th.rut-cell,
-table.cases-index td.rut-cell {
+/* Columna 1: Marcar */
+table.cases-index th.col-sticky-marcar,
+table.cases-index td.col-sticky-marcar {
+    position: sticky;
+    left: 0;
+    z-index: 12;
     background: #ffffff;
 }
-
-table.cases-index thead th.name-cell,
-table.cases-index thead th.rut-cell {
+table.cases-index thead th.col-sticky-marcar {
+    z-index: 30;
     background: #eef2f6;
 }
 
-table.cases-index tbody tr.row-alt td.name-cell,
-table.cases-index tbody tr.row-alt td.rut-cell { background: #fafbfc; }
+/* Columna 2: Citación */
+table.cases-index th.col-sticky-citacion,
+table.cases-index td.col-sticky-citacion {
+    position: sticky;
+    left: var(--sticky-citacion-left, 48px);
+    z-index: 12;
+    background: #ffffff;
+}
+table.cases-index thead th.col-sticky-citacion {
+    z-index: 30;
+    background: #eef2f6;
+}
 
-table.cases-index tbody tr:hover td.name-cell,
-table.cases-index tbody tr:hover td.rut-cell { background: #f0f6fb; }
+/* Columna 3: Nombre Completo */
+table.cases-index th.col-sticky-nombre,
+table.cases-index td.col-sticky-nombre {
+    position: sticky;
+    left: var(--sticky-nombre-left, 160px);
+    z-index: 12;
+    background: #ffffff;
+}
+table.cases-index thead th.col-sticky-nombre {
+    z-index: 30;
+    background: #eef2f6;
+}
 
-table.cases-index tbody tr:has(input[name="markedValue"]:checked) td.name-cell,
-table.cases-index tbody tr:has(input[name="markedValue"]:checked) td.rut-cell {
+/* Columna 4: RUT */
+table.cases-index th.col-sticky-rut,
+table.cases-index td.col-sticky-rut {
+    position: sticky;
+    left: var(--sticky-rut-left, 380px);
+    z-index: 12;
+    background: #ffffff;
+    box-shadow: 4px 0 8px -3px rgba(0, 0, 0, 0.15);
+}
+table.cases-index thead th.col-sticky-rut {
+    z-index: 30;
+    background: #eef2f6;
+    box-shadow: 4px 0 8px -3px rgba(0, 0, 0, 0.15);
+}
+
+/* Fondos por estado de fila para celdas sticky */
+table.cases-index tbody tr.row-alt td.col-sticky-marcar,
+table.cases-index tbody tr.row-alt td.col-sticky-citacion,
+table.cases-index tbody tr.row-alt td.col-sticky-nombre,
+table.cases-index tbody tr.row-alt td.col-sticky-rut {
+    background: #fafbfc;
+}
+
+table.cases-index tbody tr:hover td.col-sticky-marcar,
+table.cases-index tbody tr:hover td.col-sticky-citacion,
+table.cases-index tbody tr:hover td.col-sticky-nombre,
+table.cases-index tbody tr:hover td.col-sticky-rut {
+    background: #f0f6fb;
+}
+
+table.cases-index tbody tr.row-selected td.col-sticky-marcar,
+table.cases-index tbody tr.row-selected td.col-sticky-citacion,
+table.cases-index tbody tr.row-selected td.col-sticky-nombre,
+table.cases-index tbody tr.row-selected td.col-sticky-rut,
+table.cases-index tbody tr:has(input[name="markedValue"]:checked) td.col-sticky-marcar,
+table.cases-index tbody tr:has(input[name="markedValue"]:checked) td.col-sticky-citacion,
+table.cases-index tbody tr:has(input[name="markedValue"]:checked) td.col-sticky-nombre,
+table.cases-index tbody tr:has(input[name="markedValue"]:checked) td.col-sticky-rut {
     background: #bfe3b4 !important;
 }
 
-table.cases-index tbody tr:has(input[name="markedValue"]:checked):hover td.name-cell,
-table.cases-index tbody tr:has(input[name="markedValue"]:checked):hover td.rut-cell {
+table.cases-index tbody tr:has(input[name="markedValue"]:checked):hover td.col-sticky-marcar,
+table.cases-index tbody tr:has(input[name="markedValue"]:checked):hover td.col-sticky-citacion,
+table.cases-index tbody tr:has(input[name="markedValue"]:checked):hover td.col-sticky-nombre,
+table.cases-index tbody tr:has(input[name="markedValue"]:checked):hover td.col-sticky-rut {
     background: #aed89f !important;
 }
 
-table.cases-index tbody tr.row-needs-review td.name-cell,
-table.cases-index tbody tr.row-needs-review td.rut-cell {
+table.cases-index tbody tr.row-needs-review td.col-sticky-marcar,
+table.cases-index tbody tr.row-needs-review td.col-sticky-citacion,
+table.cases-index tbody tr.row-needs-review td.col-sticky-nombre,
+table.cases-index tbody tr.row-needs-review td.col-sticky-rut {
     background: var(--color-review-bg) !important;
 }
 
-table.cases-index tbody tr.row-needs-review:hover td.name-cell,
-table.cases-index tbody tr.row-needs-review:hover td.rut-cell {
+table.cases-index tbody tr.row-needs-review:hover td.col-sticky-marcar,
+table.cases-index tbody tr.row-needs-review:hover td.col-sticky-citacion,
+table.cases-index tbody tr.row-needs-review:hover td.col-sticky-nombre,
+table.cases-index tbody tr.row-needs-review:hover td.col-sticky-rut {
     background: #f6d0d8 !important;
+}
+
+table.cases-index tbody tr.row-alertada td.col-sticky-marcar,
+table.cases-index tbody tr.row-alertada td.col-sticky-citacion,
+table.cases-index tbody tr.row-alertada td.col-sticky-nombre,
+table.cases-index tbody tr.row-alertada td.col-sticky-rut {
+    background: #fee2e2 !important;
+}
+
+table.cases-index tbody tr.row-revisar td.col-sticky-marcar,
+table.cases-index tbody tr.row-revisar td.col-sticky-citacion,
+table.cases-index tbody tr.row-revisar td.col-sticky-nombre,
+table.cases-index tbody tr.row-revisar td.col-sticky-rut {
+    background: #fef3c7 !important;
 }
 
 /* ── Tablas anchas fuera de Casos (Estadísticas) ─────────────────────────────────────────────
@@ -1877,18 +1951,21 @@ table.cases-index tbody td select {
     text-align: left;
 }
 
-/* Selección múltiple de clases (LICENCIAS) y nota libre por persona (OBSERVACIONES): mismo patrón
-   de <details>/<summary>, resumen cerrado y panel al abrir — comparten estilo base y el mecanismo
-   de posicionamiento fijo, cada uno con su propio contenido. */
+/* Selección múltiple de clases (LICENCIAS) y nota libre por persona (OBSERVACIONES) */
 .popover-celda {
     position: relative;
+    display: inline-block;
 }
 
-/* position+z-index por encima de las columnas sticky (Nombre/RUT, z-index:1 en tbody) SIEMPRE,
-   no solo con el panel abierto — un intento anterior de dejarlo solo en [open] (para que no
-   pintara encima de Nombre/RUT al correr la tabla) rompió el click: cuando la celda queda bajo la
-   franja fija, ese sticky se traga el clic y el <details> nunca llega a abrirse, aunque el mouse
-   se vea "sobre" el resumen. Clickeable siempre gana sobre prolijo siempre. */
+table.cases-index tbody tr:has(.popover-celda[open]) {
+    position: relative;
+    z-index: 100 !important;
+}
+
+table.cases-index tbody tr:has(.popover-celda[open]) td {
+    overflow: visible !important;
+}
+
 .popover-celda summary {
     position: relative;
     z-index: 2;
@@ -1909,8 +1986,6 @@ table.cases-index tbody td select {
     padding-right: 20px;
 }
 
-/* Sin texto de resumen fijo ("—" u otro) cuando no hay clases elegidas, esta flecha es la única
-   pista de que el casillero abre un selector — decorativa, no forma parte del contenido. */
 .licencias-celda summary::after {
     content: "▾";
     position: absolute;
@@ -1923,46 +1998,48 @@ table.cases-index tbody td select {
 
 .popover-celda summary::-webkit-details-marker { display: none; }
 
-/* Los paneles flotan sobre la tabla: dentro de la celda estirarían la fila al abrirse.
-   position:absolute es solo el estado inicial/sin-JS: en cuanto se abre, el script de Index.cshtml
-   lo cambia a position:fixed con coordenadas calculadas — sin eso, los bordes de las filas de abajo
-   se pintan encima del panel pese al z-index, porque una tabla pinta el fondo/borde de cada fila
-   como su propia capa, y eso no lo puede ganar un descendiente absoluto de una fila anterior. */
 .popover-celda[open] .popover-panel {
     position: absolute;
-    top: calc(100% + 4px);
-    left: 0;
-    z-index: 20;
-    padding: 8px 10px;
-    background: #fff;
+    z-index: 500;
+    background: #ffffff;
     border: 1px solid var(--color-border);
-    border-radius: 6px;
-    box-shadow: var(--shadow-sm);
+    border-radius: 8px;
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.2), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
 }
 
-/* Un ancho angosto (2 columnas, no 5) mantiene las opciones de licencia sobre su propia columna en
-   vez de invadir la de al lado. */
 .popover-celda[open] .licencias-opciones {
+    top: calc(100% + 4px);
+    left: 0;
     display: grid;
-    grid-template-columns: repeat(2, auto);
-    gap: 3px 10px;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 6px 14px;
+    padding: 10px 14px;
+    min-width: 150px;
     width: max-content;
 }
 
-.licencias-celda .licencias-opciones label {
+.licencia-option-label {
     display: flex;
     align-items: center;
-    gap: 4px;
+    gap: 6px;
     font-size: var(--font-sm);
     font-weight: 700;
     white-space: nowrap;
+    cursor: pointer;
+    user-select: none;
+}
+.licencia-option-label:hover {
+    color: var(--color-primary);
 }
 
-.observaciones-panel {
-    width: 260px;
+.popover-celda[open] .observaciones-panel {
+    top: -10px;
+    left: calc(100% + 8px);
+    width: 290px;
+    padding: 12px;
     display: flex;
     flex-direction: column;
-    gap: 6px;
+    gap: 8px;
 }
 
 .observaciones-panel-header {
@@ -1970,9 +2047,9 @@ table.cases-index tbody td select {
     align-items: center;
     justify-content: space-between;
     gap: 8px;
-    font-size: var(--font-sm);
+    font-size: var(--font-xs);
     font-weight: 700;
-    color: var(--color-text-muted);
+    color: var(--color-primary);
     text-transform: uppercase;
     letter-spacing: 0.3px;
     border-bottom: 1px solid var(--color-border);
@@ -1990,7 +2067,7 @@ table.cases-index tbody td select {
     border: none;
     background: none;
     cursor: pointer;
-    font-size: var(--font-xl);
+    font-size: var(--font-base);
     line-height: 1;
     color: var(--color-text-muted);
     padding: 0 2px;
@@ -2002,23 +2079,19 @@ table.cases-index tbody td select {
 
 .observaciones-panel textarea {
     width: 100%;
-    height: 72px;
-    font-size: var(--font-md);
+    height: 80px;
+    font-size: var(--font-sm);
     font-family: inherit;
     resize: vertical;
     border: 1px solid var(--color-border);
-    border-radius: 4px;
-    padding: 6px 8px;
+    border-radius: 6px;
+    padding: 8px;
     box-sizing: border-box;
 }
-
-/* Solo lectura hasta que se pulsa Editar: evita que un roce accidental sobre el texto ya guardado
-   se confunda con una edición a medias. Reemplaza al aviso de texto que había antes explicando
-   dónde guardar — ahora el botón Guardar vive en el propio panel. */
-.observaciones-panel textarea[readonly] {
-    background: var(--color-pending-bg);
-    color: var(--color-text-muted);
-    cursor: default;
+.observaciones-panel textarea:focus {
+    outline: none;
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 2px rgba(11, 61, 104, 0.15);
 }
 
 .observaciones-panel-acciones {
@@ -2027,23 +2100,9 @@ table.cases-index tbody td select {
     gap: 6px;
 }
 
-.observaciones-editar {
-    border: 1px solid var(--color-border);
-    background: #fff;
-    color: var(--color-text-muted);
-    border-radius: 4px;
-    padding: 4px 10px;
-    font-size: var(--font-base);
-    cursor: pointer;
-}
-
-.observaciones-editar:hover {
-    background: var(--color-pending-bg);
-}
-
 .observaciones-panel .observaciones-guardar {
     padding: 4px 12px;
-    font-size: var(--font-base);
+    font-size: var(--font-xs);
 }
 
 /* El ícono cambia de 📝 a 🗒️ al tipear (ver Index.cshtml), pero eso no sobrevive un refresh de

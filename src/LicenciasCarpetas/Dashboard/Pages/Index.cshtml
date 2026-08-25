@@ -278,13 +278,13 @@
     <table class="cases cases-index">
         <thead>
             <tr>
-                <th>Marcar<br /><input type="checkbox" id="select-all-rows" title="Marcar/seleccionar todos" /></th>
+                <th class="col-sticky-marcar">Marcar<br /><input type="checkbox" id="select-all-rows" title="Marcar/seleccionar todos" /></th>
                 @* El texto va dentro de un <span>: escrito como "Oficina@Model...", Razor lee
                    "texto@algo" como una dirección de correo y lo imprime literal en vez de
                    evaluarlo. El ">" que cierra el span rompe esa heurística. *@
-                <th><a asp-page="/Index" asp-all-route-data="@Model.SortRouteValues(CaseSort.CitationDate)" class="sort-link"><span>Citación</span>@Model.SortIndicator(CaseSort.CitationDate)</a></th>
-                <th class="name-cell"><a asp-page="/Index" asp-all-route-data="@Model.SortRouteValues(CaseSort.Name)" class="sort-link"><span>Nombre completo</span>@Model.SortIndicator(CaseSort.Name)</a></th>
-                <th class="rut-cell"><a asp-page="/Index" asp-all-route-data="@Model.SortRouteValues(CaseSort.Rut)" class="sort-link"><span>RUT</span>@Model.SortIndicator(CaseSort.Rut)</a></th>
+                <th class="col-sticky-citacion"><a asp-page="/Index" asp-all-route-data="@Model.SortRouteValues(CaseSort.CitationDate)" class="sort-link"><span>Citación</span>@Model.SortIndicator(CaseSort.CitationDate)</a></th>
+                <th class="name-cell col-sticky-nombre"><a asp-page="/Index" asp-all-route-data="@Model.SortRouteValues(CaseSort.Name)" class="sort-link"><span>Nombre completo</span>@Model.SortIndicator(CaseSort.Name)</a></th>
+                <th class="rut-cell col-sticky-rut"><a asp-page="/Index" asp-all-route-data="@Model.SortRouteValues(CaseSort.Rut)" class="sort-link"><span>RUT</span>@Model.SortIndicator(CaseSort.Rut)</a></th>
                 <th><a asp-page="/Index" asp-all-route-data="@Model.SortRouteValues(CaseSort.Office)" class="sort-link"><span>Oficina</span>@Model.SortIndicator(CaseSort.Office)</a></th>
                 <th title="Número de folio de la licencia. Texto libre">Folio de licencia</th>
                 <th><a asp-page="/Index" asp-all-route-data="@Model.SortRouteValues(CaseSort.FolderUploadedDate)" class="sort-link"><span>Fecha subida de carpeta</span>@Model.SortIndicator(CaseSort.FolderUploadedDate)</a></th>
@@ -330,7 +330,7 @@
             var lastFolderSize = Math.Max(12, lastFolderText.Length + 2);
             var attentionSize = Math.Max(16, (item.AttentionNote?.Length ?? 0) + 2);
             <tr class="@rowClass @estadoClass @duplicadoClass @reviewClass @idoneidadClass @markedClass" ondblclick="openCaseDrawer(@item.Id)">
-                <td class="marked-cell">
+                <td class="marked-cell col-sticky-marcar">
                     <form method="post" asp-page-handler="ToggleMarked" class="marked-form" id="marked-form-@item.Id">
                         <input type="hidden" name="id" value="@item.Id" />
                     </form>
@@ -339,7 +339,7 @@
                            onchange="toggleRowMark(this, document.getElementById('marked-form-@item.Id'))"
                            title="Marcar caso (impresión de sector y borrado masivo)" />
                 </td>
-                <td>
+                <td class="col-sticky-citacion">
                     <form method="post" asp-page-handler="Save" id="case-form-@item.Id"
                           asp-route-office="@Model.Office" asp-route-year="@Model.Year" asp-route-month="@Model.Month"
                           asp-route-estado="@Model.Estado" asp-route-decision="@Model.Decision" asp-route-sector="@Model.Sector"
@@ -361,7 +361,7 @@
                         }
                     </div>
                 </td>
-                <td class="name-cell">
+                <td class="name-cell col-sticky-nombre">
                     @if (item.NeedsReview)
                     {
                         <span class="review-alert" title="Requiere revisión — datos incompletos en la fila original">⚠</span>
@@ -377,25 +377,20 @@
                     <input type="text" name="nombre" form="case-form-@item.Id" class="input-inline name-input"
                            size="@nameSize" value="@item.FullName" placeholder="Nombre completo" />
                 </td>
-                <td class="text-cell rut-cell">
+                <td class="text-cell rut-cell col-sticky-rut">
                     <span class="rut-con-obs">
                         <input type="text" name="rut" form="case-form-@item.Id" class="input-inline rut-input" size="14" value="@item.Rut" />
-                        @* Nota libre por persona, oculta hasta que hace falta: un ícono aparte del RUT
-                           en vez de una columna fija que quedaría vacía en casi todas las filas. Mismo
-                           panel flotante que LICENCIAS — sin position:fixed calculado por JS, los
-                           bordes de las filas de abajo se pintan encima pese al z-index. *@
                         <details class="popover-celda observaciones-celda">
                             <summary title="Observaciones">@(string.IsNullOrWhiteSpace(item.Observations) ? "📝" : "🗒️")</summary>
                             <div class="popover-panel observaciones-panel">
                                 <div class="observaciones-panel-header">
                                     <span>Observación — @item.FullName</span>
-                                    <button type="button" class="observaciones-cerrar" aria-label="Cerrar" title="Cerrar">×</button>
+                                    <button type="button" class="observaciones-cerrar" aria-label="Cerrar" title="Cerrar">✕</button>
                                 </div>
-                                <textarea name="observaciones" form="case-form-@item.Id" readonly
+                                <textarea name="observaciones" form="case-form-@item.Id"
                                           placeholder="Observación sobre esta persona…">@item.Observations</textarea>
                                 <div class="observaciones-panel-acciones">
-                                    <button type="button" class="observaciones-editar">Editar</button>
-                                    <button type="submit" form="case-form-@item.Id" class="btn-primary observaciones-guardar" style="display:none;">Guardar</button>
+                                    <button type="button" class="btn-primary btn-sm observaciones-guardar" onclick="closeAndSaveObs(this)">Listo</button>
                                 </div>
                             </div>
                         </details>
@@ -431,19 +426,17 @@
                            placeholder="dd/mes/aaaa" />
                 </td>
                 <td>
-                    @* Selección múltiple sin lista desplegable con Ctrl: un resumen que se abre y
-                       muestra casillas. En una tabla de 15 columnas, diez casillas sueltas por fila
-                       no caben, y un <select multiple> obliga a Ctrl+clic para elegir dos clases. *@
+                    @* Selección múltiple de clases de licencia *@
                     @{ var licencias = LicenceClassCatalog.Parse(item.LicenceClasses); }
                     <details class="popover-celda licencias-celda">
-                        <summary>@LicenceClassCatalog.DisplayList(item.LicenceClasses)</summary>
+                        <summary>@(string.IsNullOrWhiteSpace(LicenceClassCatalog.DisplayList(item.LicenceClasses)) ? "—" : LicenceClassCatalog.DisplayList(item.LicenceClasses))</summary>
                         <div class="popover-panel licencias-opciones">
                             @foreach (var licence in LicenceClassCatalog.All)
                             {
-                                <label>
+                                <label class="licencia-option-label">
                                     <input type="checkbox" name="licencias" form="case-form-@item.Id"
                                            value="@licence" checked="@licencias.Contains(licence)" />
-                                    @LicenceClassCatalog.Display(licence)
+                                    <span>@LicenceClassCatalog.Display(licence)</span>
                                 </label>
                             }
                         </div>
@@ -784,157 +777,104 @@
             });
         });
 
-    // Marcar una casilla no repinta el <summary> por su cuenta — sin esto, el resumen se queda en
-    // lo que trajo el servidor hasta guardar la fila, y el operador no ve lo que acaba de tildar.
-    document.querySelectorAll('.licencias-celda input[type="checkbox"]')
-        .forEach(function (checkbox) {
-            checkbox.addEventListener('change', function () {
-                var cell = checkbox.closest('.licencias-celda');
-                var summary = cell.querySelector('summary');
-                var selected = Array.from(cell.querySelectorAll('input[type="checkbox"]:checked'))
-                    .map(function (c) { return c.value; });
-                summary.textContent = selected.length > 0 ? selected.join(', ') : '';
-                markUnsaved(checkbox);
-            });
+    // Actualizar resumen de licencias al cambiar cualquier casilla
+    document.querySelectorAll('.licencias-celda input[type="checkbox"]').forEach(function (checkbox) {
+        checkbox.addEventListener('change', function () {
+            var cell = checkbox.closest('.licencias-celda');
+            if (!cell) return;
+            var summary = cell.querySelector('summary');
+            var selected = Array.from(cell.querySelectorAll('input[type="checkbox"]:checked')).map(function (c) { return c.value; });
+            if (summary) {
+                summary.textContent = selected.length > 0 ? selected.join(', ') : '—';
+            }
+            markUnsaved(checkbox);
         });
+    });
 
-    // La nota de observaciones cambia el ícono del resumen al tipear, igual que LICENCIAS cambia su
-    // resumen al tildar — sin esto, el ícono se queda en lo que trajo el servidor hasta guardar.
-    document.querySelectorAll('.observaciones-celda textarea')
-        .forEach(function (textarea) {
-            textarea.addEventListener('input', function () {
-                var summary = textarea.closest('.observaciones-celda').querySelector('summary');
+    // Observaciones: cambiar ícono según contenido y marcar como pendiente de guardado
+    document.querySelectorAll('.observaciones-celda textarea').forEach(function (textarea) {
+        textarea.addEventListener('input', function () {
+            var cell = textarea.closest('.observaciones-celda');
+            if (!cell) return;
+            var summary = cell.querySelector('summary');
+            if (summary) {
                 summary.textContent = textarea.value.trim().length > 0 ? '🗒️' : '📝';
-                markUnsaved(textarea);
-            });
+            }
+            markUnsaved(textarea);
         });
+    });
 
-    document.querySelectorAll('.observaciones-cerrar')
-        .forEach(function (boton) {
-            boton.addEventListener('click', function () {
-                boton.closest('.observaciones-celda').removeAttribute('open');
-            });
+    document.querySelectorAll('.observaciones-cerrar').forEach(function (boton) {
+        boton.addEventListener('click', function () {
+            var cell = boton.closest('.observaciones-celda');
+            if (cell) cell.removeAttribute('open');
         });
+    });
 
-    // Editar habilita la nota (estaba en solo lectura) y la deja lista para escribir; Guardar
-    // manda el mismo formulario de la fila que usa cualquier otro campo — no hay envío aparte.
-    document.querySelectorAll('.observaciones-editar')
-        .forEach(function (boton) {
-            boton.addEventListener('click', function () {
-                var panel = boton.closest('.observaciones-panel');
-                var textarea = panel.querySelector('textarea');
-                textarea.readOnly = false;
-                textarea.focus();
-                boton.style.display = 'none';
-                panel.querySelector('.observaciones-guardar').style.display = '';
-            });
-        });
+    function closeAndSaveObs(btn) {
+        var cell = btn.closest('.observaciones-celda');
+        if (cell) {
+            cell.removeAttribute('open');
+            var tr = cell.closest('tr');
+            var form = tr ? tr.querySelector('form[id^="case-form-"]') : null;
+            if (form) autoSaveCaseForm(form);
+        }
+    }
 
-    // <details> de LICENCIAS se queda abierto hasta el próximo clic en su propio resumen — sin
-    // esto, el panel se queda en pantalla aunque el operador ya haya seguido trabajando en otra
-    // celda. Un clic fuera de la celda lo cierra, como cualquier menú desplegable.
-    // OBSERVACIONES queda afuera a propósito: un clic en otra fila (por ejemplo para leer el
-    // nombre de al lado) no debe borrar la nota a medio escribir — se cierra con la × o al
-    // guardar, nunca por un clic accidental en cualquier otro lado.
+    // Cerrar popovers al hacer clic afuera
     document.addEventListener('click', function (event) {
-        document.querySelectorAll('.popover-celda[open]:not(.observaciones-celda)').forEach(function (cell) {
+        document.querySelectorAll('.popover-celda[open]').forEach(function (cell) {
             if (!cell.contains(event.target)) {
                 cell.removeAttribute('open');
             }
         });
     });
 
-    // Las filas de una tabla pintan sus propios bordes por encima de cualquier hijo absoluto de una
-    // fila anterior — z-index no alcanza para escapar de ese orden. `position: fixed`, calculado a
-    // mano desde el resumen, saca el panel de la tabla por completo. Como queda anclado a coordenadas
-    // de pantalla y no de fila, se cierra solo si la tabla se desplaza para no dejarlo flotando lejos
-    // de la celda que lo abrió. Genérico para LICENCIAS y OBSERVACIONES: mismo problema, mismo panel.
-    // Nombre y RUT son columnas sticky con fondo opaco: en la franja donde se superponen con un
-    // panel fijo, pintan encima pese al z-index (mismo tipo de problema que las filas de la tabla,
-    // pero las sticky lo hacen incluso contra position:fixed). El panel nunca puede empezar más a
-    // la izquierda que el borde derecho del RUT — así no hay superposición que perder.
-    var rutHeader = document.querySelector('table.cases-index thead th.rut-cell');
+    // Control de apertura de popovers
     document.querySelectorAll('.popover-celda').forEach(function (cell) {
         cell.addEventListener('toggle', function () {
-            var panel = cell.querySelector('.popover-panel');
-            if (!cell.open || !panel) return;
-            var rect = cell.querySelector('summary').getBoundingClientRect();
-            var minLeft = rutHeader ? rutHeader.getBoundingClientRect().right + 6 : 0;
-            var esObservacion = panel.classList.contains('observaciones-panel');
-
-            if (esObservacion) {
-                // Al lado del RUT, no debajo: "debajo" en una fila cerca del borde inferior de la
-                // ventana empuja el panel fuera de lo visible. A la derecha, la fila siempre está
-                // a la vista porque es la misma fila que el operador ya está mirando.
-                var posicionarJuntoAlIcono = function () {
-                    var freshRect = cell.querySelector('summary').getBoundingClientRect();
-                    var ancho = 260; // igual al width fijo de .observaciones-panel en dashboard.css
-                    var cabeADerecha = freshRect.right + 6 + ancho <= window.innerWidth;
-                    panel.style.top = freshRect.top + 'px';
-                    panel.style.left = cabeADerecha
-                        ? (freshRect.right + 6) + 'px'
-                        : Math.max(freshRect.left - ancho - 6, minLeft) + 'px';
-                };
-                panel.style.position = 'fixed';
-                posicionarJuntoAlIcono();
-                // preventScroll: sin esto, el foco fuerza un scroll de .table-card para centrar
-                // el textarea — y ese scroll dispara el listener de abajo que cierra el panel
-                // recién abierto, dando la sensación de que "salta y se cierra solo".
-                panel.querySelector('textarea').focus({ preventScroll: true });
-                // En el celular, enfocar el textarea abre el teclado y ESO reacomoda el visual
-                // viewport (empuja el contenido hacia arriba) — la posición calculada ANTES de
-                // que el teclado terminara de abrirse quedaba desactualizada, y el panel aparecía
-                // lejos del ícono en vez de al lado. Se recalcula un par de frames después (layout
-                // inmediato) y de nuevo cuando el visualViewport avisa que terminó de acomodarse
-                // (la animación del teclado en sí, que tarda más que un par de frames).
-                requestAnimationFrame(function () { requestAnimationFrame(posicionarJuntoAlIcono); });
-                if (window.visualViewport) {
-                    window.visualViewport.addEventListener('resize', posicionarJuntoAlIcono, { once: true });
-                }
-            }
-            else {
-                panel.style.position = 'fixed';
-                panel.style.top = (rect.bottom + 4) + 'px';
-                // Sin este clamp, una columna cerca del borde derecho de la ventana (como TIPO DE
-                // LICENCIA, lejos de las columnas fijas) abre el panel más allá de lo visible —
-                // técnicamente "abierto" pero invisible, indistinguible de que no pasó nada.
-                var anchoPanel = panel.offsetWidth || 150;
-                var maxLeft = window.innerWidth - anchoPanel - 6;
-                panel.style.left = Math.max(Math.min(rect.left, maxLeft), minLeft) + 'px';
-            }
+            if (!cell.open) return;
+            // Cerrar otros popovers abiertos
+            document.querySelectorAll('.popover-celda[open]').forEach(function (other) {
+                if (other !== cell) other.removeAttribute('open');
+            });
+            var ta = cell.querySelector('textarea');
+            if (ta) ta.focus();
         });
     });
 
-    var tableCard = document.querySelector('.card.table-card');
-    if (tableCard) {
-        tableCard.addEventListener('scroll', function () {
-            document.querySelectorAll('.popover-celda[open]').forEach(function (cell) {
-                cell.removeAttribute('open');
-            });
-        });
-    }
-</script>
-<script>
-    // Nombre y RUT quedan fijos al desplazarse en horizontal. El nombre ancla en 0; el RUT tiene
-    // que empezar justo donde termina el nombre, y ese ancho cambia en cada página (cada campo se
-    // dimensiona según el nombre más largo que le tocó). Por eso se mide del DOM en vez de fijarlo
-    // en el CSS: un valor a ojo dejaría un hueco o taparía el final del nombre.
+    // ── Columnas Fijas (Sticky) hasta el RUT ─────────────────────────────────────
     (function () {
         var table = document.querySelector('table.cases-index');
         if (!table) return;
 
-        function placeRutColumn() {
-            var nameHeader = table.querySelector('thead th.name-cell');
-            if (!nameHeader) return;
-            table.style.setProperty('--sticky-rut-left', nameHeader.getBoundingClientRect().width + 'px');
+        function updateStickyColumns() {
+            var colMarcar = table.querySelector('thead th.col-sticky-marcar');
+            var colCitacion = table.querySelector('thead th.col-sticky-citacion');
+            var colNombre = table.querySelector('thead th.col-sticky-nombre');
+
+            if (!colMarcar || !colCitacion || !colNombre) return;
+
+            var wMarcar = colMarcar.getBoundingClientRect().width;
+            var wCitacion = colCitacion.getBoundingClientRect().width;
+            var wNombre = colNombre.getBoundingClientRect().width;
+
+            var citacionLeft = Math.round(wMarcar);
+            var nombreLeft = Math.round(citacionLeft + wCitacion);
+            var rutLeft = Math.round(nombreLeft + wNombre);
+
+            table.style.setProperty('--sticky-citacion-left', citacionLeft + 'px');
+            table.style.setProperty('--sticky-nombre-left', nombreLeft + 'px');
+            table.style.setProperty('--sticky-rut-left', rutLeft + 'px');
         }
 
-        placeRutColumn();
-        window.addEventListener('resize', placeRutColumn);
-        // Las fuentes tardan un instante en aplicarse y cambian el ancho medido.
+        updateStickyColumns();
+        window.addEventListener('resize', updateStickyColumns);
         if (document.fonts && document.fonts.ready) {
-            document.fonts.ready.then(placeRutColumn);
+            document.fonts.ready.then(updateStickyColumns);
         }
+        setTimeout(updateStickyColumns, 100);
+        setTimeout(updateStickyColumns, 500);
     })();
 </script>
 <script>
