@@ -21,7 +21,7 @@
     </script>
 }
 
-<div class="card" style="padding:5px 12px; margin-bottom:8px;">
+<div class="card" style="padding:4px 10px; margin-bottom:6px;">
     <form method="get" class="filters-bar" style="display:flex; gap:3px 8px; align-items:flex-end; flex-wrap:wrap;">
         @* Sin estos tres, filtrar por Oficina/Año/etc. resetea lo que el operador eligió en
            "Ver" (tamaño de página) y en el orden de columna — el <select> de "Ver" ya guarda
@@ -125,9 +125,9 @@
     </form>
 </div>
 
-<details class="card" style="padding:8px 14px; margin-bottom:10px;">
-    <summary class="text-md" style="cursor:pointer; font-weight:600;">Agregar caso a la agenda</summary>
-    <form method="post" asp-page-handler="Add" style="display:flex; gap:10px; align-items:flex-end; flex-wrap:wrap; margin-top:12px;">
+<details class="card" style="padding:4px 10px; margin-bottom:6px;">
+    <summary class="text-sm" style="cursor:pointer; font-weight:600;">Agregar caso a la agenda</summary>
+    <form method="post" asp-page-handler="Add" style="display:flex; gap:10px; align-items:flex-end; flex-wrap:wrap; margin-top:8px;">
         <input type="hidden" name="size" value="@Model.PageSize" />
         <input type="hidden" name="sort" value="@Model.Sort" />
         <input type="hidden" name="desc" value="@Model.Descending" />
@@ -198,14 +198,14 @@
             <label class="form-label">Atención</label>
             <input type="text" name="atencion" placeholder="ej: SI, EN AV. ARGENTINA" />
         </div>
-        <button type="submit" class="btn-primary" style="padding:8px 16px;">Agregar</button>
+        <button type="submit" class="btn-primary btn-sm" style="padding:6px 14px;">Agregar</button>
     </form>
 </details>
 
 @* Paginación arriba de la tabla, no debajo: la tabla llega hasta el borde inferior de la ventana
    y su barra de desplazamiento lateral queda ahí, siempre a la vista. Con los botones abajo, la
    barra subía y se comía la última fila. *@
-<div class="text-md" style="display:flex; gap:12px; align-items:center; margin:0 0 8px 4px;">
+<div class="text-sm" style="display:flex; gap:10px; align-items:center; margin:0 0 4px 2px; flex-wrap:wrap;">
     <span>@Model.TotalCount caso(s) — página @Model.PageNumber de @Model.TotalPages</span>
 
     @* Cuántas filas por página. Va como formulario GET con los filtros actuales en campos ocultos,
@@ -231,11 +231,11 @@
     {
         @if (Model.PageNumber > 1)
         {
-            <a class="nav-pill" asp-page="/Index" asp-all-route-data="@Model.RouteValues(Model.PageNumber - 1)">← Anterior</a>
+            <a class="nav-pill text-xs" asp-page="/Index" asp-all-route-data="@Model.RouteValues(Model.PageNumber - 1)">← Anterior</a>
         }
         @if (Model.PageNumber < Model.TotalPages)
         {
-            <a class="nav-pill" asp-page="/Index" asp-all-route-data="@Model.RouteValues(Model.PageNumber + 1)">Siguiente →</a>
+            <a class="nav-pill text-xs" asp-page="/Index" asp-all-route-data="@Model.RouteValues(Model.PageNumber + 1)">Siguiente →</a>
         }
     }
 
@@ -243,7 +243,7 @@
        asp-route-office="@Model.Office" asp-route-year="@Model.Year" asp-route-month="@Model.Month"
        asp-route-estado="@Model.Estado" asp-route-decision="@Model.Decision" asp-route-sector="@Model.Sector"
        asp-route-needsReview="@Model.NeedsReview" asp-route-otherComuna="@Model.OtherComuna"
-       asp-route-search="@Model.Search" class="nav-pill" style="margin-left:auto;">Exportar a Excel</a>
+       asp-route-search="@Model.Search" class="nav-pill text-xs" style="margin-left:auto;">Exportar a Excel</a>
 </div>
 
 @* Sugerencias de la columna ATENCIÓN tal como se escriben en el libro; el campo sigue siendo texto
@@ -266,9 +266,10 @@
     <input type="hidden" name="sort" value="@Model.Sort" />
     <input type="hidden" name="desc" value="@Model.Descending" />
 </form>
-<div style="display:flex; justify-content:flex-end; align-items:center; gap:8px; margin-bottom:6px;">
-    <span id="bulk-delete-count" class="text-sm" style="color:var(--color-text-muted);"></span>
-    <button type="submit" form="bulk-delete-form" class="btn-danger" id="bulk-delete-btn" disabled
+<div style="display:flex; justify-content:flex-end; align-items:center; gap:8px; margin-bottom:4px;">
+    <span id="bulk-delete-count" class="text-xs" style="color:var(--color-text-muted);"></span>
+    <button type="submit" form="bulk-delete-form" class="btn-danger btn-sm" id="bulk-delete-btn" disabled
+            style="padding:3px 10px; font-size:var(--font-xs);"
             onclick="return confirm('Los casos seleccionados se moverán a la Papelera. Se pueden restaurar desde ahí. ¿Confirmar?');">
         🗑️ Eliminar seleccionados
     </button>

@@ -774,24 +774,29 @@ body.cases-page main {
 
 /* A visible, grabbable horizontal bar — the default overlay scrollbar is nearly invisible on a
    white card and this one is the only clue that Decisión final and Acción exist further right. */
+.card.table-card {
+    scrollbar-width: auto;
+    scrollbar-color: #475569 #e2e8f0;
+}
+
 .card.table-card::-webkit-scrollbar {
     height: 14px;
-    width: 14px;
+    width: 12px;
 }
 
 .card.table-card::-webkit-scrollbar-track {
-    background: #e9eef3;
-    border-radius: 7px;
+    background: #e2e8f0;
+    border-radius: 6px;
 }
 
 .card.table-card::-webkit-scrollbar-thumb {
-    background: #98a7b5;
-    border-radius: 7px;
-    border: 3px solid #e9eef3;
+    background: #475569;
+    border-radius: 6px;
+    border: 2px solid #e2e8f0;
 }
 
 .card.table-card::-webkit-scrollbar-thumb:hover {
-    background: #6b7c8c;
+    background: #1e293b;
 }
 
 table.cases {
@@ -1653,22 +1658,52 @@ table.cases.table-wide td {
    aplicado a todas las pantallas dejaba fuera de alcance lo que no cupiera: el documento de Sector,
    la pantalla de importación y la de contraseña quedaban cortados sin forma de desplazarse. Las
    demás pantallas se desplazan como una página normal. */
+body.viewport-locked {
+    height: 100vh;
+    max-height: 100vh;
+    overflow: hidden;
+}
+
+body.viewport-locked .app-shell {
+    height: 100vh;
+    max-height: 100vh;
+    overflow: hidden;
+}
+
 body.viewport-locked .app-content {
     height: 100vh;
+    max-height: 100vh;
+    display: flex;
+    flex-direction: column;
     overflow: hidden;
+    min-height: 0;
+    min-width: 0;
 }
 
 body.viewport-locked .app-content main {
+    flex: 1 1 0;
+    height: 100%;
+    max-height: 100%;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
     overflow: hidden;
-    /* La tabla llega hasta el borde inferior: sin ese hueco final la barra lateral queda más
-       abajo que la pantalla. */
-    padding-bottom: 8px;
+    padding: 8px 14px 6px;
+    box-sizing: border-box;
 }
 
-body.viewport-locked .app-content .card.table-card {
-    flex: 1 1 auto;
-    /* Un piso, para que en pantallas bajas la tabla no se reduzca a una franja inservible. */
-    min-height: 220px;
+body.viewport-locked .app-content main > * {
+    flex: 0 0 auto;
+}
+
+body.viewport-locked .app-content main > .card.table-card {
+    flex: 1 1 0;
+    min-height: 0;
+    max-height: 100%;
+    overflow-y: auto;
+    overflow-x: scroll;
+    scrollbar-gutter: stable;
+    margin-bottom: 0;
 }
 
 /* ── Colores de fila por estado de la carpeta ────────────────────────────────────────────────
