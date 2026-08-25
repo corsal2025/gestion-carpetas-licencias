@@ -259,24 +259,20 @@ if (args.Contains("--import"))
     return;
 }
 
-// Nunca bajo "Testing" (WebApplicationFactory en los tests de integración) — de lo contrario
-// cada test que levanta el host real dispara una ventana de navegador real y huérfana.
-if (!app.Environment.IsEnvironment("Testing"))
+// Solo abre el navegador automáticamente si se especifica --open-browser en la línea de comandos
+if (args.Contains("--open-browser"))
 {
     _ = Task.Run(async () =>
     {
         try
         {
-            // Small delay to let the server bind before opening the browser
-            await Task.Delay(2000);
+            await Task.Delay(1500);
             var url = "https://localhost:5011";
-            Console.WriteLine($"Abriendo dashboard: {url}");
             Process.Start(new ProcessStartInfo(url) { UseShellExecute = true });
         }
         catch (Exception ex)
         {
             Console.WriteLine($"No se pudo abrir el navegador automáticamente: {ex.Message}");
-            Console.WriteLine("Abre https://localhost:5011 manualmente en tu navegador.");
         }
     });
 }
